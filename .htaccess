@@ -1,0 +1,57 @@
+# ============================================================
+# ATTENDANCE SYSTEM — .htaccess
+# Security rules + URL handling
+# ============================================================
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "(config\.php|\.sql|\.env|\.git|\.log)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Protect the lib, includes, sql directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to includes/ and lib/ and sql/
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^lib/ - [F,L]
+    RewriteRule ^sql/ - [F,L]
+
+    # Force HTTPS on cloud hosting (uncomment when on cloud)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Prevent access to backup files
+<FilesMatch "\.(bak|old|orig|save|swp|tmp)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# PHP settings (if allowed by host)
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 120
+</IfModule>
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+</IfModule>
+
+# GZIP compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript
+</IfModule>
