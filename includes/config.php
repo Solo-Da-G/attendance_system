@@ -3,10 +3,11 @@
  * ATTENDANCE SYSTEM — Configuration & Database Connection
  */
 
-// 1. ERROR REPORTING (Turn on for debugging)
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// 1. ERROR REPORTING (Off for production)
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
+
 
 // 2. SESSION CONFIGURATION
 if (getenv('VERCEL') || getenv('VERCEL_URL')) {

@@ -3,13 +3,9 @@ include(__DIR__ . "/../includes/config.php");
 
 $error = "";
 
-// DISABLE AUTO-REDIRECT FOR DEBUGGING
+// Auto-redirect if already logged in
 if (isset($_SESSION['admin_id'])) {
-    echo "<h1>✅ You are logged in as: " . $_SESSION['admin'] . "</h1>";
-    echo "<p><a href='/dashboard.php' style='font-size:20px; color:blue;'>Click here to go to the Dashboard</a></p>";
-    echo "<p><a href='/logout.php'>Logout</a></p>";
-    echo "<hr><p>Debug Info:</p>";
-    echo "<pre>"; print_r($_SESSION); echo "</pre>";
+    echo "<script>window.location.href='/dashboard.php';</script>";
     exit;
 }
 
@@ -33,9 +29,7 @@ if (isset($_POST['login'])) {
                 $_SESSION['role']     = $row['role'];
                 
                 session_write_close();
-
-                echo "<h1>✅ Login Successful!</h1>";
-                echo "<p><a href='/dashboard.php' style='font-size:20px; color:blue;'>Click here to go to the Dashboard</a></p>";
+                echo "<script>window.location.href='/dashboard.php';</script>";
                 exit;
             } else {
                 $error = "Invalid username or password!";

@@ -1,19 +1,12 @@
 <?php
-
 include(__DIR__ . "/../includes/config.php");
 
 // Redirect to login if not logged in
 if (!isset($_SESSION['admin'])) {
-    echo "<h1>❌ Dashboard Error: Session not found!</h1>";
-    echo "<p>Please go back to <a href='/index.php'>Login</a></p>";
-    echo "<hr><p>Debug Info:</p>";
-    echo "<pre>"; print_r($_SESSION); echo "</pre>";
+    session_write_close();
+    echo "<script>window.location.href='/index.php';</script>";
     exit;
 }
-
-
-
-
 
 $staff_id = $_SESSION['staff_id'] ?? null;
 ?>
@@ -23,7 +16,7 @@ $staff_id = $_SESSION['staff_id'] ?? null;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — Attendance System</title>
-  <link rel="stylesheet" href="asset/css/style.css">
+  <link rel="stylesheet" href="/asset/css/style.css">
   <style>
     .clocking-card {
       background: linear-gradient(135deg, var(--primary), var(--primary-light));
@@ -188,7 +181,7 @@ $staff_id = $_SESSION['staff_id'] ?? null;
         formData.append('lat', currentCoords.latitude);
         formData.append('lng', currentCoords.longitude);
 
-        fetch('api/web_clock.php', {
+        fetch('/api/web_clock.php', {
             method: 'POST',
             body: formData
         })
@@ -201,9 +194,6 @@ $staff_id = $_SESSION['staff_id'] ?? null;
             } else {
                 apiResult.style.color = "#fca5a5";
                 apiResult.innerHTML = "❌ " + data.message;
-                if (data.debug) {
-                    console.log("Distance check:", data.debug);
-                }
                 clockBtn.disabled = false;
                 clockBtn.innerHTML = action === 'clock_in' ? 'Clock In Now' : 'Clock Out Now';
             }
