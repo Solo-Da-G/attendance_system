@@ -1,13 +1,15 @@
 {
   "functions": {
-    "**/*.php": {
-      "runtime": "vercel-php@0.7.2"
-    }
+    "index.php": { "runtime": "vercel-php@0.7.2" },
+    "test.php": { "runtime": "vercel-php@0.7.2" },
+    "install.php": { "runtime": "vercel-php@0.7.2" },
+    "*.php": { "runtime": "vercel-php@0.7.2" },
+    "api/*.php": { "runtime": "vercel-php@0.7.2" }
   },
-
   "rewrites": [
     { "source": "/", "destination": "/index.php" }
   ]
 }
+
 
 
