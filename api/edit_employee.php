@@ -1,6 +1,6 @@
 <?php
 session_start();
-include("includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 // 1. Check Login
 if (!isset($_SESSION['admin'])) {

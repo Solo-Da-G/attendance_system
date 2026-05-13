@@ -5,7 +5,7 @@
  * Automatically updates the database for geofencing support.
  */
 
-include("includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 echo "<h2>🛠️ Geofencing Database Setup</h2>";
 echo "<pre>";

@@ -1,6 +1,6 @@
 <?php
 session_start();
-include("includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 // Only Admin/Super Admin
 if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'super_admin')) {

@@ -5,8 +5,8 @@
     }
   },
   "rewrites": [
+    { "source": "/asset/(.*)", "destination": "/asset/$1" },
     { "source": "/", "destination": "/api/index.php" },
-    { "source": "/test.php", "destination": "/api/test.php" },
-    { "source": "/install.php", "destination": "/api/install.php" }
+    { "source": "/(.*).php", "destination": "/api/$1.php" }
   ]
 }

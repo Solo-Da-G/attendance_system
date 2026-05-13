@@ -1,6 +1,6 @@
 <?php
 session_start();
-include("includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 // Only logged-in admin can change password
 if (!isset($_SESSION['admin'])) {

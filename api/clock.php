@@ -1,5 +1,5 @@
 <?php
-include("includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $staff_id = $_POST['staff_id'] ?? '';

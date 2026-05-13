@@ -5,7 +5,7 @@
  * Updates the admin table to support emails and password recovery.
  */
 
-include("includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 echo "<h2>🔑 Password Reset Database Setup</h2>";
 echo "<pre>";
