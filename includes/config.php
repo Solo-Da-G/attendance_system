@@ -3,10 +3,10 @@
  * ATTENDANCE SYSTEM — Configuration
  */
 
-// 1. FORCE ERRORS ON
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// 1. ERROR REPORTING (Off for production)
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
 
 // 2. ENVIRONMENT DETECTION
 if (getenv('VERCEL') || getenv('VERCEL_URL')) {
@@ -32,63 +32,52 @@ if (ENVIRONMENT === 'cloud') {
 }
 
 // 5. DATABASE CONNECTION
-$conn = mysqli_init();
-if (ENVIRONMENT === 'cloud') {
-    $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-    $conn->real_connect($servername, $username, $password, $database, null, null, MYSQLI_CLIENT_SSL);
-} else {
-    $conn->real_connect($servername, $username, $password, $database);
+$conn = mysqli_connect($servername, $username, $password, $database);
+if (!$conn) { die("Connection failed."); }
+
+// 6. DATABASE SESSIONS (Procedural version for max compatibility)
+function sess_open($path, $name) { return true; }
+function sess_close() { return true; }
+function sess_read($id) {
+    global $conn;
+    $stmt = mysqli_prepare($conn, "SELECT data FROM sessions WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, "s", $id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($row = mysqli_fetch_assoc($res)) { return (string)$row['data']; }
+    return "";
+}
+function sess_write($id, $data) {
+    global $conn;
+    $ts = time();
+    $stmt = mysqli_prepare($conn, "REPLACE INTO sessions (id, data, timestamp) VALUES (?, ?, ?)");
+    mysqli_stmt_bind_param($stmt, "ssi", $id, $data, $ts);
+    return mysqli_stmt_execute($stmt);
+}
+function sess_destroy($id) {
+    global $conn;
+    $stmt = mysqli_prepare($conn, "DELETE FROM sessions WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, "s", $id);
+    return mysqli_stmt_execute($stmt);
+}
+function sess_gc($max) {
+    global $conn;
+    $ts = time() - $max;
+    mysqli_query($conn, "DELETE FROM sessions WHERE timestamp < $ts");
+    return true;
 }
 
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+session_set_save_handler("sess_open", "sess_close", "sess_read", "sess_write", "sess_destroy", "sess_gc");
 
-// 6. TEST WITHOUT CUSTOM HANDLER FIRST
-// (I am commenting this out to see if the page loads at all)
-/*
-class DatabaseSessionHandler implements SessionHandlerInterface {
-    private $db;
-    public function __construct($db) { $this->db = $db; }
-    public function open($savePath, $sessionName) { return true; }
-    public function close() { return true; }
-    public function read($id) {
-        $stmt = $this->db->prepare("SELECT data FROM sessions WHERE id = ?");
-        $stmt->bind_param("s", $id);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($row = $res->fetch_assoc()) { return (string)$row['data']; }
-        return "";
-    }
-    public function write($id, $data) {
-        $ts = time();
-        $stmt = $this->db->prepare("REPLACE INTO sessions (id, data, timestamp) VALUES (?, ?, ?)");
-        $stmt->bind_param("ssi", $id, $data, $ts);
-        return $stmt->execute();
-    }
-    public function destroy($id) {
-        $stmt = $this->db->prepare("DELETE FROM sessions WHERE id = ?");
-        $stmt->bind_param("s", $id);
-        return $stmt->execute();
-    }
-    public function gc($maxlifetime) {
-        $ts = time() - $maxlifetime;
-        $stmt = $this->db->prepare("DELETE FROM sessions WHERE timestamp < ?");
-        $stmt->execute();
-        return true;
-    }
-}
-$handler = new DatabaseSessionHandler($conn);
-session_set_save_handler($handler, true);
-*/
-
-if (ENVIRONMENT === 'cloud') {
-    session_save_path('/tmp');
-}
+// Modern Session Settings
+session_set_cookie_params([
+    'path' => '/',
+    'secure' => true,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-echo "<!-- Config Loaded -->";
 ?>
