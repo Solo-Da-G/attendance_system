@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 include(__DIR__ . "/../includes/config.php");
 
 // Only Admin/Super Admin

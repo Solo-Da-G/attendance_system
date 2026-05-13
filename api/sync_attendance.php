@@ -13,7 +13,7 @@
 
 // Allow execution from CLI or web
 if (php_sapi_name() !== 'cli') {
-    session_start();
+    
 }
 
 include(__DIR__ . "/includes/config.php");

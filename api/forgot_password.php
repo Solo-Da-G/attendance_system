@@ -4,7 +4,7 @@
  * 
  * Allows users to request a password reset via email.
  */
-session_start();
+
 include(__DIR__ . "/../includes/config.php");
 
 // Redirect if already logged in

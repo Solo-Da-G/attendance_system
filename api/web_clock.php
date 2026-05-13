@@ -4,7 +4,7 @@
  * 
  * Handles clock-in/out from the web/mobile dashboard with location verification.
  */
-session_start();
+
 include("../includes/config.php");
 include("../lib/Geolocation.php");
 
