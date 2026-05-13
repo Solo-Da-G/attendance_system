@@ -16,7 +16,7 @@ $error = "";
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Login — Attendance System for staff</title>
+<title>Admin Login — Attendance System</title>
 <link rel="stylesheet" href="asset/css/style.css">
 </head>
 
