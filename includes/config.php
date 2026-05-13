@@ -44,13 +44,13 @@ if ($conn->connect_error) {
     die("Connection failed.");
 }
 
-// 6. DATABASE SESSION HANDLER (The "Ultimate Fix" for Vercel)
+// 6. DATABASE SESSION HANDLER (Compatible version)
 class DatabaseSessionHandler implements SessionHandlerInterface {
     private $db;
     public function __construct($db) { $this->db = $db; }
-    public function open($savePath, $sessionName): bool { return true; }
-    public function close(): bool { return true; }
-    public function read($id): string {
+    public function open($savePath, $sessionName) { return true; }
+    public function close() { return true; }
+    public function read($id) {
         $stmt = $this->db->prepare("SELECT data FROM sessions WHERE id = ?");
         $stmt->bind_param("s", $id);
         $stmt->execute();
@@ -58,22 +58,22 @@ class DatabaseSessionHandler implements SessionHandlerInterface {
         if ($row = $res->fetch_assoc()) { return (string)$row['data']; }
         return "";
     }
-    public function write($id, $data): bool {
+    public function write($id, $data) {
         $ts = time();
         $stmt = $this->db->prepare("REPLACE INTO sessions (id, data, timestamp) VALUES (?, ?, ?)");
         $stmt->bind_param("ssi", $id, $data, $ts);
         return $stmt->execute();
     }
-    public function destroy($id): bool {
+    public function destroy($id) {
         $stmt = $this->db->prepare("DELETE FROM sessions WHERE id = ?");
         $stmt->bind_param("s", $id);
         return $stmt->execute();
     }
-    public function gc($maxlifetime): int|false {
+    public function gc($maxlifetime) {
         $ts = time() - $maxlifetime;
         $stmt = $this->db->prepare("DELETE FROM sessions WHERE timestamp < ?");
         $stmt->execute();
-        return $stmt->affected_rows;
+        return true;
     }
 }
 
