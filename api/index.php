@@ -3,7 +3,10 @@ include(__DIR__ . "/../includes/config.php");
 
 $error = "";
 
-// Auto-redirect if already logged in
+// Add auth_token column if it doesn't exist (safe to run multiple times)
+$conn->query("ALTER TABLE admin ADD COLUMN IF NOT EXISTS auth_token VARCHAR(64) DEFAULT NULL");
+
+// Redirect if already logged in
 if (isset($_SESSION['admin_id'])) {
     echo "<script>window.location.href='/dashboard.php';</script>";
     exit;
@@ -24,11 +27,29 @@ if (isset($_POST['login'])) {
         if ($result->num_rows === 1) {
             $row = $result->fetch_assoc();
             if (password_verify($password, $row['password'])) {
+
+                // Generate a unique token and store in DB
+                $token = bin2hex(random_bytes(32));
+                $conn->prepare("UPDATE admin SET auth_token = ? WHERE id = ?")->execute();
+                $upd = $conn->prepare("UPDATE admin SET auth_token = ? WHERE id = ?");
+                $upd->bind_param("si", $token, $row['id']);
+                $upd->execute();
+
+                // Set session
                 $_SESSION['admin_id'] = $row['id'];
                 $_SESSION['admin']    = $row['username'];
                 $_SESSION['role']     = $row['role'];
-                
-                session_write_close();
+
+                // Set a long-lived cookie (30 days) that works across all Vercel instances
+                setcookie('auth_token', $token, [
+                    'expires'  => time() + (30 * 24 * 60 * 60),
+                    'path'     => '/',
+                    'secure'   => true,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]);
+
+                $stmt->close();
                 echo "<script>window.location.href='/dashboard.php';</script>";
                 exit;
             } else {

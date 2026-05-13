@@ -1,9 +1,8 @@
 <?php
 include(__DIR__ . "/../includes/config.php");
 
-// Redirect to login if not logged in
-if (!isset($_SESSION['admin'])) {
-    session_write_close();
+// Redirect to login if not authenticated
+if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin'])) {
     echo "<script>window.location.href='/index.php';</script>";
     exit;
 }
