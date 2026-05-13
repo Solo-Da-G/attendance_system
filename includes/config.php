@@ -1,12 +1,12 @@
 <?php
 /**
- * ATTENDANCE SYSTEM — Configuration & Database Connection
+ * ATTENDANCE SYSTEM — Configuration
  */
 
-// 1. ERROR REPORTING (Off for production)
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
-error_reporting(0);
+// 1. FORCE ERRORS ON
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 
 // 2. ENVIRONMENT DETECTION
 if (getenv('VERCEL') || getenv('VERCEL_URL')) {
@@ -41,10 +41,12 @@ if (ENVIRONMENT === 'cloud') {
 }
 
 if ($conn->connect_error) {
-    die("Connection failed.");
+    die("Connection failed: " . $conn->connect_error);
 }
 
-// 6. DATABASE SESSION HANDLER (Compatible version)
+// 6. TEST WITHOUT CUSTOM HANDLER FIRST
+// (I am commenting this out to see if the page loads at all)
+/*
 class DatabaseSessionHandler implements SessionHandlerInterface {
     private $db;
     public function __construct($db) { $this->db = $db; }
@@ -76,19 +78,17 @@ class DatabaseSessionHandler implements SessionHandlerInterface {
         return true;
     }
 }
-
-// Register the handler
 $handler = new DatabaseSessionHandler($conn);
 session_set_save_handler($handler, true);
+*/
 
-// Modern Session Settings
-session_set_cookie_params([
-    'path' => '/',
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
+if (ENVIRONMENT === 'cloud') {
+    session_save_path('/tmp');
+}
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+echo "<!-- Config Loaded -->";
+?>
