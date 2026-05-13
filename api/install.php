@@ -9,8 +9,9 @@
  */
 
 // Prevent running if already installed
-$config_file = __DIR__ . "/includes/config.php";
+$config_file = __DIR__ . "/../includes/config.php";
 include($config_file);
+
 
 $step     = isset($_GET['step']) ? (int)$_GET['step'] : 1;
 $message  = "";

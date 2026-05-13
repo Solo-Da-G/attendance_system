@@ -1,12 +1,12 @@
 {
   "functions": {
-    "**/*.php": {
+    "api/*.php": {
       "runtime": "vercel-php@0.7.2"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/api/index.php" },
+    { "source": "/test.php", "destination": "/api/test.php" },
+    { "source": "/install.php", "destination": "/api/install.php" }
+  ]
 }
-
-
-
-
-
