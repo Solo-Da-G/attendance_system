@@ -1,7 +1,7 @@
 <?php
-
+include(__DIR__ . "/../includes/config.php");
 session_unset();
 session_destroy();
-header("Location: index.php");
+echo "<script>window.location.href='/index.php';</script>";
 exit;
 ?>

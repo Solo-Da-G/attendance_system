@@ -1,12 +1,11 @@
 <?php
 include(__DIR__ . "/../includes/config.php");
 
-
 $error = "";
 
-// Redirect if already logged in
+// Redirect if already logged in (using JavaScript to be safe)
 if (isset($_SESSION['admin_id'])) {
-    header("Location: dashboard.php");
+    echo "<script>window.location.href='/dashboard.php';</script>";
     exit;
 }
 
@@ -37,8 +36,11 @@ if (isset($_POST['login'])) {
                     $_SESSION['staff_id'] = $s_row['staff_id'];
                 }
                 $s_stmt->close();
+                
+                // Save session before redirecting
+                session_write_close();
 
-                header("Location: dashboard.php");
+                echo "<script>window.location.href='/dashboard.php';</script>";
                 exit;
             } else {
                 $error = "Invalid username or password!";
