@@ -61,7 +61,7 @@ if (isset($_POST['login'])) {
 <div class="login-container">
     <img src="/asset/img/miss_logo.png" alt="Logo" width="80">
     <h2>Admin Login</h2>
-    <form method="POST" action="/api/index.php" autocomplete="off">
+    <form method="POST" action="index.php" autocomplete="off">
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit" name="login">Login</button>
