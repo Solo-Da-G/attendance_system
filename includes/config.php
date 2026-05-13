@@ -31,52 +31,63 @@ if (ENVIRONMENT === 'cloud') {
     $database   = "attendance_system";
 }
 
-// 5. DATABASE CONNECTION (Restoring SSL for Aiven)
-$conn = mysqli_init();
-if (ENVIRONMENT === 'cloud') {
-    $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-    $conn->real_connect($servername, $username, $password, $database, null, null, MYSQLI_CLIENT_SSL);
-} else {
-    $conn->real_connect($servername, $username, $password, $database);
+// 5. DATABASE CONNECTION
+function get_db_connection() {
+    global $servername, $username, $password, $database;
+    static $conn = null;
+    if ($conn === null || !mysqli_ping($conn)) {
+        $conn = mysqli_init();
+        if (ENVIRONMENT === 'cloud') {
+            $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
+            $conn->real_connect($servername, $username, $password, $database, null, null, MYSQLI_CLIENT_SSL);
+        } else {
+            $conn->real_connect($servername, $username, $password, $database);
+        }
+    }
+    return $conn;
 }
 
-if ($conn->connect_error) {
-    die("Connection failed.");
-}
+// Initial connection
+$conn = get_db_connection();
+if (!$conn) { die("Database Connection Failed."); }
 
-// 6. DATABASE SESSIONS
+// 6. BULLETPROOF DATABASE SESSIONS
 function sess_open($path, $name) { return true; }
 function sess_close() { return true; }
 function sess_read($id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT data FROM sessions WHERE id = ?");
-    $stmt->bind_param("s", $id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($row = $res->fetch_assoc()) { return (string)$row['data']; }
+    $db = get_db_connection();
+    $stmt = mysqli_prepare($db, "SELECT data FROM sessions WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, "s", $id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($row = mysqli_fetch_assoc($res)) { return (string)$row['data']; }
     return "";
 }
 function sess_write($id, $data) {
-    global $conn;
+    $db = get_db_connection();
     $ts = time();
-    $stmt = $conn->prepare("REPLACE INTO sessions (id, data, timestamp) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $id, $data, $ts);
-    return $stmt->execute();
+    $stmt = mysqli_prepare($db, "REPLACE INTO sessions (id, data, timestamp) VALUES (?, ?, ?)");
+    mysqli_stmt_bind_param($stmt, "ssi", $id, $data, $ts);
+    return mysqli_stmt_execute($stmt);
 }
 function sess_destroy($id) {
-    global $conn;
-    $stmt = $conn->prepare("DELETE FROM sessions WHERE id = ?");
-    $stmt->bind_param("s", $id);
-    return $stmt->execute();
+    $db = get_db_connection();
+    $stmt = mysqli_prepare($db, "DELETE FROM sessions WHERE id = ?");
+    mysqli_stmt_bind_param($stmt, "s", $id);
+    return mysqli_stmt_execute($stmt);
 }
 function sess_gc($max) {
-    global $conn;
+    $db = get_db_connection();
     $ts = time() - $max;
-    $conn->query("DELETE FROM sessions WHERE timestamp < $ts");
+    mysqli_query($db, "DELETE FROM sessions WHERE timestamp < $ts");
     return true;
 }
 
+// Register handler
 session_set_save_handler("sess_open", "sess_close", "sess_read", "sess_write", "sess_destroy", "sess_gc");
+
+// Ensure session is written BEFORE shutdown to avoid crashes
+register_shutdown_function('session_write_close');
 
 // Modern Session Settings
 session_set_cookie_params([
