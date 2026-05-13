@@ -277,7 +277,7 @@ if (isset($_POST['install'])) {
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
       This will create all database tables and your first super admin account.
     </p>
-    <form method="POST">
+    <form method="POST" action="/api/install.php">
       <label>Admin Username</label>
       <input type="text" name="admin_username" placeholder="e.g. admin" required>
       <label>Password</label>
