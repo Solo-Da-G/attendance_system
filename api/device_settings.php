@@ -235,7 +235,7 @@ $devices = $conn->query("SELECT * FROM zk_devices ORDER BY id ASC");
 </head>
 <body>
 
-<?php include("includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <div class="content">
   <h2>📡 Device Settings</h2>

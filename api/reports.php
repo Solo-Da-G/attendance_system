@@ -18,7 +18,7 @@ if (!isset($_SESSION['admin'])) {
 </head>
 <body>
 
-<?php include("includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <div class="content">
   <h2>📊 Attendance Report</h2>

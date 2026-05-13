@@ -63,7 +63,7 @@ $users = $conn->query("SELECT id, username, email, role, status FROM admin ORDER
 </head>
 <body>
 
-<?php include("includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <div class="content">
     <h2>🔑 User Management</h2>

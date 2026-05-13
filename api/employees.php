@@ -56,7 +56,7 @@ if (isset($_POST['add_employee'])) {
 </head>
 <body>
 
-<?php include("includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <!-- Content -->
 <div class="content">

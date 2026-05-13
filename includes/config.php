@@ -20,7 +20,10 @@
 // Auto-detect Vercel environment
 if (getenv('VERCEL') || getenv('VERCEL_URL')) {
     define('ENVIRONMENT', 'cloud');
+    // Vercel only allows writing to /tmp
+    session_save_path('/tmp');
 } else {
+
     define('ENVIRONMENT', 'local');
 }
 

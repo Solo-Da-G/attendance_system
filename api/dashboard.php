@@ -57,7 +57,7 @@ $staff_id = $_SESSION['staff_id'] ?? null;
 </head>
 <body>
 
-  <?php include("includes/sidebar.php"); ?>
+  <?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
   <div class="content">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">

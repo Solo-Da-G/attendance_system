@@ -96,7 +96,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
 </head>
 <body>
 
-<?php include("includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <div class="content">
     <h2>📍 Manage Branches & Geofencing</h2>

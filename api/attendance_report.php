@@ -16,7 +16,7 @@ if (!isset($_SESSION['admin'])) {
 <link rel="stylesheet" href="asset/css/style.css">
 </head>
 <body>
-<?php include("includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 <div class="content">
   <h2>Attendance Report</h2>
   <form method="GET">
