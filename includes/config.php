@@ -31,39 +31,48 @@ if (ENVIRONMENT === 'cloud') {
     $database   = "attendance_system";
 }
 
-// 5. DATABASE CONNECTION
-$conn = mysqli_connect($servername, $username, $password, $database);
-if (!$conn) { die("Connection failed."); }
+// 5. DATABASE CONNECTION (Restoring SSL for Aiven)
+$conn = mysqli_init();
+if (ENVIRONMENT === 'cloud') {
+    $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
+    $conn->real_connect($servername, $username, $password, $database, null, null, MYSQLI_CLIENT_SSL);
+} else {
+    $conn->real_connect($servername, $username, $password, $database);
+}
 
-// 6. DATABASE SESSIONS (Procedural version for max compatibility)
+if ($conn->connect_error) {
+    die("Connection failed.");
+}
+
+// 6. DATABASE SESSIONS
 function sess_open($path, $name) { return true; }
 function sess_close() { return true; }
 function sess_read($id) {
     global $conn;
-    $stmt = mysqli_prepare($conn, "SELECT data FROM sessions WHERE id = ?");
-    mysqli_stmt_bind_param($stmt, "s", $id);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    if ($row = mysqli_fetch_assoc($res)) { return (string)$row['data']; }
+    $stmt = $conn->prepare("SELECT data FROM sessions WHERE id = ?");
+    $stmt->bind_param("s", $id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($row = $res->fetch_assoc()) { return (string)$row['data']; }
     return "";
 }
 function sess_write($id, $data) {
     global $conn;
     $ts = time();
-    $stmt = mysqli_prepare($conn, "REPLACE INTO sessions (id, data, timestamp) VALUES (?, ?, ?)");
-    mysqli_stmt_bind_param($stmt, "ssi", $id, $data, $ts);
-    return mysqli_stmt_execute($stmt);
+    $stmt = $conn->prepare("REPLACE INTO sessions (id, data, timestamp) VALUES (?, ?, ?)");
+    $stmt->bind_param("ssi", $id, $data, $ts);
+    return $stmt->execute();
 }
 function sess_destroy($id) {
     global $conn;
-    $stmt = mysqli_prepare($conn, "DELETE FROM sessions WHERE id = ?");
-    mysqli_stmt_bind_param($stmt, "s", $id);
-    return mysqli_stmt_execute($stmt);
+    $stmt = $conn->prepare("DELETE FROM sessions WHERE id = ?");
+    $stmt->bind_param("s", $id);
+    return $stmt->execute();
 }
 function sess_gc($max) {
     global $conn;
     $ts = time() - $max;
-    mysqli_query($conn, "DELETE FROM sessions WHERE timestamp < $ts");
+    $conn->query("DELETE FROM sessions WHERE timestamp < $ts");
     return true;
 }
 
