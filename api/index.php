@@ -3,9 +3,13 @@ include(__DIR__ . "/../includes/config.php");
 
 $error = "";
 
-// Redirect if already logged in (using JavaScript to be safe)
+// DISABLE AUTO-REDIRECT FOR DEBUGGING
 if (isset($_SESSION['admin_id'])) {
-    echo "<script>window.location.href='/dashboard.php';</script>";
+    echo "<h1>✅ You are logged in as: " . $_SESSION['admin'] . "</h1>";
+    echo "<p><a href='/dashboard.php' style='font-size:20px; color:blue;'>Click here to go to the Dashboard</a></p>";
+    echo "<p><a href='/logout.php'>Logout</a></p>";
+    echo "<hr><p>Debug Info:</p>";
+    echo "<pre>"; print_r($_SESSION); echo "</pre>";
     exit;
 }
 
@@ -27,20 +31,11 @@ if (isset($_POST['login'])) {
                 $_SESSION['admin_id'] = $row['id'];
                 $_SESSION['admin']    = $row['username'];
                 $_SESSION['role']     = $row['role'];
-
-                $s_stmt = $conn->prepare("SELECT staff_id FROM staff WHERE staff_id = ? OR full_name = ? LIMIT 1");
-                $s_stmt->bind_param("ss", $row['username'], $row['username']);
-                $s_stmt->execute();
-                $s_res = $s_stmt->get_result();
-                if ($s_row = $s_res->fetch_assoc()) {
-                    $_SESSION['staff_id'] = $s_row['staff_id'];
-                }
-                $s_stmt->close();
                 
-                // Save session before redirecting
                 session_write_close();
 
-                echo "<script>window.location.href='/dashboard.php';</script>";
+                echo "<h1>✅ Login Successful!</h1>";
+                echo "<p><a href='/dashboard.php' style='font-size:20px; color:blue;'>Click here to go to the Dashboard</a></p>";
                 exit;
             } else {
                 $error = "Invalid username or password!";
@@ -63,28 +58,15 @@ if (isset($_POST['login'])) {
 </head>
 
 <body class="login-page">
-
 <div class="login-container">
-
     <img src="/asset/img/miss_logo.png" alt="Logo" width="80">
     <h2>Admin Login</h2>
-
     <form method="POST" action="/api/index.php" autocomplete="off">
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit" name="login">Login</button>
-        <div style="text-align:right; margin-top:10px;">
-            <a href="forgot_password.php" style="color:var(--primary); font-size:13px; font-weight:600; text-decoration:none;">Forgot Password?</a>
-        </div>
     </form>
-
-    <?php
-    if (!empty($error)) {
-        echo "<p class='error-msg'>$error</p>";
-    }
-    ?>
-
+    <?php if (!empty($error)) echo "<p class='error-msg'>$error</p>"; ?>
 </div>
-
 </body>
 </html>

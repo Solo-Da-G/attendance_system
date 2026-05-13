@@ -4,16 +4,13 @@ include(__DIR__ . "/../includes/config.php");
 
 // Redirect to login if not logged in
 if (!isset($_SESSION['admin'])) {
-    // DEBUG: See what is actually in the session
-    if (isset($_GET['debug'])) {
-        echo "<h1>Debug: Session is missing 'admin'</h1>";
-        echo "<pre>"; print_r($_SESSION); echo "</pre>";
-        exit;
-    }
-    session_write_close();
-    echo "<script>window.location.href='/index.php';</script>";
+    echo "<h1>❌ Dashboard Error: Session not found!</h1>";
+    echo "<p>Please go back to <a href='/index.php'>Login</a></p>";
+    echo "<hr><p>Debug Info:</p>";
+    echo "<pre>"; print_r($_SESSION); echo "</pre>";
     exit;
 }
+
 
 
 
