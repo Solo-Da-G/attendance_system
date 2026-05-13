@@ -19,10 +19,15 @@ $msg_type = "";
 $installed = false;
 
 // Check if admin table exists and has records
-$check = $conn->query("SELECT COUNT(*) as c FROM admin");
-if ($check && $check->fetch_assoc()['c'] > 0) {
-    $installed = true;
+$installed = false;
+$table_check = $conn->query("SHOW TABLES LIKE 'admin'");
+if ($table_check && $table_check->num_rows > 0) {
+    $check = $conn->query("SELECT COUNT(*) as c FROM admin");
+    if ($check && $check->fetch_assoc()['c'] > 0) {
+        $installed = true;
+    }
 }
+
 
 // ================================================================
 // STEP 2: Create tables + admin account
