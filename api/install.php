@@ -133,14 +133,10 @@ if (isset($_POST['install'])) {
     }
 }
 
-// Create uploads directory
-if (!is_dir(__DIR__ . "/uploads")) {
-    @mkdir(__DIR__ . "/uploads", 0755, true);
-}
-if (!is_dir(__DIR__ . "/logs")) {
-    @mkdir(__DIR__ . "/logs", 0755, true);
-}
+// Vercel is read-only, so we skip creating directories at runtime.
+// If you need uploads, you would normally use a service like S3 or Cloudinary.
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
