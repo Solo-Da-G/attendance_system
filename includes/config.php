@@ -1,66 +1,47 @@
 <?php
 /**
- * ATTENDANCE SYSTEM — Configuration
+ * ATTENDANCE SYSTEM — Configuration & Database Connection
  * 
- * This config auto-detects the environment:
- *   - LOCALHOST:  XAMPP on your own PC
- *   - LAN:       Office network (other devices connect via your PC's IP)
- *   - CLOUD:     Hosted on a web server (Hostinger, DigitalOcean, etc.)
- * 
- * HOW TO CONFIGURE FOR CLOUD HOSTING:
- *   1. Change ENVIRONMENT to 'cloud'
- *   2. Fill in your cloud database credentials below
- *   3. Set CLOUD_URL to your domain (e.g. https://attendance.yourcompany.com)
- *   4. Set API_SECRET to a random string for hybrid sync security
+ * This file handles:
+ * 1. Timezone settings
+ * 2. Environment detection (Local vs Cloud)
+ * 3. Session initialization (Vercel compatible)
+ * 4. Database connection using Environment Variables (Vercel) or static (Local)
  */
 
-// ================================================================
-// ENVIRONMENT: 'local' | 'lan' | 'cloud'
-// ================================================================
-// Auto-detect Vercel environment
+// 1. SESSION CONFIGURATION (Must be before session_start)
 if (getenv('VERCEL') || getenv('VERCEL_URL')) {
     define('ENVIRONMENT', 'cloud');
     // Vercel only allows writing to /tmp
     session_save_path('/tmp');
 } else {
-
     define('ENVIRONMENT', 'local');
 }
 
-// ================================================================
-// DATABASE CREDENTIALS (per environment)
-// ================================================================
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 2. TIMEZONE SETTINGS
+date_default_timezone_set("Africa/Lagos");
+
+// 3. DATABASE CREDENTIALS
 if (ENVIRONMENT === 'cloud') {
-    // ---- CLOUD HOSTING (using Vercel Environment Variables) ----
-    $servername = getenv('DB_HOST') ?: "localhost";
-    $username   = getenv('DB_USER') ?: "your_db_username";
-    $password   = getenv('DB_PASSWORD') ?: "your_db_password";
-    $database   = getenv('DB_NAME') ?: "your_db_name";
+    // These come from Vercel Environment Variables
+    $servername = getenv('DB_HOST');
+    $username   = getenv('DB_USER');
+    $password   = getenv('DB_PASSWORD');
+    $database   = getenv('DB_NAME');
 } else {
-    // ---- LOCAL / LAN (XAMPP defaults) ----
+    // Local XAMPP settings
     $servername = "localhost";
     $username   = "root";
     $password   = "";
     $database   = "attendance_system";
 }
 
-
-// ================================================================
-// APP SETTINGS
-// ================================================================
-
-// Your cloud URL (used by hybrid sync to push data from local to cloud)
-define('CLOUD_URL', 'https://attendance.yourcompany.com');
-
-// API secret key for secure communication between local sync and cloud
-define('API_SECRET', 'CHANGE_THIS_TO_A_RANDOM_STRING_123');
-
-// Timezone
-date_default_timezone_set("Africa/Lagos");
-
-// ================================================================
-// DATABASE CONNECTION
-// ================================================================
+// 4. DATABASE CONNECTION
 $conn = mysqli_init();
 
 if (ENVIRONMENT === 'cloud') {
@@ -68,28 +49,14 @@ if (ENVIRONMENT === 'cloud') {
     $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
     $conn->real_connect($servername, $username, $password, $database, null, null, MYSQLI_CLIENT_SSL);
 } else {
-
     $conn->real_connect($servername, $username, $password, $database);
 }
 
 if ($conn->connect_error) {
-
     if (ENVIRONMENT === 'cloud') {
-        die("Database connection failed. Please check your hosting credentials.");
+        die("Database connection failed. Please check your Vercel Environment Variables.");
     } else {
-        die("Database connection failed: " . $conn->connect_error);
+        die("Connection failed: " . $conn->connect_error);
     }
-}
-
-$conn->set_charset("utf8mb4");
-
-// ================================================================
-// SECURITY HEADERS (for cloud)
-// ================================================================
-if (ENVIRONMENT === 'cloud') {
-    header("X-Content-Type-Options: nosniff");
-    header("X-Frame-Options: SAMEORIGIN");
-    header("X-XSS-Protection: 1; mode=block");
-    header("Referrer-Policy: strict-origin-when-cross-origin");
 }
 ?>
