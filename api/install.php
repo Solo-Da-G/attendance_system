@@ -33,9 +33,9 @@ if ($table_check && $table_check->num_rows > 0) {
 // STEP 2: Create tables + admin account
 // ================================================================
 if (isset($_POST['install'])) {
-    $admin_user = trim($_POST['admin_username']);
-    $admin_pass = trim($_POST['admin_password']);
-    $admin_pass2 = trim($_POST['admin_password2']);
+    $admin_user = trim($_POST['u']);
+    $admin_pass = trim($_POST['p']);
+    $admin_pass2 = trim($_POST['p2']);
 
     if (empty($admin_user) || empty($admin_pass)) {
         $message = "Username and password are required";
@@ -277,13 +277,13 @@ if (isset($_POST['install'])) {
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
       This will create all database tables and your first super admin account.
     </p>
-    <form method="POST" action="/api/install.php">
+    <form method="POST" action="install.php">
       <label>Admin Username</label>
-      <input type="text" name="admin_username" placeholder="e.g. admin" required>
+      <input type="text" name="u" placeholder="e.g. admin" required>
       <label>Password</label>
-      <input type="password" name="admin_password" placeholder="Choose a strong password" required>
+      <input type="password" name="p" placeholder="Choose a strong password" required>
       <label>Confirm Password</label>
-      <input type="password" name="admin_password2" placeholder="Re-enter password" required>
+      <input type="password" name="p2" placeholder="Re-enter password" required>
       <button type="submit" name="install" style="width:100%;margin-top:8px;">Install System</button>
     </form>
 
