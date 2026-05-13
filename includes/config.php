@@ -58,9 +58,19 @@ date_default_timezone_set("Africa/Lagos");
 // ================================================================
 // DATABASE CONNECTION
 // ================================================================
-$conn = new mysqli($servername, $username, $password, $database);
+$conn = mysqli_init();
+
+if (ENVIRONMENT === 'cloud') {
+    // Aiven requires SSL. We enable SSL but skip strict cert verification for ease of setup
+    $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
+    $conn->real_connect($servername, $username, $password, $database, null, null, MYSQLI_CLIENT_SSL);
+} else {
+
+    $conn->real_connect($servername, $username, $password, $database);
+}
 
 if ($conn->connect_error) {
+
     if (ENVIRONMENT === 'cloud') {
         die("Database connection failed. Please check your hosting credentials.");
     } else {
