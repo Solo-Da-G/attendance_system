@@ -101,7 +101,14 @@ if (isset($_POST['install'])) {
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+            // Sessions table
+            "CREATE TABLE IF NOT EXISTS `sessions` (
+                `id` VARCHAR(128) NOT NULL PRIMARY KEY,
+                `data` BLOB NOT NULL,
+                `timestamp` INT NOT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
         ];
+
 
         $errors = [];
         foreach ($sqls as $sql) {
