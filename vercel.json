@@ -5,9 +5,9 @@
     }
   },
 
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/", "dest": "/index.php" }
+  "rewrites": [
+    { "source": "/", "destination": "/index.php" }
   ]
 }
+
 
