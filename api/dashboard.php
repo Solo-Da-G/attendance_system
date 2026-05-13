@@ -4,9 +4,11 @@ include(__DIR__ . "/../includes/config.php");
 
 // Redirect to login if not logged in
 if (!isset($_SESSION['admin'])) {
+    session_write_close();
     echo "<script>window.location.href='/index.php';</script>";
     exit;
 }
+
 
 
 $staff_id = $_SESSION['staff_id'] ?? null;

@@ -3,7 +3,12 @@
  * ATTENDANCE SYSTEM — Configuration & Database Connection
  */
 
-// 1. SESSION CONFIGURATION (Must be before session_start)
+// 1. ERROR REPORTING (Turn on for debugging)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// 2. SESSION CONFIGURATION
 if (getenv('VERCEL') || getenv('VERCEL_URL')) {
     define('ENVIRONMENT', 'cloud');
     session_save_path('/tmp');
@@ -11,22 +16,19 @@ if (getenv('VERCEL') || getenv('VERCEL_URL')) {
     define('ENVIRONMENT', 'local');
 }
 
-// Ensure cookies work across the whole domain
-session_set_cookie_params([
-    'path' => '/',
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
+// Modern Session Settings
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+ini_set('session.cookie_samesite', 'Lax');
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 2. TIMEZONE SETTINGS
+// 3. TIMEZONE SETTINGS
 date_default_timezone_set("Africa/Lagos");
 
-// 3. DATABASE CREDENTIALS
+// 4. DATABASE CREDENTIALS
 if (ENVIRONMENT === 'cloud') {
     $servername = getenv('DB_HOST');
     $username   = getenv('DB_USER');
@@ -39,7 +41,7 @@ if (ENVIRONMENT === 'cloud') {
     $database   = "attendance_system";
 }
 
-// 4. DATABASE CONNECTION
+// 5. DATABASE CONNECTION
 $conn = mysqli_init();
 
 if (ENVIRONMENT === 'cloud') {
@@ -50,6 +52,5 @@ if (ENVIRONMENT === 'cloud') {
 }
 
 if ($conn->connect_error) {
-    die("Connection failed.");
+    die("Database Connection Error: " . $conn->connect_error);
 }
-// No closing tag to avoid whitespace issues
