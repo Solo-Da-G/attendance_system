@@ -5,7 +5,7 @@ $error = "";
 
 // If already logged in, go to dashboard
 if (isset($_SESSION['admin_id']) || isset($_SESSION['staff_id'])) {
-    echo "<script>window.location.href='/dashboard.php';</script>";
+    header("Location: dashboard.php");
     exit;
 }
 
@@ -37,8 +37,7 @@ if (isset($_POST['login'])) {
                 $upd->execute();
                 $upd->close();
                 setcookie('auth_token', $token, ['expires' => time() + (30 * 24 * 60 * 60), 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
-
-                echo "<script>window.location.href='/dashboard.php';</script>";
+                header("Location: dashboard.php");
                 exit;
             }
         }
@@ -58,8 +57,7 @@ if (isset($_POST['login'])) {
                 $_SESSION['staff_id'] = $row['staff_id'];
                 $_SESSION['admin']    = $row['full_name'];
                 $_SESSION['role']     = 'staff';
-
-                echo "<script>window.location.href='/dashboard.php';</script>";
+                header("Location: dashboard.php");
                 exit;
             }
         }

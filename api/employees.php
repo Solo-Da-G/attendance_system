@@ -2,7 +2,7 @@
 include(__DIR__ . "/../includes/config.php");
 
 if (!isset($_SESSION['admin_id'])) {
-    echo "<script>window.location.href='/index.php';</script>";
+    header("Location: index.php");
     exit;
 }
 

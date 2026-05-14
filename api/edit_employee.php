@@ -3,13 +3,13 @@ include(__DIR__ . "/../includes/config.php");
 
 // Auth check
 if (!isset($_SESSION['admin_id'])) {
-    echo "<script>window.location.href='/index.php';</script>";
+    header("Location: index.php");
     exit;
 }
 
 // Redirect if no ID provided
 if (!isset($_GET['id']) && !isset($_POST['id'])) {
-    echo "<script>window.location.href='/employees.php';</script>";
+    header("Location: employees.php");
     exit;
 }
 

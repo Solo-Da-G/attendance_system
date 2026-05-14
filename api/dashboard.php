@@ -3,13 +3,19 @@ include(__DIR__ . "/../includes/config.php");
 
 // Redirect to login if not authenticated
 if (!isset($_SESSION['admin_id']) && !isset($_SESSION['staff_id'])) {
-    echo "<script>window.location.href='/index.php';</script>";
+    header("Location: index.php");
     exit;
 }
 
 $is_admin = isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'super_admin');
 $staff_id = $_SESSION['staff_id'] ?? null;
 $display_name = $_SESSION['admin'] ?? 'User';
+
+// TEMPORARY: Enable errors if something is failing
+if ($is_admin) {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -128,7 +134,8 @@ $display_name = $_SESSION['admin'] ?? 'User';
             <tbody>
                 <?php
                     $res = $conn->query("SELECT a.*, s.full_name, s.photo FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 50");
-                    while($row = $res->fetch_assoc()){
+                    if ($res && $res->num_rows > 0) {
+                        while($row = $res->fetch_assoc()){
                         $status_badge = $row['clock_out'] ? 'badge-info' : 'badge-success';
                         $status_text = $row['clock_out'] ? 'Completed' : 'Working';
                         $selfie = $row['photo_in'] ?: $row['photo_out'];
