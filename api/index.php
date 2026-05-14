@@ -35,10 +35,12 @@ if (isset($_POST['login'])) {
                 $_SESSION['role']     = $row['role'];
                 
                 $token = bin2hex(random_bytes(32));
-                $upd = $conn->prepare("UPDATE admin SET auth_token = ? WHERE id = ?");
-                $upd->bind_param("si", $token, $row['id']);
-                $upd->execute();
-                $upd->close();
+                $upd = $conn->prepare("UPDATE `admin` SET auth_token = ? WHERE id = ?");
+                if ($upd) {
+                    $upd->bind_param("si", $token, $row['id']);
+                    $upd->execute();
+                    $upd->close();
+                }
                 setcookie('auth_token', $token, ['expires' => time() + (30 * 24 * 60 * 60), 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
                 header("Location: dashboard.php");
                 exit;
