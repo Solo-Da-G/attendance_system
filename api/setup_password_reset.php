@@ -27,3 +27,5 @@ echo "</pre>";
 echo "<p><b>Done!</b> Email support has been added to the user table.</p>";
 echo "<a href='user.php'><button>Go to User Management</button></a>";
 ?>
+
+

@@ -168,3 +168,5 @@ if ($action === 'health') {
 // Unknown action
 http_response_code(400);
 echo json_encode(["status" => "error", "message" => "Unknown action: $action"]);
+
+

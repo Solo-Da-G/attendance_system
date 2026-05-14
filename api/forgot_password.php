@@ -85,7 +85,7 @@ if (isset($_POST['reset_request'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password — Attendance System</title>
-    <link rel="stylesheet" href="asset/css/style.css">
+    <link rel="stylesheet" href="/asset/css/style.css">
 </head>
 <body class="login-page">
 
@@ -112,3 +112,5 @@ if (isset($_POST['reset_request'])) {
 
 </body>
 </html>
+
+

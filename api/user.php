@@ -1,10 +1,14 @@
-<?php
-
 include(__DIR__ . "/../includes/config.php");
+
+// Only logged-in users
+if (!isset($_SESSION['admin_id'])) {
+    echo "<script>window.location.href='/index.php';</script>";
+    exit;
+}
 
 // Only Super Admin allowed
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
-    die("<h2 style='color:var(--danger);text-align:center;margin-top:100px;font-family:Inter,sans-serif;'>Access Denied.</h2>");
+    die("<h2 style='color:red;text-align:center;margin-top:100px;font-family:Inter,sans-serif;'>Access Denied.</h2>");
 }
 
 $message = "";
@@ -32,16 +36,16 @@ if (isset($_POST['create_user'])) {
     $role = $_POST['role'];
 
     // Check duplicate username or email
-    $check = $conn->prepare("SELECT id FROM admin WHERE username = ? OR email = ?");
-    $check->bind_param("ss", $new_user, $new_email);
+    $check = $conn->prepare("SELECT id FROM admin WHERE username = ?");
+    $check->bind_param("s", $new_user);
     $check->execute();
     $check->store_result();
 
     if ($check->num_rows > 0) {
         $message = "<p class='msg-error'>Username or Email already exists.</p>";
     } else {
-        $stmt = $conn->prepare("INSERT INTO admin (username, email, password, role) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $new_user, $new_email, $new_pass, $role);
+        $stmt = $conn->prepare("INSERT INTO admin (username, password, role) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $new_user, $new_pass, $role);
         $stmt->execute();
         $stmt->close();
         $message = "<p class='msg-success'>User created successfully.</p>";
@@ -50,7 +54,7 @@ if (isset($_POST['create_user'])) {
 }
 
 // FETCH USERS
-$users = $conn->query("SELECT id, username, email, role, status FROM admin ORDER BY id ASC");
+$users = $conn->query("SELECT id, username, role, status FROM admin ORDER BY id ASC");
 ?>
 
 <!DOCTYPE html>
@@ -59,7 +63,7 @@ $users = $conn->query("SELECT id, username, email, role, status FROM admin ORDER
     <title>User Management</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="asset/css/style.css">
+    <link rel="stylesheet" href="/asset/css/style.css">
 </head>
 <body>
 
@@ -113,8 +117,8 @@ $users = $conn->query("SELECT id, username, email, role, status FROM admin ORDER
         <?php while ($row = $users->fetch_assoc()): ?>
         <tr>
             <td><?php echo $row['id']; ?></td>
-            <td><strong><?php echo htmlspecialchars($row['username']); ?></strong></td>
-            <td><?php echo htmlspecialchars($row['email'] ?? '—'); ?></td>
+            <td><?php echo htmlspecialchars($row['username']); ?></td>
+            <td>—</td>
             <td><span class="badge <?php echo ($row['role']=='super_admin') ? 'badge-danger' : (($row['role']=='admin') ? 'badge-warning' : 'badge-info'); ?>"><?php echo $row['role']; ?></span></td>
             <td><span class="badge <?php echo ($row['status']=='active') ? 'badge-success' : 'badge-danger'; ?>"><?php echo $row['status'] ?? 'active'; ?></span></td>
             <td>
@@ -135,3 +139,5 @@ $users = $conn->query("SELECT id, username, email, role, status FROM admin ORDER
 
 </body>
 </html>
+
+

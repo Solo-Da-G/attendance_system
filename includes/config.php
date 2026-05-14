@@ -48,6 +48,14 @@ if ($col && $col->num_rows === 0) {
     $conn->query("ALTER TABLE admin ADD COLUMN auth_token VARCHAR(64) DEFAULT NULL");
 }
 
+// Ensure staff photo column can hold Base64 data
+$photo_col = $conn->query("SHOW COLUMNS FROM staff LIKE 'photo'");
+if ($photo_col && $row_col = $photo_col->fetch_assoc()) {
+    if (stripos($row_col['Type'], 'mediumtext') === false && stripos($row_col['Type'], 'longtext') === false) {
+        $conn->query("ALTER TABLE staff MODIFY COLUMN photo MEDIUMTEXT DEFAULT NULL");
+    }
+}
+
 // 7. SESSION — /tmp works within same Vercel instance
 if (ENVIRONMENT === 'cloud') {
     session_save_path('/tmp');

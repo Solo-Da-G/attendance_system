@@ -41,3 +41,5 @@ echo "</pre>";
 echo "<p><b>Done!</b> You can now delete this script and proceed to manage branches.</p>";
 echo "<a href='dashboard.php'><button>Back to Dashboard</button></a>";
 ?>
+
+

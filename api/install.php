@@ -150,7 +150,7 @@ if (isset($_POST['install'])) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Install — Attendance System</title>
-<link rel="stylesheet" href="asset/css/style.css">
+<link rel="stylesheet" href="/asset/css/style.css">
 <style>
   body.install-page {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #312e81 100%);
@@ -320,3 +320,5 @@ if (isset($_POST['install'])) {
 
 </body>
 </html>
+
+

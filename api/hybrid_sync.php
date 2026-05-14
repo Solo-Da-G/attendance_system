@@ -254,3 +254,5 @@ function logMsg($msg) {
 
     @file_put_contents($logFile, $line . "\n", FILE_APPEND);
 }
+
+

@@ -54,7 +54,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Branches & Geofencing</title>
-    <link rel="stylesheet" href="asset/css/style.css">
+    <link rel="stylesheet" href="/asset/css/style.css">
     <style>
         .geo-box {
             background: var(--surface);
@@ -161,3 +161,5 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
 
 </body>
 </html>
+
+

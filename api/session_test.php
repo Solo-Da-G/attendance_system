@@ -16,3 +16,5 @@ echo "Session ID: " . session_id() . "<br>";
 echo "Session Path: " . session_save_path() . "<br>";
 echo "Environment: " . ENVIRONMENT;
 ?>
+
+

@@ -1,10 +1,7 @@
-<?php
-
 include(__DIR__ . "/../includes/config.php");
 
-// Redirect if not logged in
-if (!isset($_SESSION['admin'])) {
-    header("Location: index.php");
+if (!isset($_SESSION['admin_id'])) {
+    echo "<script>window.location.href='/index.php';</script>";
     exit;
 }
 
@@ -19,18 +16,11 @@ if (isset($_POST['add_employee'])) {
     $phone = trim($_POST['phone']);
     $photo = "";
 
-    // Handle photo upload
-    if (!empty($_FILES['photo']['name'])) {
-        $targetDir = "uploads/";
-        if (!file_exists($targetDir)) {
-            mkdir($targetDir, 0777, true);
-        }
-        $fileName = time() . "_" . basename($_FILES['photo']['name']);
-        $targetFile = $targetDir . $fileName;
-
-        if (move_uploaded_file($_FILES['photo']['tmp_name'], $targetFile)) {
-            $photo = $fileName;
-        }
+    // Handle photo upload — stored as Base64 in DB (Vercel is read-only)
+    if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
+        $imgData = file_get_contents($_FILES['photo']['tmp_name']);
+        $imgType = mime_content_type($_FILES['photo']['tmp_name']);
+        $photo   = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
     }
 
     // Insert new record
@@ -52,7 +42,7 @@ if (isset($_POST['add_employee'])) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Employees</title>
-<link rel="stylesheet" href="asset/css/style.css">
+<link rel="stylesheet" href="/asset/css/style.css">
 </head>
 <body>
 
@@ -85,7 +75,8 @@ if (isset($_POST['add_employee'])) {
         echo "<tr>
           <td>";
           if (!empty($row['photo'])) {
-            echo "<img src='uploads/{$row['photo']}' class='photo' alt='Photo'>";
+            // Photo stored as Base64 data URI
+            echo "<img src='{$row['photo']}' class='photo' alt='Photo' style='width:40px;height:40px;border-radius:50%;object-fit:cover;'>";
           } else {
             echo "<span style='color:var(--text-muted);font-size:13px;'>No photo</span>";
           }
@@ -159,3 +150,5 @@ if (isset($_POST['add_employee'])) {
 </script>
 </body>
 </html>
+
+

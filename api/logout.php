@@ -17,3 +17,5 @@ setcookie('auth_token', '', [
 echo "<script>window.location.href='/index.php';</script>";
 exit;
 ?>
+
+
