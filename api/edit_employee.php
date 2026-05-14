@@ -1,25 +1,19 @@
 <?php
-
 include(__DIR__ . "/../includes/config.php");
 
-// 1. Check Login
-if (!isset(<?php
-
-include(__DIR__ . "/../includes/config.php");
-
-// 1. Check Login
-if (!isset($_SESSION['admin'])) {
-    header("Location: index.php");
+// Auth check
+if (!isset($_SESSION['admin_id'])) {
+    echo "<script>window.location.href='/index.php';</script>";
     exit;
 }
 
-// 2. Redirect if no ID
+// Redirect if no ID provided
 if (!isset($_GET['id']) && !isset($_POST['id'])) {
-    header("Location: employees.php");
+    echo "<script>window.location.href='/employees.php';</script>";
     exit;
 }
 
-// 3. Fetch Employee Data
+// Fetch employee data
 if (isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $stmt = $conn->prepare("SELECT * FROM staff WHERE id = ?");
@@ -28,208 +22,99 @@ if (isset($_GET['id'])) {
     $result = $stmt->get_result();
     $employee = $result->fetch_assoc();
     $stmt->close();
-    
     if (!$employee) {
         die("Employee not found.");
     }
 }
 
-// 4. Handle Update Submission
+// Handle update form submission
 if (isset($_POST['update_employee'])) {
-    $id = (int)$_POST['id'];
-    $full_name = $_POST['full_name'];
-    $job_title = $_POST['job_title'];
+    $id         = (int)$_POST['id'];
+    $full_name  = $_POST['full_name'];
+    $job_title  = $_POST['job_title'];
     $department = $_POST['department'];
-    $branch = $_POST['branch'];
-    $email = $_POST['email'];
-    $phone = $_POST['phone'];
-    
-    // Check if new photo is uploaded
-    if (!empty($_FILES['photo']['name'])) {
-        $fileName = time() . "_" . basename($_FILES['photo']['name']);
-        move_uploaded_file($_FILES['photo']['tmp_name'], "uploads/" . $fileName);
-        
-        $sql = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=?, photo=? WHERE id=?";
+    $branch     = $_POST['branch'];
+    $email      = $_POST['email'];
+    $phone      = $_POST['phone'];
+
+    // Photo: store as Base64 in DB (Vercel is read-only filesystem)
+    if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
+        $imgData  = file_get_contents($_FILES['photo']['tmp_name']);
+        $imgType  = mime_content_type($_FILES['photo']['tmp_name']);
+        $photo    = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
+
+        $sql  = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=?, photo=? WHERE id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssssi", $full_name, $job_title, $department, $branch, $email, $phone, $fileName, $id);
+        $stmt->bind_param("sssssssi", $full_name, $job_title, $department, $branch, $email, $phone, $photo, $id);
     } else {
-        $sql = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=? WHERE id=?";
+        $sql  = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=? WHERE id=?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ssssssi", $full_name, $job_title, $department, $branch, $email, $phone, $id);
     }
 
     if ($stmt->execute()) {
-        echo "<script>alert('Updated successfully!'); window.location='employees.php';</script>";
+        echo "<script>alert('Updated successfully!'); window.location='/employees.php';</script>";
     } else {
-        echo "Error: " . $conn->error;
+        echo "<script>alert('Error updating employee.');</script>";
     }
     $stmt->close();
 }
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Edit Employee</title>
+    <title>Edit Employee — Attendance System</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/asset/css/style.css">
 </head>
 <body>
 
-<div class="edit-container">
-    <h2>Edit Employee Information</h2>
-    <form method="POST" enctype="multipart/form-data">
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
+
+<div class="content">
+    <h2>Edit Employee</h2>
+
+    <form method="POST" enctype="multipart/form-data" style="max-width:600px;">
         <input type="hidden" name="id" value="<?php echo $employee['id']; ?>">
-        
+
         <label>Full Name</label>
         <input type="text" name="full_name" value="<?php echo htmlspecialchars($employee['full_name']); ?>" required>
-        
+
         <label>Job Title</label>
-        <input type="text" name="job_title" value="<?php echo htmlspecialchars($employee['job_title']); ?>" required>
-        
+        <input type="text" name="job_title" value="<?php echo htmlspecialchars($employee['job_title']); ?>">
+
         <label>Department</label>
-        <input type="text" name="department" value="<?php echo htmlspecialchars($employee['department']); ?>" required>
-        
+        <input type="text" name="department" value="<?php echo htmlspecialchars($employee['department']); ?>">
+
         <label>Branch</label>
-        <input type="text" name="branch" value="<?php echo htmlspecialchars($employee['branch']); ?>" required>
-        
+        <input type="text" name="branch" value="<?php echo htmlspecialchars($employee['branch']); ?>">
+
         <label>Email</label>
-        <input type="email" name="email" value="<?php echo htmlspecialchars($employee['email']); ?>" required>
-        
+        <input type="email" name="email" value="<?php echo htmlspecialchars($employee['email']); ?>">
+
         <label>Phone</label>
-        <input type="text" name="phone" value="<?php echo htmlspecialchars($employee['phone']); ?>" required>
-        
-        <label>Current Photo:</label><br>
+        <input type="text" name="phone" value="<?php echo htmlspecialchars($employee['phone']); ?>">
+
+        <label>Current Photo</label><br>
         <?php if (!empty($employee['photo'])): ?>
-          <img src="uploads/<?php echo $employee['photo']; ?>" class="photo" style="width:60px;height:60px;margin-bottom:10px;" alt="Current photo"><br>
+            <img src="<?php echo $employee['photo']; ?>" style="width:70px;height:70px;border-radius:50%;object-fit:cover;margin-bottom:10px;" alt="Current photo"><br>
         <?php else: ?>
-          <span style="color:var(--text-muted);font-size:13px;">No photo</span><br>
+            <span style="color:var(--text-muted);font-size:13px;">No photo uploaded</span><br>
         <?php endif; ?>
-        
+
         <label>Change Photo (optional)</label>
         <input type="file" name="photo" accept="image/*">
-        
-        <div style="display:flex;gap:12px;margin-top:10px;">
-          <button type="submit" name="update_employee">Update Employee</button>
-          <a href="employees.php" class="cancel-btn">Cancel</a>
+
+        <div style="display:flex;gap:12px;margin-top:16px;">
+            <button type="submit" name="update_employee">Update Employee</button>
+            <a href="/employees.php"><button type="button" style="background:var(--surface-alt);">Cancel</button></a>
         </div>
     </form>
+
+    <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Collins</div>
 </div>
 
 </body>
 </html>
-
-SESSION['admin_id'])) {
-    header("Location: index.php");
-    exit;
-}
-
-// 2. Redirect if no ID
-if (!isset($_GET['id']) && !isset($_POST['id'])) {
-    header("Location: employees.php");
-    exit;
-}
-
-// 3. Fetch Employee Data
-if (isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    $stmt = $conn->prepare("SELECT * FROM staff WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $employee = $result->fetch_assoc();
-    $stmt->close();
-    
-    if (!$employee) {
-        die("Employee not found.");
-    }
-}
-
-// 4. Handle Update Submission
-if (isset($_POST['update_employee'])) {
-    $id = (int)$_POST['id'];
-    $full_name = $_POST['full_name'];
-    $job_title = $_POST['job_title'];
-    $department = $_POST['department'];
-    $branch = $_POST['branch'];
-    $email = $_POST['email'];
-    $phone = $_POST['phone'];
-    
-    // Check if new photo is uploaded
-    if (!empty($_FILES['photo']['name'])) {
-        $fileName = time() . "_" . basename($_FILES['photo']['name']);
-        move_uploaded_file($_FILES['photo']['tmp_name'], "uploads/" . $fileName);
-        
-        $sql = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=?, photo=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssssi", $full_name, $job_title, $department, $branch, $email, $phone, $fileName, $id);
-    } else {
-        $sql = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssssi", $full_name, $job_title, $department, $branch, $email, $phone, $id);
-    }
-
-    if ($stmt->execute()) {
-        echo "<script>alert('Updated successfully!'); window.location='employees.php';</script>";
-    } else {
-        echo "Error: " . $conn->error;
-    }
-    $stmt->close();
-}
-?>
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Employee</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/asset/css/style.css">
-</head>
-<body>
-
-<div class="edit-container">
-    <h2>Edit Employee Information</h2>
-    <form method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="id" value="<?php echo $employee['id']; ?>">
-        
-        <label>Full Name</label>
-        <input type="text" name="full_name" value="<?php echo htmlspecialchars($employee['full_name']); ?>" required>
-        
-        <label>Job Title</label>
-        <input type="text" name="job_title" value="<?php echo htmlspecialchars($employee['job_title']); ?>" required>
-        
-        <label>Department</label>
-        <input type="text" name="department" value="<?php echo htmlspecialchars($employee['department']); ?>" required>
-        
-        <label>Branch</label>
-        <input type="text" name="branch" value="<?php echo htmlspecialchars($employee['branch']); ?>" required>
-        
-        <label>Email</label>
-        <input type="email" name="email" value="<?php echo htmlspecialchars($employee['email']); ?>" required>
-        
-        <label>Phone</label>
-        <input type="text" name="phone" value="<?php echo htmlspecialchars($employee['phone']); ?>" required>
-        
-        <label>Current Photo:</label><br>
-        <?php if (!empty($employee['photo'])): ?>
-          <img src="uploads/<?php echo $employee['photo']; ?>" class="photo" style="width:60px;height:60px;margin-bottom:10px;" alt="Current photo"><br>
-        <?php else: ?>
-          <span style="color:var(--text-muted);font-size:13px;">No photo</span><br>
-        <?php endif; ?>
-        
-        <label>Change Photo (optional)</label>
-        <input type="file" name="photo" accept="image/*">
-        
-        <div style="display:flex;gap:12px;margin-top:10px;">
-          <button type="submit" name="update_employee">Update Employee</button>
-          <a href="employees.php" class="cancel-btn">Cancel</a>
-        </div>
-    </form>
-</div>
-
-</body>
-</html>
-
-

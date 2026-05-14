@@ -33,11 +33,21 @@ if (ENVIRONMENT === 'cloud') {
 // 5. DATABASE CONNECTION (SSL for Aiven)
 $conn = mysqli_init();
 if (ENVIRONMENT === 'cloud') {
+    // DB_HOST may contain port as "hostname:port" — split them
+    $db_host_raw = getenv('DB_HOST');
+    $db_port     = 3306; // default MySQL port
+    if (strpos($db_host_raw, ':') !== false) {
+        list($db_host_clean, $db_port_str) = explode(':', $db_host_raw, 2);
+        $db_port = (int)$db_port_str;
+    } else {
+        $db_host_clean = $db_host_raw;
+    }
     $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-    $conn->real_connect($servername, $username, $password, $database, null, null, MYSQLI_CLIENT_SSL);
+    $conn->real_connect($db_host_clean, $username, $password, $database, $db_port, null, MYSQLI_CLIENT_SSL);
 } else {
     $conn->real_connect($servername, $username, $password, $database);
 }
+
 if ($conn->connect_error) {
     die("Database connection failed.");
 }
