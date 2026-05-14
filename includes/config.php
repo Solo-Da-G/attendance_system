@@ -44,7 +44,7 @@ try {
 
     if (ENVIRONMENT === 'cloud') {
         $db_host_raw = getenv('DB_HOST');
-        $db_port     = 3306;
+        $db_port     = getenv('DB_PORT') ?: 3306;
         if (strpos($db_host_raw, ':') !== false) {
             list($db_host_clean, $db_port_str) = explode(':', $db_host_raw, 2);
             $db_port = (int)$db_port_str;
