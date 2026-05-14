@@ -260,7 +260,7 @@ th, td {
 }
 
 th {
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  background: linear-gradient(135deg, #0f172a, #1e293b);
   color: #fff;
   font-weight: 600;
   text-transform: uppercase;
@@ -446,10 +446,10 @@ button:hover,
   letter-spacing: .3px;
 }
 
-.badge-success { background: var(--success-bg); color: #065f46; }
-.badge-danger  { background: var(--danger-bg);  color: #991b1b; }
-.badge-warning { background: var(--warning-bg); color: #92400e; }
-.badge-info    { background: var(--info-bg);    color: #1e40af; }
+.badge-success { background: #10b981; color: #ffffff; }
+.badge-danger  { background: #ef4444; color: #ffffff; }
+.badge-warning { background: #f59e0b; color: #ffffff; }
+.badge-info    { background: #3b82f6; color: #ffffff; }
 
 /* ============================================================
    PHOTOS
