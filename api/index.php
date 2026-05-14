@@ -19,6 +19,9 @@ if (isset($_POST['login'])) {
     } else {
         // 1. Try Admin Login first
         $stmt = $conn->prepare("SELECT id, username, password, role FROM `admin` WHERE (username = ? OR email = ?) LIMIT 1");
+        if (!$stmt) {
+            die("MySQL Prepare Error (Admin Table): " . $conn->error);
+        }
         $stmt->bind_param("ss", $username, $username);
         $stmt->execute();
         $result = $stmt->get_result();
