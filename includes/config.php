@@ -35,6 +35,7 @@ if (ENVIRONMENT === 'cloud') {
 }
 
 // 5. DATABASE CONNECTION
+mysqli_report(MYSQLI_REPORT_OFF); // Prevent PHP 8.1+ from throwing fatal exceptions on query errors
 try {
     $conn = mysqli_init();
     if (!$conn) {
@@ -87,30 +88,38 @@ if (session_status() === PHP_SESSION_NONE) {
 // 7. DB SCHEMA AUTO-MIGRATION
 // To prevent 500 errors and slow-downs, we only check this if needed.
 if (empty($_SESSION['schema_checked'])) {
-    // Wrap in try-catch to prevent site-wide crash if a query fails
     try {
         // Ensure auth_token column exists on admin table
-        $conn->query("ALTER TABLE `admin` ADD COLUMN IF NOT EXISTS `auth_token` VARCHAR(64) DEFAULT NULL");
+        $col = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'auth_token'");
+        if ($col && $col->num_rows === 0) $conn->query("ALTER TABLE `admin` ADD COLUMN `auth_token` VARCHAR(64) DEFAULT NULL");
         
         // Ensure staff columns
-        $conn->query("ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `password` VARCHAR(255) DEFAULT NULL");
-        $conn->query("ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `reset_token` VARCHAR(100) DEFAULT NULL");
+        $pass_col = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'password'");
+        if ($pass_col && $pass_col->num_rows === 0) $conn->query("ALTER TABLE `staff` ADD COLUMN `password` VARCHAR(255) DEFAULT NULL");
+        
+        $res_stf = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'reset_token'");
+        if ($res_stf && $res_stf->num_rows === 0) $conn->query("ALTER TABLE `staff` ADD COLUMN `reset_token` VARCHAR(100) DEFAULT NULL");
         
         // Ensure attendance columns
-        $conn->query("ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `photo_in` MEDIUMTEXT DEFAULT NULL");
-        $conn->query("ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `photo_out` MEDIUMTEXT DEFAULT NULL");
+        $att_in = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'photo_in'");
+        if ($att_in && $att_in->num_rows === 0) $conn->query("ALTER TABLE `attendance` ADD COLUMN `photo_in` MEDIUMTEXT DEFAULT NULL");
+        
+        $att_out = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'photo_out'");
+        if ($att_out && $att_out->num_rows === 0) $conn->query("ALTER TABLE `attendance` ADD COLUMN `photo_out` MEDIUMTEXT DEFAULT NULL");
 
         // Ensure branches geofencing
         $chk_br = $conn->query("SHOW TABLES LIKE 'branches'");
         if ($chk_br && $chk_br->num_rows > 0) {
-            $conn->query("ALTER TABLE `branches` ADD COLUMN IF NOT EXISTS `latitude` DECIMAL(10,8) DEFAULT 6.5244");
-            $conn->query("ALTER TABLE `branches` ADD COLUMN IF NOT EXISTS `longitude` DECIMAL(11,8) DEFAULT 3.3792");
-            $conn->query("ALTER TABLE `branches` ADD COLUMN IF NOT EXISTS `radius_meters` INT DEFAULT 200");
+            $br_lat = $conn->query("SHOW COLUMNS FROM `branches` LIKE 'latitude'");
+            if ($br_lat && $br_lat->num_rows === 0) {
+                $conn->query("ALTER TABLE `branches` ADD COLUMN `latitude` DECIMAL(10,8) DEFAULT 6.5244");
+                $conn->query("ALTER TABLE `branches` ADD COLUMN `longitude` DECIMAL(11,8) DEFAULT 3.3792");
+                $conn->query("ALTER TABLE `branches` ADD COLUMN `radius_meters` INT DEFAULT 200");
+            }
         }
         
         $_SESSION['schema_checked'] = true;
     } catch (Exception $e) {
-        // Log error but don't crash the site
         error_log("Migration Error: " . $e->getMessage());
     }
 }
