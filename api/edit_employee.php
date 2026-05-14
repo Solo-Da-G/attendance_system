@@ -36,21 +36,38 @@ if (isset($_POST['update_employee'])) {
     $branch     = $_POST['branch'];
     $email      = $_POST['email'];
     $phone      = $_POST['phone'];
+    $finger_id  = $_POST['fingerprint_id'];
+    $new_pass   = $_POST['new_password'];
 
-    // Photo: store as Base64 in DB (Vercel is read-only filesystem)
+    $params = [$full_name, $job_title, $department, $branch, $email, $phone, $finger_id];
+    $types  = "sssssss";
+
+    $sql = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=?, fingerprint_id=?";
+
+    // Handle password update if provided
+    if (!empty($new_pass)) {
+        $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
+        $sql .= ", password=?";
+        $params[] = $hashed;
+        $types .= "s";
+    }
+
+    // Handle photo update
     if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
         $imgData  = file_get_contents($_FILES['photo']['tmp_name']);
         $imgType  = mime_content_type($_FILES['photo']['tmp_name']);
         $photo    = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
-
-        $sql  = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=?, photo=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssssi", $full_name, $job_title, $department, $branch, $email, $phone, $photo, $id);
-    } else {
-        $sql  = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssssi", $full_name, $job_title, $department, $branch, $email, $phone, $id);
+        $sql .= ", photo=?";
+        $params[] = $photo;
+        $types .= "s";
     }
+
+    $sql .= " WHERE id=?";
+    $params[] = $id;
+    $types .= "i";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
 
     if ($stmt->execute()) {
         echo "<script>alert('Updated successfully!'); window.location='/employees.php';</script>";
@@ -97,6 +114,12 @@ if (isset($_POST['update_employee'])) {
         <label>Phone</label>
         <input type="text" name="phone" value="<?php echo htmlspecialchars($employee['phone']); ?>">
 
+        <label>Fingerprint User ID (ZKTeco)</label>
+        <input type="text" name="fingerprint_id" value="<?php echo htmlspecialchars($employee['fingerprint_id']); ?>" placeholder="e.g. 1">
+
+        <label>New Password (leave blank to keep current)</label>
+        <input type="password" name="new_password" placeholder="Set a new login password">
+
         <label>Current Photo</label><br>
         <?php if (!empty($employee['photo'])): ?>
             <img src="<?php echo $employee['photo']; ?>" style="width:70px;height:70px;border-radius:50%;object-fit:cover;margin-bottom:10px;" alt="Current photo"><br>
@@ -107,9 +130,9 @@ if (isset($_POST['update_employee'])) {
         <label>Change Photo (optional)</label>
         <input type="file" name="photo" accept="image/*">
 
-        <div style="display:flex;gap:12px;margin-top:16px;">
-            <button type="submit" name="update_employee">Update Employee</button>
-            <a href="/employees.php"><button type="button" style="background:var(--surface-alt);">Cancel</button></a>
+        <div style="display:flex;gap:12px;margin-top:25px;">
+            <button type="submit" name="update_employee">Save Changes</button>
+            <a href="/employees.php"><button type="button" style="background:#f1f5f9; color:#475569;">Cancel</button></a>
         </div>
     </form>
 
