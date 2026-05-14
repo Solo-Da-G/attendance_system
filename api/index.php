@@ -57,6 +57,20 @@ if (isset($_POST['login'])) {
                 $_SESSION['staff_id'] = $row['staff_id'];
                 $_SESSION['admin']    = $row['full_name'];
                 $_SESSION['role']     = 'staff';
+                
+                // Set auth_token for staff to survive Vercel statelessness
+                $token = bin2hex(random_bytes(32));
+                // Add column if it doesn't exist just in case (will fail silently if mysqli exceptions are off)
+                $conn->query("ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `auth_token` VARCHAR(64) DEFAULT NULL");
+                
+                $upd = $conn->prepare("UPDATE `staff` SET auth_token = ? WHERE id = ?");
+                if ($upd) {
+                    $upd->bind_param("si", $token, $row['id']);
+                    $upd->execute();
+                    $upd->close();
+                }
+                setcookie('auth_token', 'staff_' . $token, ['expires' => time() + (30 * 24 * 60 * 60), 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+                
                 header("Location: dashboard.php");
                 exit;
             }

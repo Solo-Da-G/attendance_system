@@ -93,11 +93,17 @@ if ($is_admin) {
         </div>
 
         <?php
-            $stmt = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND clock_out IS NULL ORDER BY clock_in DESC LIMIT 1");
-            $stmt->bind_param("s", $staff_id);
-            $stmt->execute();
-            $is_clocked_in = !empty($stmt->get_result()->fetch_assoc());
-            $stmt->close();
+            $is_clocked_in = false;
+            $stmt = $conn->prepare("SELECT id FROM `attendance` WHERE staff_id = ? AND clock_out IS NULL ORDER BY clock_in DESC LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param("s", $staff_id);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res && $res->num_rows > 0) {
+                    $is_clocked_in = true;
+                }
+                $stmt->close();
+            }
         ?>
         
         <div id="clockControls">

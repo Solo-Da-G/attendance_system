@@ -93,6 +93,9 @@ if (empty($_SESSION['schema_checked'])) {
         $pass_col = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'password'");
         if ($pass_col && $pass_col->num_rows === 0) $conn->query("ALTER TABLE `staff` ADD COLUMN `password` VARCHAR(255) DEFAULT NULL");
         
+        $stf_token = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'auth_token'");
+        if ($stf_token && $stf_token->num_rows === 0) $conn->query("ALTER TABLE `staff` ADD COLUMN `auth_token` VARCHAR(64) DEFAULT NULL");
+        
         $res_stf = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'reset_token'");
         if ($res_stf && $res_stf->num_rows === 0) $conn->query("ALTER TABLE `staff` ADD COLUMN `reset_token` VARCHAR(100) DEFAULT NULL");
         
@@ -122,21 +125,40 @@ if (empty($_SESSION['schema_checked'])) {
 
 // 8. COOKIE-BASED AUTH RESTORE
 // This is CRITICAL for Vercel persistence
-if (empty($_SESSION['admin_id']) && !empty($_COOKIE['auth_token'])) {
-    $token = preg_replace('/[^a-zA-Z0-9]/', '', $_COOKIE['auth_token']);
-    if (strlen($token) >= 32) { // Allow for different token lengths
-        $stmt = $conn->prepare("SELECT id, username, role FROM `admin` WHERE auth_token = ? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param("s", $token);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            if ($res && $res->num_rows === 1) {
-                $row = $res->fetch_assoc();
-                $_SESSION['admin_id'] = $row['id'];
-                $_SESSION['admin']    = $row['username'];
-                $_SESSION['role']     = $row['role'];
+if (empty($_SESSION['admin_id']) && empty($_SESSION['staff_id']) && !empty($_COOKIE['auth_token'])) {
+    $raw_token = $_COOKIE['auth_token'];
+    $is_staff = strpos($raw_token, 'staff_') === 0;
+    $token = preg_replace('/[^a-zA-Z0-9]/', '', str_replace('staff_', '', $raw_token));
+    
+    if (strlen($token) >= 32) {
+        if ($is_staff) {
+            $stmt = $conn->prepare("SELECT id, staff_id, full_name FROM `staff` WHERE auth_token = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param("s", $token);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res && $res->num_rows === 1) {
+                    $row = $res->fetch_assoc();
+                    $_SESSION['staff_id'] = $row['staff_id'];
+                    $_SESSION['admin']    = $row['full_name'];
+                    $_SESSION['role']     = 'staff';
+                }
+                $stmt->close();
             }
-            $stmt->close();
+        } else {
+            $stmt = $conn->prepare("SELECT id, username, role FROM `admin` WHERE auth_token = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param("s", $token);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res && $res->num_rows === 1) {
+                    $row = $res->fetch_assoc();
+                    $_SESSION['admin_id'] = $row['id'];
+                    $_SESSION['admin']    = $row['username'];
+                    $_SESSION['role']     = $row['role'];
+                }
+                $stmt->close();
+            }
         }
     }
 }
