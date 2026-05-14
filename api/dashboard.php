@@ -121,10 +121,11 @@ $display_name = $_SESSION['admin'] ?? 'User';
         overflow: hidden;
     }
     table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 16px 20px; font-size: 13px; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--border); }
-    td { padding: 16px 20px; font-size: 14px; color: var(--text); border-bottom: 1px solid #f1f5f9; }
+    th { text-align: left; padding: 18px 20px; font-size: 14px; color: #1e293b; font-weight: 800; border-bottom: 2px solid #f1f5f9; background: #f8fafc; }
+    td { padding: 16px 20px; font-size: 15px; color: #334155; border-bottom: 1px solid #f1f5f9; }
+    tr:hover td { background: #fdfdfd; }
     tr:last-child td { border-bottom: none; }
-    .badge { padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; }
+    .badge { padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
   </style>
 </head>
 <body>
