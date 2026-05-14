@@ -17,7 +17,11 @@ if (getenv('VERCEL') || getenv('VERCEL_URL')) {
 // 3. TIMEZONE
 date_default_timezone_set("Africa/Lagos");
 
-// 4. DATABASE CREDENTIALS
+// 4. API & SYNC CONFIG
+define('API_SECRET', 'Attendance_Secret_Key_2026'); // Change this to a secure random string
+define('CLOUD_URL', 'https://attendance-system-delta-five.vercel.app'); 
+
+// 5. DATABASE CREDENTIALS
 if (ENVIRONMENT === 'cloud') {
     $servername = getenv('DB_HOST');
     $username   = getenv('DB_USER');
@@ -94,6 +98,16 @@ if (empty($_SESSION['schema_checked'])) {
     $res_stf = $conn->query("SHOW COLUMNS FROM staff LIKE 'reset_token'");
     if ($res_stf && $res_stf->num_rows === 0) {
         $conn->query("ALTER TABLE staff ADD COLUMN reset_token VARCHAR(100) DEFAULT NULL");
+    }
+
+    // Ensure attendance photo columns exist
+    $att_p_in = $conn->query("SHOW COLUMNS FROM attendance LIKE 'photo_in'");
+    if ($att_p_in && $att_p_in->num_rows === 0) {
+        $conn->query("ALTER TABLE attendance ADD COLUMN photo_in MEDIUMTEXT DEFAULT NULL");
+    }
+    $att_p_out = $conn->query("SHOW COLUMNS FROM attendance LIKE 'photo_out'");
+    if ($att_p_out && $att_p_out->num_rows === 0) {
+        $conn->query("ALTER TABLE attendance ADD COLUMN photo_out MEDIUMTEXT DEFAULT NULL");
     }
 
     $_SESSION['schema_checked'] = true;

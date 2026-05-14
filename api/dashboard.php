@@ -20,112 +20,50 @@ $display_name = $_SESSION['admin'] ?? 'User';
   <link rel="stylesheet" href="/asset/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-        --glass-bg: rgba(255, 255, 255, 0.7);
-        --glass-border: rgba(255, 255, 255, 0.4);
-    }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
     
     .dashboard-header {
         background: linear-gradient(135deg, #1e293b, #334155);
-        color: white;
-        padding: 40px;
-        border-radius: 24px;
-        margin-bottom: 30px;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-        position: relative;
-        overflow: hidden;
+        color: white; padding: 40px; border-radius: 24px; margin-bottom: 30px;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; overflow: hidden;
     }
-    .dashboard-header::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 300px;
-        height: 300px;
-        background: rgba(255,255,255,0.03);
-        border-radius: 50%;
-    }
-    .dashboard-header h2 { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
-    .dashboard-header p { opacity: 0.8; font-size: 16px; }
+    .dashboard-header h2 { font-size: 32px; font-weight: 800; margin:0; }
 
     .clocking-card {
-        background: white;
-        padding: 30px;
-        border-radius: 24px;
-        margin-bottom: 30px;
-        text-align: center;
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow);
-        transition: all 0.3s var(--ease);
+        background: white; padding: 30px; border-radius: 24px; margin-bottom: 30px;
+        border: 1px solid var(--border); box-shadow: var(--shadow);
     }
-    .clocking-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
-    .clocking-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: var(--text); }
     
+    #camera-container {
+        width: 100%; max-width: 320px; margin: 0 auto 20px;
+        border-radius: 16px; overflow: hidden; background: #000;
+        aspect-ratio: 4/3; position: relative; border: 4px solid #f1f5f9;
+    }
+    #video { width: 100%; height: 100%; object-fit: cover; }
+    #canvas { display: none; }
+
     .clock-btn {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 18px 50px;
-        font-size: 18px;
-        font-weight: 700;
-        border-radius: 16px;
-        cursor: pointer;
-        transition: all 0.3s var(--ease);
+        background: var(--primary); color: white; border: none;
+        padding: 18px 50px; font-size: 18px; font-weight: 700;
+        border-radius: 16px; cursor: pointer; transition: all 0.3s var(--ease);
         box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
     }
-    .clock-btn:hover { background: var(--primary-light); transform: scale(1.02); }
-    .clock-btn:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; }
     .clock-btn.out { background: #ef4444; box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
 
-    .search-section {
-        margin-bottom: 30px;
-        position: relative;
-    }
     .search-input {
-        width: 100%;
-        padding: 16px 24px 16px 50px;
-        background: white;
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        font-size: 16px;
-        font-family: inherit;
-        box-shadow: var(--shadow-sm);
-        transition: all 0.3s var(--ease);
-    }
-    .search-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
-    .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); opacity: 0.4; }
-
-    .card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 24px;
-        margin-bottom: 40px;
-    }
-    .stat-card {
-        background: white;
-        padding: 24px;
-        border-radius: 20px;
-        border: 1px solid var(--border);
+        width: 100%; padding: 16px 24px 16px 50px;
+        background: white; border: 1px solid var(--border);
+        border-radius: 16px; font-size: 16px; margin-bottom: 30px;
         box-shadow: var(--shadow-sm);
     }
-    .stat-card h4 { color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-card .val { font-size: 28px; font-weight: 800; color: var(--text); }
 
     .recent-table {
-        background: white;
-        border-radius: 24px;
-        padding: 10px;
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow-sm);
-        overflow: hidden;
+        background: white; border-radius: 24px; padding: 10px;
+        border: 1px solid var(--border); box-shadow: var(--shadow-sm);
     }
-    table { width: 100%; border-collapse: collapse; }
     th { text-align: left; padding: 18px 20px; font-size: 14px; color: #1e293b; font-weight: 800; border-bottom: 2px solid #f1f5f9; background: #f8fafc; }
     td { padding: 16px 20px; font-size: 15px; color: #334155; border-bottom: 1px solid #f1f5f9; }
-    tr:hover td { background: #fdfdfd; }
-    tr:last-child td { border-bottom: none; }
-    .badge { padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .staff-thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px; vertical-align: middle; }
   </style>
 </head>
 <body>
@@ -135,27 +73,32 @@ $display_name = $_SESSION['admin'] ?? 'User';
   <div class="content">
     <div class="dashboard-header">
         <h2>Welcome, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
-        <p>System status: All systems operational. Have a productive day!</p>
+        <p>System operational. Facial verification active.</p>
     </div>
 
     <?php if ($staff_id): ?>
-    <div class="clocking-card">
-        <h3>🕒 Web Clocking (Geofenced)</h3>
+    <div class="clocking-card" style="text-align:center;">
+        <h3>📸 Face Clocking (Geofenced)</h3>
+        <p style="color:var(--text-muted); margin-bottom:20px;">Please center your face in the camera frame.</p>
+        
+        <div id="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
+        </div>
+
         <?php
-            // IMPROVED SHIFT LOGIC: Find latest open session (any date)
             $stmt = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND clock_out IS NULL ORDER BY clock_in DESC LIMIT 1");
             $stmt->bind_param("s", $staff_id);
             $stmt->execute();
-            $open_record = $stmt->get_result()->fetch_assoc();
-            $is_clocked_in = !empty($open_record);
+            $is_clocked_in = !empty($stmt->get_result()->fetch_assoc());
             $stmt->close();
         ?>
         
         <div id="clockControls">
             <?php if (!$is_clocked_in): ?>
-                <button id="clockBtn" class="clock-btn" onclick="processClocking('clock_in')">Clock In Now</button>
+                <button id="clockBtn" class="clock-btn" onclick="processClocking('clock_in')">Verify & Clock In</button>
             <?php else: ?>
-                <button id="clockBtn" class="clock-btn out" onclick="processClocking('clock_out')">Clock Out Now</button>
+                <button id="clockBtn" class="clock-btn out" onclick="processClocking('clock_out')">Verify & Clock Out</button>
             <?php endif; ?>
         </div>
         
@@ -165,37 +108,9 @@ $display_name = $_SESSION['admin'] ?? 'User';
     <?php endif; ?>
 
     <?php if ($is_admin): ?>
-    <div class="card-grid">
-        <div class="stat-card">
-            <h4>Total Employees</h4>
-            <?php
-              $res = $conn->query("SELECT COUNT(*) AS t FROM staff");
-              $row = $res->fetch_assoc();
-              echo "<div class='val'>{$row['t']}</div>";
-            ?>
-        </div>
-        <div class="stat-card">
-            <h4>Present Today</h4>
-            <?php
-              $today = date('Y-m-d');
-              $res = $conn->query("SELECT COUNT(DISTINCT staff_id) AS t FROM attendance WHERE DATE(clock_in) = '$today'");
-              $row = $res->fetch_assoc();
-              echo "<div class='val'>{$row['t']}</div>";
-            ?>
-        </div>
-        <div class="stat-card">
-            <h4>Currently Clocked In</h4>
-            <?php
-              $res = $conn->query("SELECT COUNT(*) AS t FROM attendance WHERE clock_out IS NULL");
-              $row = $res->fetch_assoc();
-              echo "<div class='val'>{$row['t']}</div>";
-            ?>
-        </div>
-    </div>
-
-    <div class="search-section">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="staffSearch" class="search-input" placeholder="Search by name, staff ID, or phone..." onkeyup="filterTable()">
+    <div class="search-section" style="position:relative;">
+        <span style="position:absolute; left:20px; top:18px; opacity:0.4;">🔍</span>
+        <input type="text" id="staffSearch" class="search-input" placeholder="Search staff records..." onkeyup="filterTable()">
     </div>
 
     <div class="recent-table">
@@ -206,20 +121,29 @@ $display_name = $_SESSION['admin'] ?? 'User';
                     <th>Staff ID</th>
                     <th>Clock In</th>
                     <th>Clock Out</th>
+                    <th>Selfie</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 <?php
-                    $res = $conn->query("SELECT a.*, s.full_name FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 50");
+                    $res = $conn->query("SELECT a.*, s.full_name, s.photo FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 50");
                     while($row = $res->fetch_assoc()){
                         $status_badge = $row['clock_out'] ? 'badge-info' : 'badge-success';
                         $status_text = $row['clock_out'] ? 'Completed' : 'Working';
+                        $selfie = $row['photo_in'] ?: $row['photo_out'];
+                        
                         echo "<tr>";
-                        echo "<td><strong>".htmlspecialchars($row['full_name'])."</strong></td>";
+                        echo "<td>";
+                        if($row['photo']) echo "<img src='{$row['photo']}' class='staff-thumb'>";
+                        echo "<strong>".htmlspecialchars($row['full_name'])."</strong></td>";
                         echo "<td><code>".htmlspecialchars($row['staff_id'])."</code></td>";
                         echo "<td>".date('M j, g:i A', strtotime($row['clock_in']))."</td>";
                         echo "<td>".($row['clock_out'] ? date('M j, g:i A', strtotime($row['clock_out'])) : '—')."</td>";
+                        echo "<td>";
+                        if($selfie) echo "<img src='{$selfie}' class='staff-thumb' style='border-radius:4px; cursor:pointer;' onclick='showFull(this.src)'>";
+                        else echo "<span style='color:#ccc;'>No photo</span>";
+                        echo "</td>";
                         echo "<td><span class='badge {$status_badge}'>{$status_text}</span></td>";
                         echo "</tr>";
                     }
@@ -229,84 +153,88 @@ $display_name = $_SESSION['admin'] ?? 'User';
     </div>
     <?php endif; ?>
 
-    <div class="footer">
-      &copy; <?php echo date("Y"); ?> Attendance System | Premium Enterprise Edition
-    </div>
+    <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System | Solomon Mbewu</div>
   </div>
 
   <script>
-    function filterTable() {
-        const input = document.getElementById("staffSearch");
-        const filter = input.value.toUpperCase();
-        const table = document.getElementById("attendanceTable");
-        const tr = table.getElementsByTagName("tr");
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const clockBtn = document.getElementById('clockBtn');
+    let currentCoords = null;
 
-        for (let i = 1; i < tr.length; i++) {
-            let found = false;
-            const tds = tr[i].getElementsByTagName("td");
-            for (let j = 0; j < tds.length; j++) {
-                if (tds[j].textContent.toUpperCase().indexOf(filter) > -1) {
-                    found = true;
-                    break;
-                }
-            }
-            tr[i].style.display = found ? "" : "none";
-        }
+    // Initialize Camera
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => { 
+            console.error("Camera error:", err);
+            document.getElementById('camera-container').innerHTML = "<p style='color:white; padding:20px;'>Camera access denied or not available.</p>";
+        });
     }
 
-    let currentCoords = null;
-    const geoStatus = document.getElementById('geoStatus');
-    const clockBtn = document.getElementById('clockBtn');
-    const apiResult = document.getElementById('apiResult');
-
+    // Geolocation
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                currentCoords = pos.coords;
-                geoStatus.innerHTML = `✅ Location Ready (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`;
+            (pos) => { 
+                currentCoords = pos.coords; 
+                document.getElementById('geoStatus').innerHTML = "✅ Location Ready";
             },
-            (err) => {
-                geoStatus.innerHTML = "❌ Please enable Location Access to clock in/out.";
-                if (clockBtn) clockBtn.disabled = true;
+            (err) => { 
+                document.getElementById('geoStatus').innerHTML = "❌ GPS Access Denied";
+                if(clockBtn) clockBtn.disabled = true;
             }
         );
     }
 
     function processClocking(action) {
-        if (!currentCoords) {
-            alert("Waiting for GPS location...");
-            return;
-        }
+        if (!currentCoords) { alert("Waiting for location..."); return; }
+        
+        // Capture Frame
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, 640, 480);
+        const photoData = canvas.toDataURL('image/jpeg', 0.7);
 
         clockBtn.disabled = true;
         const originalText = clockBtn.innerHTML;
-        clockBtn.innerHTML = "Processing...";
+        clockBtn.innerHTML = "Verifying...";
 
         const formData = new FormData();
         formData.append('action', action);
         formData.append('lat', currentCoords.latitude);
         formData.append('lng', currentCoords.longitude);
+        formData.append('photo', photoData);
 
         fetch('/api/web_clock.php', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                apiResult.style.color = "#10b981";
-                apiResult.innerHTML = data.message;
-                setTimeout(() => location.reload(), 2000);
+                document.getElementById('apiResult').style.color = "#10b981";
+                document.getElementById('apiResult').innerHTML = data.message;
+                setTimeout(() => location.reload(), 1500);
             } else {
-                apiResult.style.color = "#ef4444";
-                apiResult.innerHTML = "Error: " + data.message;
+                document.getElementById('apiResult').style.color = "#ef4444";
+                document.getElementById('apiResult').innerHTML = data.message;
                 clockBtn.disabled = false;
                 clockBtn.innerHTML = originalText;
             }
-        })
-        .catch(err => {
-            apiResult.innerHTML = "Network error. Try again.";
-            clockBtn.disabled = false;
         });
     }
-  </script>
 
+    function filterTable() {
+        const input = document.getElementById("staffSearch");
+        const filter = input.value.toUpperCase();
+        const tr = document.getElementById("attendanceTable").getElementsByTagName("tr");
+        for (let i = 1; i < tr.length; i++) {
+            let found = false;
+            const tds = tr[i].getElementsByTagName("td");
+            for (let j = 0; j < tds.length; j++) {
+                if (tds[j].textContent.toUpperCase().indexOf(filter) > -1) { found = true; break; }
+            }
+            tr[i].style.display = found ? "" : "none";
+        }
+    }
+
+    function showFull(src) { window.open(src, '_blank'); }
+  </script>
 </body>
 </html>

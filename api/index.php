@@ -77,10 +77,12 @@ if (isset($_POST['login'])) {
 <link rel="stylesheet" href="/asset/css/style.css">
 <style>
     :root {
-        --login-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --login-bg: #0f172a;
+        --login-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     }
     body.login-page {
         background: var(--login-bg);
+        background: var(--login-gradient);
         height: 100vh;
         display: flex;
         align-items: center;
@@ -89,7 +91,7 @@ if (isset($_POST['login'])) {
         font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     }
     .login-container {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(15, 23, 42, 0.8); /* Darker, more solid background */
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 45px;
@@ -97,11 +99,11 @@ if (isset($_POST['login'])) {
         width: 100%;
         max-width: 420px;
         text-align: center;
-        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
     }
     .login-container img { margin-bottom: 24px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); }
-    .login-container h2 { color: white; margin-bottom: 10px; font-weight: 800; font-size: 28px; }
-    .login-container p.subtitle { color: rgba(255,255,255,0.5); font-size: 15px; margin-bottom: 35px; }
+    .login-container h2 { color: #ffffff; margin-bottom: 10px; font-weight: 800; font-size: 28px; }
+    .login-container p.subtitle { color: rgba(255,255,255,0.6); font-size: 15px; margin-bottom: 35px; }
     
     .input-group {
         position: relative;
@@ -111,19 +113,22 @@ if (isset($_POST['login'])) {
     .login-container input {
         width: 100%;
         padding: 16px 20px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.2);
         border-radius: 16px;
-        color: white;
+        color: #ffffff;
         font-size: 16px;
         transition: all 0.3s var(--ease);
         box-sizing: border-box;
     }
+    .login-container input::placeholder {
+        color: rgba(255,255,255,0.4);
+    }
     .login-container input:focus {
-        background: rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.15);
         border-color: var(--primary);
         outline: none;
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
     }
     
     .toggle-password {
@@ -132,13 +137,14 @@ if (isset($_POST['login'])) {
         top: 50%;
         transform: translateY(-50%);
         cursor: pointer;
-        opacity: 0.5;
+        opacity: 0.6;
         transition: opacity 0.3s;
         display: flex;
         align-items: center;
+        z-index: 5;
     }
     .toggle-password:hover { opacity: 1; }
-    .toggle-password svg { width: 20px; height: 20px; fill: white; }
+    .toggle-password svg { width: 22px; height: 22px; fill: #ffffff; }
 
     .forgot-pass {
         display: block;
@@ -146,11 +152,11 @@ if (isset($_POST['login'])) {
         margin-top: -8px;
         margin-bottom: 24px;
         font-size: 14px;
-        color: rgba(255,255,255,0.5);
+        color: rgba(255,255,255,0.6);
         text-decoration: none;
         transition: color 0.3s;
     }
-    .forgot-pass:hover { color: var(--primary); }
+    .forgot-pass:hover { color: var(--primary-light); }
 
     .login-container button {
         width: 100%;
@@ -158,7 +164,7 @@ if (isset($_POST['login'])) {
         background: var(--primary);
         border: none;
         border-radius: 16px;
-        color: white;
+        color: #ffffff;
         font-weight: 700;
         font-size: 16px;
         cursor: pointer;
@@ -168,17 +174,18 @@ if (isset($_POST['login'])) {
     .login-container button:hover {
         background: var(--primary-light);
         transform: translateY(-3px);
-        box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.5);
     }
     .error-msg {
-        background: rgba(239, 68, 68, 0.15);
-        color: #fca5a5;
+        background: rgba(239, 68, 68, 0.2);
+        color: #fecaca;
         padding: 14px;
         border-radius: 12px;
         font-size: 14px;
         margin-top: 24px;
-        border: 1px solid rgba(239, 68, 68, 0.3);
+        border: 1px solid rgba(239, 68, 68, 0.4);
     }
+}
 </style>
 </head>
 <body class="login-page">

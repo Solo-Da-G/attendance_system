@@ -142,22 +142,22 @@ $devices = $conn->query("SELECT * FROM zk_devices ORDER BY id ASC");
         <div class="step-item">
             <div class="step-number">2</div>
             <div class="step-content">
-                <h4>Admin Laptop Setup</h4>
-                <p>Since this site is live on Vercel, it cannot "reach" your local IP directly. You must run the <code>sync_attendance.php</code> script on a laptop connected to the same network as the device.</p>
+                <h4>Local Bridge Script</h4>
+                <p>Since this site is live on Vercel, it cannot "reach" your local IP directly. You must run the <code>api/hybrid_sync.php</code> script on your admin laptop. This script acts as a bridge between the physical device and this cloud site.</p>
             </div>
         </div>
         <div class="step-item">
             <div class="step-number">3</div>
             <div class="step-content">
-                <h4>Syncing to Cloud</h4>
-                <p>The local script reads thumbprints from the device and "pushes" them to this site using your <strong>API Key</strong>. This ensures real-time updates on the Super Admin dashboard even when using geofencing on phones.</p>
+                <h4>Real-Time Push</h4>
+                <p>The <code>hybrid_sync.php</code> script reads thumbprints from the device and "pushes" them to Vercel using your <strong>API Key</strong>. We recommend setting up a "Task Scheduler" on your laptop to run this every 5 minutes.</p>
             </div>
         </div>
         <div class="step-item">
             <div class="step-number">4</div>
             <div class="step-content">
-                <h4>Phone & Geofencing</h4>
-                <p>Staff can also clock in via their phones. When they do, their GPS location is verified against the office coordinates. Both thumbprint logs and phone logs are merged into the same dashboard instantly.</p>
+                <h4>Mobile & Geofencing</h4>
+                <p>Staff can also clock in via their phones. When they do, their GPS location is verified. Both thumbprint logs (from the laptop bridge) and phone logs are merged into this dashboard instantly.</p>
             </div>
         </div>
     </div>

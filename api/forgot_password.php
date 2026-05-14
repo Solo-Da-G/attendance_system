@@ -104,6 +104,7 @@ if (isset($_POST['reset_request'])) {
     <link rel="stylesheet" href="/asset/css/style.css">
     <style>
         body.login-page {
+            background: #0f172a;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             height: 100vh;
             display: flex;
@@ -113,7 +114,7 @@ if (isset($_POST['reset_request'])) {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
         .login-container {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 45px;
@@ -121,36 +122,37 @@ if (isset($_POST['reset_request'])) {
             width: 100%;
             max-width: 420px;
             text-align: center;
-            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
         }
-        .login-container h2 { color: white; margin-bottom: 10px; font-weight: 800; font-size: 28px; }
-        .login-container p { color: rgba(255,255,255,0.5); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
+        .login-container h2 { color: #ffffff; margin-bottom: 10px; font-weight: 800; font-size: 28px; }
+        .login-container p { color: rgba(255,255,255,0.7); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
         .login-container input {
             width: 100%;
             padding: 16px 20px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 16px;
-            color: white;
+            color: #ffffff;
             font-size: 16px;
             margin-bottom: 20px;
             box-sizing: border-box;
         }
+        .login-container input::placeholder { color: rgba(255,255,255,0.4); }
         .login-container button {
             width: 100%;
             padding: 16px;
             background: var(--primary);
             border: none;
             border-radius: 16px;
-            color: white;
+            color: #ffffff;
             font-weight: 700;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s var(--ease);
         }
         .login-container button:hover { background: var(--primary-light); transform: translateY(-3px); }
-        .msg-success { color: #86efac; font-size: 14px; margin-bottom: 20px; background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 12px; }
-        .msg-error { color: #fca5a5; font-size: 14px; margin-bottom: 20px; background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 12px; }
+        .msg-success { color: #86efac; font-size: 14px; margin-bottom: 20px; background: rgba(16, 185, 129, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .msg-error { color: #fca5a5; font-size: 14px; margin-bottom: 20px; background: rgba(239, 68, 68, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3); }
     </style>
 </head>
 <body class="login-page">
