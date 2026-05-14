@@ -1,3 +1,4 @@
+<?php
 include(__DIR__ . "/../includes/config.php");
 
 if (!isset($_SESSION['admin_id'])) {
