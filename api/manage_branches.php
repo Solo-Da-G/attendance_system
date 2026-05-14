@@ -35,6 +35,7 @@ if (isset($_POST['add_branch'])) {
 // ---------------------------------------------------------------
 // DELETE BRANCH
 // ---------------------------------------------------------------
+
 if (isset($_GET['delete_id'])) {
     $id = (int)$_GET['delete_id'];
     $stmt = $conn->prepare("DELETE FROM branches WHERE id = ?");

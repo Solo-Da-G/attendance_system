@@ -5,6 +5,9 @@ if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
     exit;
 }
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'super_admin'])) {
+    die("<h2 style='color:red;text-align:center;margin-top:100px;font-family:sans-serif;'>Access Denied.</h2>");
+}
 
 $message = "";
 $msg_type = "";

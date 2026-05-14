@@ -175,4 +175,13 @@ if (empty($_SESSION['admin_id']) && empty($_SESSION['staff_id']) && !empty($_COO
         }
     }
 }
+
+// 9. FORCED PASSWORD CHANGE CHECK
+if (!empty($_SESSION['staff_id']) && !empty($_SESSION['require_password_change'])) {
+    $current_page = basename($_SERVER['PHP_SELF']);
+    if ($current_page !== 'change_staff_password.php' && $current_page !== 'logout.php') {
+        header("Location: change_staff_password.php");
+        exit;
+    }
+}
 ?>

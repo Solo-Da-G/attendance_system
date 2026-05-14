@@ -117,8 +117,9 @@ if (isset($_POST['update_employee'])) {
         <label>Fingerprint User ID (ZKTeco)</label>
         <input type="text" name="fingerprint_id" value="<?php echo htmlspecialchars($employee['fingerprint_id']); ?>" placeholder="e.g. 1">
 
-        <label>New Password (leave blank to keep current)</label>
-        <input type="password" name="new_password" placeholder="Set a new login password">
+        <label style="color:var(--danger);font-weight:700;">Force Password Reset (Admin Only)</label>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;margin-top:-5px;">As an admin, you cannot view the employee's current password. However, you can instantly reset it by typing a new one below. Leave blank to keep their current password.</p>
+        <input type="password" name="new_password" placeholder="Enter a new password to reset">
 
         <label>Current Photo</label><br>
         <?php if (!empty($employee['photo'])): ?>

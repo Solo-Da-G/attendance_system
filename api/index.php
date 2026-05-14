@@ -61,6 +61,11 @@ if (isset($_POST['login'])) {
                 $_SESSION['admin']    = $row['full_name'];
                 $_SESSION['role']     = 'staff';
                 
+                // Force password change if using default ID
+                if ($password === $row['staff_id'] && (empty($row['password']) || password_verify($row['staff_id'], $row['password']))) {
+                    $_SESSION['require_password_change'] = true;
+                }
+                
                 // Set auth_token for staff to survive Vercel statelessness
                 $token = bin2hex(random_bytes(32));
                 // Add column if it doesn't exist just in case (will fail silently if mysqli exceptions are off)
