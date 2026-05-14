@@ -8,7 +8,14 @@ if (session_status() === PHP_SESSION_NONE) {
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
-<div class="sidebar">
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="mobile-header">
+  <h2>📋 Attendance</h2>
+  <button class="menu-toggle" id="menuToggle">☰</button>
+</div>
+
+<div class="sidebar" id="mainSidebar">
   <div>
     <h2>📋 Attendance</h2>
     <nav>
@@ -28,3 +35,24 @@ $current_page = basename($_SERVER['PHP_SELF']);
   </div>
   <a href="logout.php" class="logout">🚪 Logout</a>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const toggleBtn = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('mainSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  if(toggleBtn) {
+    toggleBtn.addEventListener('click', function() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    });
+  }
+  if(overlay) {
+    overlay.addEventListener('click', function() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+  }
+});
+</script>
