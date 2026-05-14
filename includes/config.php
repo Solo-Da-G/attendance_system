@@ -80,6 +80,12 @@ if (empty($_SESSION['schema_checked'])) {
         }
     }
 
+    // Ensure staff password column exists for logins
+    $pass_col = $conn->query("SHOW COLUMNS FROM staff LIKE 'password'");
+    if ($pass_col && $pass_col->num_rows === 0) {
+        $conn->query("ALTER TABLE staff ADD COLUMN password VARCHAR(255) DEFAULT NULL");
+    }
+
     $_SESSION['schema_checked'] = true;
 }
 

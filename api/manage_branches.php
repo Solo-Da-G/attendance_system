@@ -154,6 +154,16 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
         <?php endwhile; ?>
     </div>
 
+    <div style="background:#fdf4ff; border:1px solid #f5d0fe; padding:24px; border-radius:20px; margin-top:40px;">
+        <h3 style="color:#86198f; margin-bottom:12px;">🌍 How Geofencing Works</h3>
+        <p style="font-size:14px; color:#86198f; line-height:1.6;">
+            1. <strong>Define Branch</strong>: Add your office location above by providing the exact Latitude and Longitude.<br>
+            2. <strong>Set Radius</strong>: The "Radius" is the allowed distance (in meters) from the center of the office. 200m is recommended.<br>
+            3. <strong>Staff Clock-in</strong>: When staff log in to the dashboard, the system will ask for their location. If they are within the radius of their assigned branch, they can clock in.<br>
+            4. <strong>Security</strong>: This ensures staff can only clock in when they are actually at the office premises.
+        </p>
+    </div>
+
     <div class="footer">
         &copy; <?php echo date("Y"); ?> Attendance System | Geofencing Enabled
     </div>
