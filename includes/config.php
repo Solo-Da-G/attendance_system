@@ -95,9 +95,12 @@ if (session_status() === PHP_SESSION_NONE) {
 // To prevent 500 errors and slow-downs, we only check this if needed.
 if (empty($_SESSION['schema_checked'])) {
     try {
-        // Ensure auth_token column exists on admin table
+        // Ensure auth_token & email columns exist on admin table
         $col = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'auth_token'");
         if ($col && $col->num_rows === 0) $conn->query("ALTER TABLE `admin` ADD COLUMN `auth_token` VARCHAR(64) DEFAULT NULL");
+        
+        $email_col = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'email'");
+        if ($email_col && $email_col->num_rows === 0) $conn->query("ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(150) DEFAULT NULL");
         
         // Ensure staff columns
         $pass_col = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'password'");
