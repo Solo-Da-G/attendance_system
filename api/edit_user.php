@@ -17,7 +17,7 @@ $id = (int)$_GET['id'];
 $message = "";
 
 // Fetch user
-$stmt = $conn->prepare("SELECT username, email, role FROM admin WHERE id = ?");
+$stmt = $conn->prepare("SELECT username, email, role FROM `admin` WHERE id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $result = $stmt->get_result();

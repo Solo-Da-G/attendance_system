@@ -31,7 +31,7 @@ if (isset($_POST['change_password'])) {
         $username = $_SESSION['admin'];
 
         // Fetch current password hash
-        $stmt = $conn->prepare("SELECT password FROM admin WHERE username = ?");
+        $stmt = $conn->prepare("SELECT password FROM `admin` WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -130,7 +130,7 @@ if (isset($_POST['change_password'])) {
         $username = $_SESSION['admin'];
 
         // Fetch current password hash
-        $stmt = $conn->prepare("SELECT password FROM admin WHERE username = ?");
+        $stmt = $conn->prepare("SELECT password FROM `admin` WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();

@@ -49,7 +49,7 @@ if (isset($_POST['update_settings'])) {
 
 /* FETCH CURRENT ADMIN */
 $admin_id = $_SESSION['admin_id'];
-$stmt = $conn->prepare("SELECT username FROM admin WHERE id = ?");
+$stmt = $conn->prepare("SELECT username FROM `admin` WHERE id = ?");
 $stmt->bind_param("i", $admin_id);
 $stmt->execute();
 $result = $stmt->get_result();

@@ -18,7 +18,7 @@ if (isset($_POST['login'])) {
         $error = "Please fill in both fields!";
     } else {
         // 1. Try Admin Login first
-        $stmt = $conn->prepare("SELECT id, username, password, role FROM admin WHERE (username = ? OR email = ?) LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, username, password, role FROM `admin` WHERE (username = ? OR email = ?) LIMIT 1");
         $stmt->bind_param("ss", $username, $username);
         $stmt->execute();
         $result = $stmt->get_result();

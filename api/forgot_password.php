@@ -16,7 +16,7 @@ if (isset($_POST['reset_request'])) {
         $msg_type = "error";
     } else {
         // 1. Search in Admin table
-        $stmt = $conn->prepare("SELECT id, username FROM admin WHERE email = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, username FROM `admin` WHERE email = ? LIMIT 1");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $admin_res = $stmt->get_result();

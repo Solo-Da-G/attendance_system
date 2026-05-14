@@ -21,7 +21,7 @@ if (isset($_GET['delete_id'])) {
     if (isset($_SESSION['admin_id']) && $_SESSION['admin_id'] == $id) {
         $message = "<p class='msg-error'>You cannot delete yourself.</p>";
     } else {
-        $del = $conn->prepare("DELETE FROM admin WHERE id = ?");
+        $del = $conn->prepare("DELETE FROM `admin` WHERE id = ?");
         $del->bind_param("i", $id);
         $del->execute();
         $del->close();
@@ -37,7 +37,7 @@ if (isset($_POST['create_user'])) {
     $role = $_POST['role'];
 
     // Check duplicate username or email
-    $check = $conn->prepare("SELECT id FROM admin WHERE username = ?");
+    $check = $conn->prepare("SELECT id FROM `admin` WHERE username = ?");
     $check->bind_param("s", $new_user);
     $check->execute();
     $check->store_result();
@@ -55,7 +55,7 @@ if (isset($_POST['create_user'])) {
 }
 
 // FETCH USERS
-$users = $conn->query("SELECT id, username, role, status FROM admin ORDER BY id ASC");
+$users = $conn->query("SELECT id, username, role, status FROM `admin` ORDER BY id ASC");
 ?>
 
 <!DOCTYPE html>
