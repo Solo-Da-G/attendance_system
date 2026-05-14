@@ -143,10 +143,14 @@ if (isset($_POST['login'])) {
     .toggle-password {
         position: absolute;
         right: 18px;
-        top: 28px; /* Adjusted for larger padding */
+        top: 50%;
+        transform: translateY(-50%);
         cursor: pointer;
         opacity: 0.8;
         z-index: 10;
+        height: 22px;
+        display: flex;
+        align-items: center;
     }
     .toggle-password:hover { opacity: 1; }
     .toggle-password svg { width: 22px; height: 22px; fill: #ffffff; }

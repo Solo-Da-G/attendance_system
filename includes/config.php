@@ -110,6 +110,14 @@ if (empty($_SESSION['schema_checked'])) {
         $conn->query("ALTER TABLE attendance ADD COLUMN photo_out MEDIUMTEXT DEFAULT NULL");
     }
 
+    // Ensure branch geofencing columns exist
+    $br_lat = $conn->query("SHOW COLUMNS FROM branches LIKE 'latitude'");
+    if ($br_lat && $br_lat->num_rows === 0) {
+        $conn->query("ALTER TABLE branches ADD COLUMN latitude DECIMAL(10,8) DEFAULT 6.5244");
+        $conn->query("ALTER TABLE branches ADD COLUMN longitude DECIMAL(11,8) DEFAULT 3.3792");
+        $conn->query("ALTER TABLE branches ADD COLUMN radius_meters INT DEFAULT 200");
+    }
+
     $_SESSION['schema_checked'] = true;
 }
 
