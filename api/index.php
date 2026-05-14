@@ -3,16 +3,13 @@ include(__DIR__ . "/../includes/config.php");
 
 $error = "";
 
-// Add auth_token column if missing (safe to run every time)
-$conn->query("ALTER TABLE admin ADD COLUMN IF NOT EXISTS auth_token VARCHAR(64) DEFAULT NULL");
-
 // If already logged in, go to dashboard
 if (isset($_SESSION['admin_id'])) {
     echo "<script>window.location.href='/dashboard.php';</script>";
     exit;
 }
 
-// Handle login form submission
+// Handle login form
 if (isset($_POST['login'])) {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
@@ -26,23 +23,23 @@ if (isset($_POST['login'])) {
         $result = $stmt->get_result();
         $stmt->close();
 
-        if ($result->num_rows === 1) {
+        if ($result && $result->num_rows === 1) {
             $row = $result->fetch_assoc();
 
             if (password_verify($password, $row['password'])) {
-                // Store session
+                // Set session values
                 $_SESSION['admin_id'] = $row['id'];
                 $_SESSION['admin']    = $row['username'];
                 $_SESSION['role']     = $row['role'];
 
-                // Generate auth token and save to DB
+                // Generate and store a unique auth token in the database
                 $token = bin2hex(random_bytes(32));
                 $upd = $conn->prepare("UPDATE admin SET auth_token = ? WHERE id = ?");
                 $upd->bind_param("si", $token, $row['id']);
                 $upd->execute();
                 $upd->close();
 
-                // Set long-lived cookie (30 days) — works across all Vercel instances
+                // Set a 30-day browser cookie — works across all Vercel serverless instances
                 setcookie('auth_token', $token, [
                     'expires'  => time() + (30 * 24 * 60 * 60),
                     'path'     => '/',
