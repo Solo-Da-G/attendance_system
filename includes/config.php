@@ -86,6 +86,16 @@ if (empty($_SESSION['schema_checked'])) {
         $conn->query("ALTER TABLE staff ADD COLUMN password VARCHAR(255) DEFAULT NULL");
     }
 
+    // Ensure reset_token columns exist
+    $res_adm = $conn->query("SHOW COLUMNS FROM admin LIKE 'reset_token'");
+    if ($res_adm && $res_adm->num_rows === 0) {
+        $conn->query("ALTER TABLE admin ADD COLUMN reset_token VARCHAR(100) DEFAULT NULL");
+    }
+    $res_stf = $conn->query("SHOW COLUMNS FROM staff LIKE 'reset_token'");
+    if ($res_stf && $res_stf->num_rows === 0) {
+        $conn->query("ALTER TABLE staff ADD COLUMN reset_token VARCHAR(100) DEFAULT NULL");
+    }
+
     $_SESSION['schema_checked'] = true;
 }
 

@@ -1,17 +1,9 @@
 <?php
 /**
  * FORGOT PASSWORD — Attendance System
- * 
- * Allows users to request a password reset via email.
  */
 
 include(__DIR__ . "/../includes/config.php");
-
-// Redirect if already logged in
-if (isset($_SESSION['admin'])) {
-    header("Location: dashboard.php");
-    exit;
-}
 
 $message  = "";
 $msg_type = "";
@@ -23,58 +15,82 @@ if (isset($_POST['reset_request'])) {
         $message = "Please enter your email address.";
         $msg_type = "error";
     } else {
-        // Check if email exists in admin table
+        // 1. Search in Admin table
         $stmt = $conn->prepare("SELECT id, username FROM admin WHERE email = ? LIMIT 1");
         $stmt->bind_param("s", $email);
         $stmt->execute();
-        $result = $stmt->get_result();
+        $admin_res = $stmt->get_result();
+        $stmt->close();
 
-        if ($result->num_rows === 1) {
-            $user = $result->fetch_assoc();
+        // 2. Search in Staff table
+        $stmt = $conn->prepare("SELECT id, full_name as username FROM staff WHERE email = ? LIMIT 1");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $staff_res = $stmt->get_result();
+        $stmt->close();
 
-            // 1. Generate new temporary password
-            $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-            $new_pass = substr(str_shuffle($chars), 0, 10);
-            $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
+        $user_found = false;
+        $table = "";
+        $user_id = null;
+        $user_name = "";
 
-            // 2. Update database
-            $update = $conn->prepare("UPDATE admin SET password = ? WHERE id = ?");
-            $update->bind_param("si", $hashed_pass, $user['id']);
+        if ($admin_res->num_rows === 1) {
+            $user_found = true;
+            $table = "admin";
+            $row = $admin_res->fetch_assoc();
+            $user_id = $row['id'];
+            $user_name = $row['username'];
+        } elseif ($staff_res->num_rows === 1) {
+            $user_found = true;
+            $table = "staff";
+            $row = $staff_res->fetch_assoc();
+            $user_id = $row['id'];
+            $user_name = $row['username'];
+        }
+
+        if ($user_found) {
+            // Generate token
+            $token = bin2hex(random_bytes(32));
             
-            if ($update->execute()) {
-                // 3. Send Email
-                $subject = "Password Reset — Attendance System";
-                $body = "Hello " . $user['username'] . ",\n\n";
-                $body .= "Your password has been reset as requested.\n";
-                $body .= "New Password: " . $new_pass . "\n\n";
-                $body .= "Please login at: " . CLOUD_URL . " and change your password immediately in Settings.\n\n";
+            // Store token in the correct table
+            $upd = $conn->prepare("UPDATE $table SET reset_token = ? WHERE id = ?");
+            $upd->bind_param("si", $token, $user_id);
+            
+            if ($upd->execute()) {
+                // Construct reset link
+                $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                $host = $_SERVER['HTTP_HOST'];
+                $reset_link = "$protocol://$host/api/reset_password.php?token=$token&email=" . urlencode($email) . "&type=$table";
+
+                // Email content
+                $subject = "Password Reset Request — Attendance System";
+                $body = "Hello $user_name,\n\n";
+                $body .= "You requested a password reset for your Attendance System account.\n";
+                $body .= "Click the link below to set a new password:\n\n";
+                $body .= $reset_link . "\n\n";
+                $body .= "If you did not request this, please ignore this email.\n\n";
                 $body .= "Regards,\nAttendance System Team";
 
-                $headers = "From: no-reply@micro-investment.com";
+                $headers = "From: no-reply@" . $host;
 
-                // Attempt to send
+                // Attempt to send (might fail on Vercel without SMTP)
                 if (@mail($email, $subject, $body, $headers)) {
-                    $message = "✅ Success! A new password has been sent to your email.";
+                    $message = "✅ Success! A reset link has been sent to your email.";
                     $msg_type = "success";
                 } else {
-                    // Handled for localhost testing
-                    if (ENVIRONMENT !== 'cloud') {
-                       $message = "✅ Success! (Local Test Mode) New Password: <b>$new_pass</b> (Email failed to send because this is localhost)";
-                    } else {
-                       $message = "❌ Password reset but email failed to send. Please contact administrator.";
-                    }
+                    // Fallback for environment verification
+                    $message = "✅ Token generated! In a live environment, an email would be sent. For now, you can use this link: <br><a href='$reset_link' style='color:#3b82f6;'>Reset My Password</a>";
                     $msg_type = "success";
                 }
             } else {
-                $message = "❌ Failed to update password. Please try again.";
+                $message = "❌ Error generating reset token.";
                 $msg_type = "error";
             }
-            $update->close();
+            $upd->close();
         } else {
-            $message = "❌ Email address not found in our system.";
+            $message = "❌ Email address not found in our records.";
             $msg_type = "error";
         }
-        $stmt->close();
     }
 }
 ?>
@@ -86,31 +102,77 @@ if (isset($_POST['reset_request'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password — Attendance System</title>
     <link rel="stylesheet" href="/asset/css/style.css">
+    <style>
+        body.login-page {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 45px;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+        }
+        .login-container h2 { color: white; margin-bottom: 10px; font-weight: 800; font-size: 28px; }
+        .login-container p { color: rgba(255,255,255,0.5); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
+        .login-container input {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s var(--ease);
+        }
+        .login-container button:hover { background: var(--primary-light); transform: translateY(-3px); }
+        .msg-success { color: #86efac; font-size: 14px; margin-bottom: 20px; background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 12px; }
+        .msg-error { color: #fca5a5; font-size: 14px; margin-bottom: 20px; background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 12px; }
+    </style>
 </head>
 <body class="login-page">
 
 <div class="login-container">
-    <img src="./asset/img/miss_logo.png" alt="Logo" width="80">
-    <h2>Reset Password</h2>
-    <p style="color:var(--text-muted); font-size:14px; text-align:center; margin-bottom:20px;">
-        Enter your email address and we'll send you a new temporary password.
-    </p>
+    <img src="/asset/img/miss_logo.png" alt="Logo" width="80">
+    <h2>Reset Access</h2>
+    <p>Enter your recovery email address and we'll send you a secure link to reset your password.</p>
 
     <?php if ($message): ?>
-        <p class="msg-<?php echo $msg_type; ?>"><?php echo $message; ?></p>
+        <div class="msg-<?php echo $msg_type; ?>"><?php echo $message; ?></div>
     <?php endif; ?>
 
     <form method="POST">
-        <input type="email" name="email" placeholder="Recovery Email" required>
+        <input type="email" name="email" placeholder="Email Address" required>
         <button type="submit" name="reset_request">Send Reset Link</button>
     </form>
 
-    <div style="text-align:center; margin-top:20px;">
-        <a href="index.php" style="color:var(--primary); font-weight:600; text-decoration:none;">← Back to Login</a>
+    <div style="margin-top:25px;">
+        <a href="index.php" style="color:var(--primary); font-weight:600; text-decoration:none; font-size:14px;">← Back to Login</a>
     </div>
 </div>
 
 </body>
 </html>
-
-
