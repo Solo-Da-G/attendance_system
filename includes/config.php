@@ -68,11 +68,7 @@ try {
         throw new Exception("Connection failed: " . $conn->connect_error);
     }
 } catch (Exception $e) {
-    if (isset($_GET['debug'])) {
-        die("Connection Error: " . $e->getMessage());
-    } else {
-        die("Database connection failed. Please check environment variables.");
-    }
+    die("Database Connection Error: " . $e->getMessage() . " | Host: " . getenv('DB_HOST') . " | User: " . getenv('DB_USER'));
 }
 
 // 6. SESSION SETUP
