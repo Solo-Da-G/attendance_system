@@ -3,9 +3,19 @@
  * ATTENDANCE SYSTEM — Configuration
  */
 
-// 1. ERROR REPORTING
-ini_set('display_errors', 0);
-error_reporting(0);
+// 1. ERROR REPORTING & HANDLING
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+set_exception_handler(function($e) {
+    echo "<div style='padding:40px; background:#fee2e2; color:#991b1b; font-family:sans-serif;'>";
+    echo "<h2>Fatal Application Error</h2>";
+    echo "<p><strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
+    echo "<p><strong>File:</strong> " . htmlspecialchars($e->getFile()) . " on line " . $e->getLine() . "</p>";
+    echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
+    echo "</div>";
+    exit;
+});
 
 // 2. ENVIRONMENT DETECTION
 if (getenv('VERCEL') || getenv('VERCEL_URL')) {

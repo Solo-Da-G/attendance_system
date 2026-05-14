@@ -16,6 +16,8 @@ if ($is_admin) {
     ini_set('display_errors', 1);
     error_reporting(E_ALL);
 }
+
+try {
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -254,3 +256,13 @@ if ($is_admin) {
   </script>
 </body>
 </html>
+<?php
+} catch (Throwable $t) {
+    echo "<div style='padding:40px; background:#fee2e2; color:#991b1b; font-family:sans-serif;'>";
+    echo "<h2>Fatal Application Error</h2>";
+    echo "<p><strong>Message:</strong> " . $t->getMessage() . "</p>";
+    echo "<p><strong>File:</strong> " . $t->getFile() . " on line " . $t->getLine() . "</p>";
+    echo "<pre>" . $t->getTraceAsString() . "</pre>";
+    echo "</div>";
+}
+?>
