@@ -34,26 +34,44 @@ if (ENVIRONMENT === 'cloud') {
     $database   = "attendance_system";
 }
 
-// 5. DATABASE CONNECTION (SSL for Aiven)
-$conn = mysqli_init();
-if (ENVIRONMENT === 'cloud') {
-    // DB_HOST may contain port as "hostname:port" — split them
-    $db_host_raw = getenv('DB_HOST');
-    $db_port     = 3306; // default MySQL port
-    if (strpos($db_host_raw, ':') !== false) {
-        list($db_host_clean, $db_port_str) = explode(':', $db_host_raw, 2);
-        $db_port = (int)$db_port_str;
-    } else {
-        $db_host_clean = $db_host_raw;
+// 5. DATABASE CONNECTION
+try {
+    $conn = mysqli_init();
+    if (!$conn) {
+        die("mysqli_init failed");
     }
-    $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-    $conn->real_connect($db_host_clean, $username, $password, $database, $db_port, null, MYSQLI_CLIENT_SSL);
-} else {
-    $conn->real_connect($servername, $username, $password, $database);
-}
 
-if ($conn->connect_error) {
-    die("Database connection failed.");
+    if (ENVIRONMENT === 'cloud') {
+        $db_host_raw = getenv('DB_HOST');
+        $db_port     = 3306;
+        if (strpos($db_host_raw, ':') !== false) {
+            list($db_host_clean, $db_port_str) = explode(':', $db_host_raw, 2);
+            $db_port = (int)$db_port_str;
+        } else {
+            $db_host_clean = $db_host_raw;
+        }
+
+        // Try with SSL first, fallback to normal if it fails
+        $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
+        $connected = @$conn->real_connect($db_host_clean, $username, $password, $database, $db_port, null, MYSQLI_CLIENT_SSL);
+        
+        if (!$connected) {
+            // Fallback to non-SSL
+            $connected = @$conn->real_connect($db_host_clean, $username, $password, $database, $db_port);
+        }
+    } else {
+        $connected = @$conn->real_connect($servername, $username, $password, $database);
+    }
+
+    if (!$connected) {
+        throw new Exception("Connection failed: " . $conn->connect_error);
+    }
+} catch (Exception $e) {
+    if (isset($_GET['debug'])) {
+        die("Connection Error: " . $e->getMessage());
+    } else {
+        die("Database connection failed. Please check environment variables.");
+    }
 }
 
 // 6. SESSION SETUP

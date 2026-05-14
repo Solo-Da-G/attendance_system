@@ -134,7 +134,7 @@ if ($is_admin) {
             <tbody>
                 <?php
                     $res = $conn->query("SELECT a.*, s.full_name, s.photo FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 50");
-                    if ($res && $res->num_rows > 0) {
+                    if ($res && !is_bool($res) && $res->num_rows > 0) {
                         while($row = $res->fetch_assoc()){
                         $status_badge = $row['clock_out'] ? 'badge-info' : 'badge-success';
                         $status_text = $row['clock_out'] ? 'Completed' : 'Working';
