@@ -112,36 +112,43 @@ if (isset($_POST['login'])) {
     }
     .login-container input {
         width: 100%;
-        padding: 16px 20px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.2);
+        padding: 16px 24px;
+        background-color: #1e293b !important; /* Solid dark background */
+        border: 2px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 16px;
-        color: #ffffff;
+        color: #ffffff !important; /* Explicit white text */
         font-size: 16px;
-        transition: all 0.3s var(--ease);
+        font-weight: 600;
+        transition: all 0.3s ease;
         box-sizing: border-box;
+        display: block;
     }
     .login-container input::placeholder {
-        color: rgba(255,255,255,0.4);
+        color: rgba(255, 255, 255, 0.5) !important;
     }
     .login-container input:focus {
-        background: rgba(255,255,255,0.15);
-        border-color: var(--primary);
+        background-color: #0f172a !important;
+        border-color: #3b82f6 !important;
         outline: none;
         box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Force Autofill colors */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus {
+        -webkit-text-fill-color: #ffffff !important;
+        -webkit-box-shadow: 0 0 0px 1000px #1e293b inset !important;
+        transition: background-color 5000s ease-in-out 0s;
     }
     
     .toggle-password {
         position: absolute;
         right: 18px;
-        top: 50%;
-        transform: translateY(-50%);
+        top: 28px; /* Adjusted for larger padding */
         cursor: pointer;
-        opacity: 0.6;
-        transition: opacity 0.3s;
-        display: flex;
-        align-items: center;
-        z-index: 5;
+        opacity: 0.8;
+        z-index: 10;
     }
     .toggle-password:hover { opacity: 1; }
     .toggle-password svg { width: 22px; height: 22px; fill: #ffffff; }

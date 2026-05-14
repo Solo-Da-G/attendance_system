@@ -98,16 +98,26 @@ if (isset($_POST['update_password']) && $valid_token) {
         .login-container p { color: rgba(255,255,255,0.7); font-size: 15px; margin-bottom: 30px; }
         .login-container input {
             width: 100%;
-            padding: 16px 20px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.2);
+            padding: 16px 24px;
+            background-color: #1e293b !important;
+            border: 2px solid rgba(255, 255, 255, 0.1) !important;
             border-radius: 16px;
-            color: #ffffff;
+            color: #ffffff !important;
             font-size: 16px;
+            font-weight: 600;
             margin-bottom: 16px;
             box-sizing: border-box;
         }
-        .login-container input::placeholder { color: rgba(255,255,255,0.4); }
+        .login-container input::placeholder { color: rgba(255,255,255,0.5) !important; }
+
+        /* Force Autofill colors */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #ffffff !important;
+            -webkit-box-shadow: 0 0 0px 1000px #1e293b inset !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
         .login-container button {
             width: 100%;
             padding: 16px;
