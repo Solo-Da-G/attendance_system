@@ -15,6 +15,7 @@ if (isset($_POST['add_employee'])) {
     $branch = trim($_POST['branch']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
+    $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : null;
     $photo = "";
 
     // Handle photo upload — stored as Base64 in DB (Vercel is read-only)
@@ -25,8 +26,8 @@ if (isset($_POST['add_employee'])) {
     }
 
     // Insert new record
-    $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $photo);
+    $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo);
 
     if ($stmt->execute()) {
         echo "<script>alert('Employee added successfully!'); window.location='employees.php';</script>";
@@ -126,6 +127,8 @@ if (isset($_POST['add_employee'])) {
       <input type="email" name="email" placeholder="john@example.com" required>
       <label>Mobile No</label>
       <input type="text" name="phone" placeholder="+234..." required>
+      <label>Password (Login)</label>
+      <input type="password" name="password" placeholder="Defaults to Staff ID if blank">
       <label>Photo</label>
       <input type="file" name="photo" accept="image/*">
       <button type="submit" name="add_employee">Add Employee</button>
