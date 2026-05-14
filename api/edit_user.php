@@ -38,12 +38,12 @@ if (isset($_POST['update_user'])) {
     if (!empty($_POST['password'])) {
         $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
         $update = $conn->prepare(
-            "UPDATE admin SET username = ?, email = ?, password = ?, role = ? WHERE id = ?"
+            "UPDATE `admin` SET username = ?, email = ?, password = ?, role = ? WHERE id = ?"
         );
         $update->bind_param("ssssi", $username, $email, $password, $role, $id);
     } else {
         $update = $conn->prepare(
-            "UPDATE admin SET username = ?, email = ?, role = ? WHERE id = ?"
+            "UPDATE `admin` SET username = ?, email = ?, role = ? WHERE id = ?"
         );
         $update->bind_param("sssi", $username, $email, $role, $id);
     }

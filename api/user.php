@@ -45,8 +45,8 @@ if (isset($_POST['create_user'])) {
     if ($check->num_rows > 0) {
         $message = "<p class='msg-error'>Username or Email already exists.</p>";
     } else {
-        $stmt = $conn->prepare("INSERT INTO admin (username, password, role) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $new_user, $new_pass, $role);
+        $stmt = $conn->prepare("INSERT INTO `admin` (username, email, password, role) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $new_user, $new_email, $new_pass, $role);
         $stmt->execute();
         $stmt->close();
         $message = "<p class='msg-success'>User created successfully.</p>";
@@ -55,7 +55,7 @@ if (isset($_POST['create_user'])) {
 }
 
 // FETCH USERS
-$users = $conn->query("SELECT id, username, role, status FROM `admin` ORDER BY id ASC");
+$users = $conn->query("SELECT id, username, email, role, status FROM `admin` ORDER BY id ASC");
 ?>
 
 <!DOCTYPE html>
@@ -119,7 +119,7 @@ $users = $conn->query("SELECT id, username, role, status FROM `admin` ORDER BY i
         <tr>
             <td><?php echo $row['id']; ?></td>
             <td><?php echo htmlspecialchars($row['username']); ?></td>
-            <td>—</td>
+            <td><?php echo htmlspecialchars($row['email'] ?: '—'); ?></td>
             <td><span class="badge <?php echo ($row['role']=='super_admin') ? 'badge-danger' : (($row['role']=='admin') ? 'badge-warning' : 'badge-info'); ?>"><?php echo $row['role']; ?></span></td>
             <td><span class="badge <?php echo ($row['status']=='active') ? 'badge-success' : 'badge-danger'; ?>"><?php echo $row['status'] ?? 'active'; ?></span></td>
             <td>
