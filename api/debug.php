@@ -34,10 +34,19 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     echo "❌ Session NOT Started<br>";
 }
 
-echo "<h3>Environment:</h3>";
-echo "VERCEL: " . (getenv('VERCEL') ? "YES" : "NO") . "<br>";
-echo "DB_HOST: " . getenv('DB_HOST') . "<br>";
+echo "<h3>Environment Variables Check:</h3>";
+$vars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+foreach ($vars as $v) {
+    $val = getenv($v);
+    if ($val) {
+        $masked = ($v === 'DB_PASSWORD') ? '********' : $val;
+        echo "✅ $v: $masked<br>";
+    } else {
+        echo "❌ $v: MISSING<br>";
+    }
+}
 
-echo "<h3>PHP Version:</h3>";
-echo phpversion();
+echo "<h3>PHP Info:</h3>";
+echo "PHP Version: " . phpversion() . "<br>";
+echo "Interface: " . php_sapi_name() . "<br>";
 ?>
