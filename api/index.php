@@ -3,15 +3,16 @@ include(__DIR__ . "/../includes/config.php");
 
 $error = "";
 
-// Add auth_token column if it doesn't exist (safe to run multiple times)
+// Add auth_token column if missing (safe to run every time)
 $conn->query("ALTER TABLE admin ADD COLUMN IF NOT EXISTS auth_token VARCHAR(64) DEFAULT NULL");
 
-// Redirect if already logged in
+// If already logged in, go to dashboard
 if (isset($_SESSION['admin_id'])) {
     echo "<script>window.location.href='/dashboard.php';</script>";
     exit;
 }
 
+// Handle login form submission
 if (isset($_POST['login'])) {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
@@ -23,24 +24,25 @@ if (isset($_POST['login'])) {
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
+        $stmt->close();
 
         if ($result->num_rows === 1) {
             $row = $result->fetch_assoc();
+
             if (password_verify($password, $row['password'])) {
-
-                // Generate a unique token and store in DB
-                $token = bin2hex(random_bytes(32));
-                $conn->prepare("UPDATE admin SET auth_token = ? WHERE id = ?")->execute();
-                $upd = $conn->prepare("UPDATE admin SET auth_token = ? WHERE id = ?");
-                $upd->bind_param("si", $token, $row['id']);
-                $upd->execute();
-
-                // Set session
+                // Store session
                 $_SESSION['admin_id'] = $row['id'];
                 $_SESSION['admin']    = $row['username'];
                 $_SESSION['role']     = $row['role'];
 
-                // Set a long-lived cookie (30 days) that works across all Vercel instances
+                // Generate auth token and save to DB
+                $token = bin2hex(random_bytes(32));
+                $upd = $conn->prepare("UPDATE admin SET auth_token = ? WHERE id = ?");
+                $upd->bind_param("si", $token, $row['id']);
+                $upd->execute();
+                $upd->close();
+
+                // Set long-lived cookie (30 days) — works across all Vercel instances
                 setcookie('auth_token', $token, [
                     'expires'  => time() + (30 * 24 * 60 * 60),
                     'path'     => '/',
@@ -49,7 +51,6 @@ if (isset($_POST['login'])) {
                     'samesite' => 'Lax'
                 ]);
 
-                $stmt->close();
                 echo "<script>window.location.href='/dashboard.php';</script>";
                 exit;
             } else {
@@ -58,11 +59,9 @@ if (isset($_POST['login'])) {
         } else {
             $error = "Invalid username or password!";
         }
-        $stmt->close();
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,7 +70,6 @@ if (isset($_POST['login'])) {
 <title>Admin Login — Attendance System</title>
 <link rel="stylesheet" href="/asset/css/style.css">
 </head>
-
 <body class="login-page">
 <div class="login-container">
     <img src="/asset/img/miss_logo.png" alt="Logo" width="80">
