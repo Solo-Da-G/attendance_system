@@ -153,6 +153,9 @@ if ($is_admin) {
                         echo "</td>";
                         echo "<td><span class='badge {$status_badge}'>{$status_text}</span></td>";
                         echo "</tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='6' style='text-align:center; padding:40px; color:#94a3b8;'>No attendance records yet.</td></tr>";
                     }
                 ?>
             </tbody>
