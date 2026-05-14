@@ -1,3 +1,4 @@
+<?php
 include(__DIR__ . "/../includes/config.php");
 
 // Only logged-in users
