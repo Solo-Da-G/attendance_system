@@ -4,7 +4,14 @@ error_reporting(E_ALL);
 
 echo "<h2>Debug Mode</h2>";
 
-// 1. Check Config File
+// 1. Check Extensions
+if (!extension_loaded('mysqli')) {
+    die("❌ Error: 'mysqli' extension is NOT loaded. This is why the site is 500ing.");
+} else {
+    echo "✅ mysqli extension is loaded<br>";
+}
+
+// 2. Check Config File
 if (file_exists(__DIR__ . "/../includes/config.php")) {
     echo "✅ includes/config.php exists<br>";
 } else {

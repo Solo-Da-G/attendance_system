@@ -76,7 +76,7 @@ try {
 
 // 6. SESSION SETUP
 if (ENVIRONMENT === 'cloud') {
-    session_save_path('/tmp');
+    session_save_path(sys_get_temp_dir());
 }
 ini_set('session.cookie_path', '/');
 ini_set('session.use_only_cookies', 1);
