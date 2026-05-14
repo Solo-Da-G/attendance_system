@@ -90,7 +90,7 @@ if (session_status() === PHP_SESSION_NONE) {
 if (empty($_SESSION['schema_checked'])) {
     // Ensure auth_token column exists on admin table
     $col = $conn->query("SHOW COLUMNS FROM admin LIKE 'auth_token'");
-    if ($col && $col->num_rows === 0) {
+    if ($col && !is_bool($col) && $col->num_rows === 0) {
         $conn->query("ALTER TABLE admin ADD COLUMN auth_token VARCHAR(64) DEFAULT NULL");
     }
 
@@ -110,30 +110,33 @@ if (empty($_SESSION['schema_checked'])) {
 
     // Ensure reset_token columns exist
     $res_adm = $conn->query("SHOW COLUMNS FROM admin LIKE 'reset_token'");
-    if ($res_adm && $res_adm->num_rows === 0) {
+    if ($res_adm && !is_bool($res_adm) && $res_adm->num_rows === 0) {
         $conn->query("ALTER TABLE admin ADD COLUMN reset_token VARCHAR(100) DEFAULT NULL");
     }
     $res_stf = $conn->query("SHOW COLUMNS FROM staff LIKE 'reset_token'");
-    if ($res_stf && $res_stf->num_rows === 0) {
+    if ($res_stf && !is_bool($res_stf) && $res_stf->num_rows === 0) {
         $conn->query("ALTER TABLE staff ADD COLUMN reset_token VARCHAR(100) DEFAULT NULL");
     }
 
     // Ensure attendance photo columns exist
     $att_p_in = $conn->query("SHOW COLUMNS FROM attendance LIKE 'photo_in'");
-    if ($att_p_in && $att_p_in->num_rows === 0) {
+    if ($att_p_in && !is_bool($att_p_in) && $att_p_in->num_rows === 0) {
         $conn->query("ALTER TABLE attendance ADD COLUMN photo_in MEDIUMTEXT DEFAULT NULL");
     }
     $att_p_out = $conn->query("SHOW COLUMNS FROM attendance LIKE 'photo_out'");
-    if ($att_p_out && $att_p_out->num_rows === 0) {
+    if ($att_p_out && !is_bool($att_p_out) && $att_p_out->num_rows === 0) {
         $conn->query("ALTER TABLE attendance ADD COLUMN photo_out MEDIUMTEXT DEFAULT NULL");
     }
 
-    // Ensure branch geofencing columns exist
-    $br_lat = $conn->query("SHOW COLUMNS FROM branches LIKE 'latitude'");
-    if ($br_lat && $br_lat->num_rows === 0) {
-        $conn->query("ALTER TABLE branches ADD COLUMN latitude DECIMAL(10,8) DEFAULT 6.5244");
-        $conn->query("ALTER TABLE branches ADD COLUMN longitude DECIMAL(11,8) DEFAULT 3.3792");
-        $conn->query("ALTER TABLE branches ADD COLUMN radius_meters INT DEFAULT 200");
+    // Ensure branch geofencing columns exist (check if table exists first)
+    $chk_br = $conn->query("SHOW TABLES LIKE 'branches'");
+    if ($chk_br && $chk_br->num_rows > 0) {
+        $br_lat = $conn->query("SHOW COLUMNS FROM branches LIKE 'latitude'");
+        if ($br_lat && !is_bool($br_lat) && $br_lat->num_rows === 0) {
+            $conn->query("ALTER TABLE branches ADD COLUMN latitude DECIMAL(10,8) DEFAULT 6.5244");
+            $conn->query("ALTER TABLE branches ADD COLUMN longitude DECIMAL(11,8) DEFAULT 3.3792");
+            $conn->query("ALTER TABLE branches ADD COLUMN radius_meters INT DEFAULT 200");
+        }
     }
 
     $_SESSION['schema_checked'] = true;
