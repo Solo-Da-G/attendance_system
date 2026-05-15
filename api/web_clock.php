@@ -33,7 +33,7 @@ if ($lat === null || $lng === null) {
 // GEOFENCE VALIDATION
 // ---------------------------------------------------------------
 $stmt = $conn->prepare("SELECT b.latitude, b.longitude, b.radius_meters FROM branches b 
-                        JOIN staff s ON (s.branch = b.branch_name OR s.branch_id = b.id)
+                        JOIN staff s ON (s.branch = b.branch_name)
                         WHERE s.staff_id = ? LIMIT 1");
 $stmt->bind_param("s", $staff_id);
 $stmt->execute();
