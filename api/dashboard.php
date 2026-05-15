@@ -269,10 +269,12 @@ try {
         document.getElementById('scanningOverlay').style.display = "block";
         document.getElementById('camera-container').style.borderColor = "#3b82f6";
         
-        // Capture Frame
+        // Capture Frame at a highly optimized, smaller resolution for INSTANT upload
         const context = canvas.getContext('2d');
+        // We draw the video to the canvas
         context.drawImage(video, 0, 0, 640, 480);
-        const photoData = canvas.toDataURL('image/jpeg', 0.7);
+        // We compress it heavily (0.4 quality) to make the upload lightning fast on mobile
+        const photoData = canvas.toDataURL('image/jpeg', 0.4);
 
         clockBtn.disabled = true;
         const originalText = clockBtn.innerHTML;
@@ -304,6 +306,12 @@ try {
                 clockBtn.innerHTML = originalText;
                 setTimeout(() => { document.getElementById('camera-container').style.borderColor = "#e2e8f0"; }, 2000);
             }
+        }).catch(err => {
+            document.getElementById('scanningOverlay').style.display = "none";
+            document.getElementById('apiResult').style.color = "#ef4444";
+            document.getElementById('apiResult').innerHTML = "❌ Network Error: Took too long. Please try again.";
+            clockBtn.disabled = false;
+            clockBtn.innerHTML = originalText;
         });
     }
 
