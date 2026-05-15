@@ -20,7 +20,7 @@ if (isset($_POST['add_branch'])) {
     $radius_meters = (int)$_POST['radius_meters'];
 
     $stmt = $conn->prepare("INSERT INTO branches (branch_name, latitude, longitude, radius_meters) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssdi", $branch_name, $latitude, $longitude, $radius_meters);
+    $stmt->bind_param("sddi", $branch_name, $latitude, $longitude, $radius_meters);
 
     if ($stmt->execute()) {
         $message  = "Branch added successfully!";

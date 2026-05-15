@@ -10,6 +10,18 @@ if (!isset($_SESSION['admin_id']) && !isset($_SESSION['staff_id'])) {
 $is_admin = isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'super_admin');
 $staff_id = $_SESSION['staff_id'] ?? null;
 $display_name = $_SESSION['admin'] ?? 'User';
+$staff_profile_photo = '';
+
+if ($staff_id) {
+    $photo_stmt = $conn->prepare("SELECT photo FROM staff WHERE staff_id = ? LIMIT 1");
+    if ($photo_stmt) {
+        $photo_stmt->bind_param("s", $staff_id);
+        $photo_stmt->execute();
+        $photo_row = $photo_stmt->get_result()->fetch_assoc();
+        $staff_profile_photo = $photo_row['photo'] ?? '';
+        $photo_stmt->close();
+    }
+}
 
 // TEMPORARY: Enable errors if something is failing
 if ($is_admin) {
@@ -66,6 +78,7 @@ try {
         box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
     }
     .clock-btn.out { background: #ef4444; box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
+    .clock-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
     .search-input {
         width: 100%; padding: 16px 24px 16px 50px;
@@ -120,13 +133,14 @@ try {
         
         <div id="clockControls">
             <?php if (!$is_clocked_in): ?>
-                <button id="clockBtn" class="clock-btn" onclick="processClocking('clock_in')">Verify & Clock In</button>
+                <button id="clockBtn" class="clock-btn" disabled onclick="processClocking('clock_in')">Verify & Clock In</button>
             <?php else: ?>
-                <button id="clockBtn" class="clock-btn out" onclick="processClocking('clock_out')">Verify & Clock Out</button>
+                <button id="clockBtn" class="clock-btn out" disabled onclick="processClocking('clock_out')">Verify & Clock Out</button>
             <?php endif; ?>
         </div>
         
-        <p id="geoStatus" style="margin-top:15px; color:var(--text-muted); font-size:14px;">📍 Detecting location...</p>
+        <p id="faceStatus" style="margin-top:8px; color:var(--text-muted); font-size:14px;">🔄 Loading face recognition...</p>
+        <p id="geoStatus" style="margin-top:8px; color:var(--text-muted); font-size:14px;">📍 Detecting location...</p>
         <div id="apiResult" style="margin-top:15px; font-weight:600; font-size:18px;"></div>
     </div>
     
@@ -216,35 +230,71 @@ try {
     <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System | Solomon Mbewu</div>
   </div>
 
+  <?php if ($staff_id): ?>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.js"></script>
+  <script src="/asset/js/clock-face.js"></script>
+  <script>
+    const STAFF_PROFILE_PHOTO = <?php echo json_encode($staff_profile_photo); ?>;
+  </script>
+  <?php endif; ?>
+
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const clockBtn = document.getElementById('clockBtn');
     let currentCoords = null;
+    let faceReady = false;
+    let geoReady = false;
 
-    // Initialize Camera
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+    function updateClockButtonState() {
+        if (!clockBtn) return;
+        const ready = faceReady && geoReady;
+        clockBtn.disabled = !ready;
+    }
+
+  <?php if ($staff_id): ?>
+    (async function initStaffClocking() {
+        const faceStatus = document.getElementById('faceStatus');
+        try {
+            await ClockFace.loadModels();
+            await ClockFace.loadProfilePhoto(STAFF_PROFILE_PHOTO);
+            faceReady = true;
+            faceStatus.innerHTML = '✅ Face profile loaded — look at the camera to verify';
+        } catch (e) {
+            faceStatus.innerHTML = '❌ ' + e.message;
+            if (clockBtn) clockBtn.disabled = true;
+        }
+        updateClockButtonState();
+    })();
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && video) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } })
         .then(stream => { video.srcObject = stream; })
-        .catch(err => { 
-            console.error("Camera error:", err);
-            document.getElementById('camera-container').innerHTML = "<p style='color:white; padding:20px;'>Camera access denied or not available.</p>";
+        .catch(() => {
+            document.getElementById('camera-container').innerHTML =
+                "<p style='color:white;padding:20px;text-align:center;'>Camera access denied. Allow camera permission and refresh.</p>";
         });
     }
 
-    // Geolocation
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => { 
-                currentCoords = pos.coords; 
-                document.getElementById('geoStatus').innerHTML = "✅ Location Ready";
+        navigator.geolocation.watchPosition(
+            (pos) => {
+                currentCoords = pos.coords;
+                geoReady = true;
+                document.getElementById('geoStatus').innerHTML =
+                    '✅ Location ready (±' + Math.round(pos.coords.accuracy || 0) + 'm accuracy)';
+                updateClockButtonState();
             },
-            (err) => { 
-                document.getElementById('geoStatus').innerHTML = "❌ GPS Access Denied";
-                if(clockBtn) clockBtn.disabled = true;
-            }
+            () => {
+                document.getElementById('geoStatus').innerHTML = '❌ GPS denied — enable location for this site';
+                geoReady = false;
+                updateClockButtonState();
+            },
+            { enableHighAccuracy: true, maximumAge: 8000, timeout: 20000 }
         );
     }
+  <?php endif; ?>
 
     function playBeep(freq, duration, type='sine') {
         try {
@@ -258,61 +308,111 @@ try {
             gain.connect(ctx.destination);
             osc.start();
             setTimeout(() => { osc.stop(); ctx.close(); }, duration);
-        } catch(e) { console.log("Audio not supported"); }
+        } catch (e) { /* audio optional */ }
     }
 
-    function processClocking(action) {
-        if (!currentCoords) { alert("Waiting for location..."); return; }
-        
-        // Visual & Audio Scanning FX
+    function showApiError(msg) {
+        document.getElementById('scanningOverlay').style.display = 'none';
+        document.getElementById('camera-container').style.borderColor = '#ef4444';
+        document.getElementById('apiResult').style.color = '#ef4444';
+        document.getElementById('apiResult').innerHTML = '❌ ' + msg;
+    }
+
+    async function processClocking(action) {
+        if (!currentCoords) {
+            alert('Waiting for GPS location…');
+            return;
+        }
+        if (typeof ClockFace === 'undefined') {
+            alert('Face verification is not available. Refresh the page.');
+            return;
+        }
+        if (!ClockFace.isReady()) {
+            alert('Face recognition is still loading. Please wait.');
+            return;
+        }
+
         playBeep(800, 200, 'square');
-        document.getElementById('scanningOverlay').style.display = "block";
-        document.getElementById('camera-container').style.borderColor = "#3b82f6";
-        
-        // Capture Frame at a highly optimized, smaller resolution for INSTANT upload
-        const context = canvas.getContext('2d');
-        // We draw the video to the canvas
-        context.drawImage(video, 0, 0, 640, 480);
-        // We compress it heavily (0.4 quality) to make the upload lightning fast on mobile
-        const photoData = canvas.toDataURL('image/jpeg', 0.4);
+        document.getElementById('scanningOverlay').style.display = 'block';
+        document.getElementById('camera-container').style.borderColor = '#3b82f6';
 
         clockBtn.disabled = true;
         const originalText = clockBtn.innerHTML;
-        clockBtn.innerHTML = "Verifying Identity...";
+        clockBtn.innerHTML = 'Verifying face…';
+
+        let faceResult = { match: true, distance: 0 };
+        try {
+            faceResult = await ClockFace.verifyVideoFace(video);
+        } catch (e) {
+            showApiError(e.message || 'Face verification failed.');
+            clockBtn.disabled = false;
+            clockBtn.innerHTML = originalText;
+            return;
+        }
+
+        if (!faceResult.match) {
+            playBeep(300, 400, 'sawtooth');
+            showApiError(faceResult.message);
+            clockBtn.disabled = false;
+            clockBtn.innerHTML = originalText;
+            setTimeout(() => { document.getElementById('camera-container').style.borderColor = '#e2e8f0'; }, 2000);
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = 320;
+        canvas.height = 240;
+        ctx.drawImage(video, 0, 0, 320, 240);
+        const photoData = canvas.toDataURL('image/jpeg', 0.55);
+
+        clockBtn.innerHTML = 'Saving attendance…';
 
         const formData = new FormData();
         formData.append('action', action);
         formData.append('lat', currentCoords.latitude);
         formData.append('lng', currentCoords.longitude);
         formData.append('photo', photoData);
+        formData.append('face_verified', '1');
+        formData.append('face_distance', String(faceResult.distance));
 
-        fetch('/api/web_clock.php', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('scanningOverlay').style.display = "none";
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+        try {
+            const res = await fetch('/api/web_clock.php', { method: 'POST', body: formData, signal: controller.signal });
+            clearTimeout(timeoutId);
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                throw new Error('Server returned an invalid response. Try again.');
+            }
+
+            document.getElementById('scanningOverlay').style.display = 'none';
             if (data.status === 'success') {
                 playBeep(1200, 400, 'sine');
-                document.getElementById('camera-container').style.borderColor = "#10b981"; // Green Success
-                document.getElementById('apiResult').style.color = "#10b981";
-                document.getElementById('apiResult').innerHTML = "✅ VERIFIED! " + data.message;
-                clockBtn.innerHTML = "Verified";
+                document.getElementById('camera-container').style.borderColor = '#10b981';
+                document.getElementById('apiResult').style.color = '#10b981';
+                document.getElementById('apiResult').innerHTML = '✅ VERIFIED! ' + data.message;
+                clockBtn.innerHTML = 'Verified';
                 setTimeout(() => location.reload(), 2000);
             } else {
                 playBeep(300, 400, 'sawtooth');
-                document.getElementById('camera-container').style.borderColor = "#ef4444"; // Red Error
-                document.getElementById('apiResult').style.color = "#ef4444";
-                document.getElementById('apiResult').innerHTML = "❌ " + data.message;
+                showApiError(data.message || 'Verification failed.');
                 clockBtn.disabled = false;
                 clockBtn.innerHTML = originalText;
-                setTimeout(() => { document.getElementById('camera-container').style.borderColor = "#e2e8f0"; }, 2000);
+                setTimeout(() => { document.getElementById('camera-container').style.borderColor = '#e2e8f0'; }, 2000);
             }
-        }).catch(err => {
-            document.getElementById('scanningOverlay').style.display = "none";
-            document.getElementById('apiResult').style.color = "#ef4444";
-            document.getElementById('apiResult').innerHTML = "❌ Network Error: Took too long. Please try again.";
+        } catch (err) {
+            clearTimeout(timeoutId);
+            const msg = err.name === 'AbortError'
+                ? 'Request timed out. Check your connection and try again.'
+                : (err.message || 'Network error. Please try again.');
+            showApiError(msg);
             clockBtn.disabled = false;
             clockBtn.innerHTML = originalText;
-        });
+        }
     }
 
     function filterTable() {

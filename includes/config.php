@@ -119,6 +119,24 @@ if (empty($_SESSION['schema_checked'])) {
         $att_out = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'photo_out'");
         if ($att_out && $att_out->num_rows === 0) $conn->query("ALTER TABLE `attendance` ADD COLUMN `photo_out` MEDIUMTEXT DEFAULT NULL");
 
+        $att_lat = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'lat_in'");
+        if ($att_lat && $att_lat->num_rows === 0) {
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `lat_in` DECIMAL(10,8) NULL");
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `lng_in` DECIMAL(11,8) NULL");
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `lat_out` DECIMAL(10,8) NULL");
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `lng_out` DECIMAL(11,8) NULL");
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `is_geofenced` TINYINT(1) DEFAULT 0");
+        }
+
+        // staff.photo must hold base64 portraits
+        $stf_photo = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'photo'");
+        if ($stf_photo && $stf_photo->num_rows > 0) {
+            $col = $stf_photo->fetch_assoc();
+            if (stripos($col['Type'] ?? '', 'varchar') !== false) {
+                $conn->query("ALTER TABLE `staff` MODIFY COLUMN `photo` MEDIUMTEXT DEFAULT NULL");
+            }
+        }
+
         // Ensure branches geofencing
         $chk_br = $conn->query("SHOW TABLES LIKE 'branches'");
         if ($chk_br && $chk_br->num_rows > 0) {

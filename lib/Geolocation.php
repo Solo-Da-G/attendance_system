@@ -28,4 +28,48 @@ class Geolocation {
         $distance = self::getDistance($lat1, $lon1, $lat2, $lon2);
         return $distance <= $radiusMeters;
     }
+
+    /**
+     * Check if coords are inside any branch; returns result with distance details.
+     */
+    public static function validateAgainstBranches($lat, $lng, array $branches) {
+        if (empty($branches)) {
+            return ['allowed' => true, 'message' => null];
+        }
+
+        $nearestDist = null;
+        $nearestName = null;
+        $nearestRadius = null;
+
+        foreach ($branches as $b) {
+            $dist = self::getDistance($lat, $lng, (float)$b['latitude'], (float)$b['longitude']);
+            $radius = (int)($b['radius_meters'] ?? 200);
+
+            if ($dist <= $radius) {
+                return [
+                    'allowed' => true,
+                    'branch_name' => $b['branch_name'] ?? '',
+                    'distance_m' => (int)round($dist),
+                ];
+            }
+
+            if ($nearestDist === null || $dist < $nearestDist) {
+                $nearestDist = $dist;
+                $nearestName = $b['branch_name'] ?? 'office';
+                $nearestRadius = $radius;
+            }
+        }
+
+        $metersOver = (int)round($nearestDist - $nearestRadius);
+        return [
+            'allowed' => false,
+            'message' => sprintf(
+                'You are outside the allowed area (%dm from %s; limit %dm). Move closer and try again.',
+                max(0, $metersOver),
+                $nearestName,
+                $nearestRadius
+            ),
+            'distance_m' => (int)round($nearestDist),
+        ];
+    }
 }
