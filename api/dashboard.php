@@ -40,22 +40,27 @@ try {
   <link rel="stylesheet" href="/asset/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
-    
+    body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; overflow-x: hidden; }
+    .dashboard-page .content { width: 100%; max-width: 100%; box-sizing: border-box; }
+
     .dashboard-header {
         background: linear-gradient(135deg, #1e293b, #334155);
-        color: white; padding: 40px; border-radius: 24px; margin-bottom: 30px;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; overflow: hidden;
+        color: white; padding: clamp(20px, 4vw, 40px); border-radius: clamp(16px, 3vw, 24px);
+        margin-bottom: clamp(16px, 3vw, 30px);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow: hidden;
     }
-    .dashboard-header h2 { font-size: 32px; font-weight: 800; margin:0; }
+    .dashboard-header h2 { font-size: clamp(1.25rem, 4vw, 2rem); font-weight: 800; margin: 0 0 8px; line-height: 1.2; }
+    .dashboard-header p { margin: 0; font-size: clamp(0.85rem, 2.5vw, 1rem); opacity: 0.9; }
 
     .clocking-card {
-        background: white; padding: 30px; border-radius: 24px; margin-bottom: 30px;
+        background: white; padding: clamp(16px, 4vw, 30px); border-radius: clamp(16px, 3vw, 24px);
+        margin-bottom: clamp(16px, 3vw, 30px);
         border: 1px solid var(--border); box-shadow: var(--shadow);
     }
-    
+    .clocking-card h3 { font-size: clamp(1rem, 3vw, 1.25rem); margin-bottom: 8px; }
+
     #camera-container {
-        width: 100%; max-width: 280px; margin: 0 auto 20px;
+        width: min(280px, 78vw); margin: 0 auto 20px;
         border-radius: 50%; overflow: hidden; background: #000;
         aspect-ratio: 1 / 1; position: relative; border: 6px solid #e2e8f0;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -63,47 +68,85 @@ try {
     }
     #video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
     #canvas { display: none; }
-    
+
     .scanning-overlay {
-        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-        border-radius: 50%; box-shadow: inset 0 0 0 10px rgba(59, 130, 246, 0.5);
+        position: absolute; inset: 0; border-radius: 50%;
+        box-shadow: inset 0 0 0 10px rgba(59, 130, 246, 0.5);
         animation: pulse 1.5s infinite; display: none; z-index: 10;
     }
     @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.5; } 50% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.5; } }
 
+    #clockControls { display: flex; justify-content: center; width: 100%; }
+
     .clock-btn {
         background: var(--primary); color: white; border: none;
-        padding: 18px 50px; font-size: 18px; font-weight: 700;
+        padding: clamp(14px, 3vw, 18px) clamp(24px, 6vw, 50px);
+        font-size: clamp(0.95rem, 2.8vw, 1.125rem); font-weight: 700;
         border-radius: 16px; cursor: pointer; transition: all 0.3s var(--ease);
         box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        width: 100%; max-width: 360px;
     }
     .clock-btn.out { background: #ef4444; box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
     .clock-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
+    .status-line { margin-top: 8px; color: var(--text-muted); font-size: clamp(0.8rem, 2.5vw, 0.875rem); word-break: break-word; }
+    #apiResult { margin-top: 15px; font-weight: 600; font-size: clamp(0.95rem, 2.8vw, 1.125rem); word-break: break-word; }
+
+    .search-section { position: relative; width: 100%; }
+    .search-section .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); opacity: 0.4; pointer-events: none; }
     .search-input {
-        width: 100%; padding: 16px 24px 16px 50px;
+        width: 100%; padding: 14px 20px 14px 44px; box-sizing: border-box;
         background: white; border: 1px solid var(--border);
-        border-radius: 16px; font-size: 16px; margin-bottom: 30px;
+        border-radius: 16px; font-size: 16px; margin-bottom: 24px;
         box-shadow: var(--shadow-sm);
     }
 
     .recent-table {
-        background: white; border-radius: 24px; padding: 10px;
+        background: white; border-radius: clamp(16px, 3vw, 24px); padding: clamp(8px, 2vw, 10px);
         border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+        overflow: hidden;
     }
-    th { text-align: left; padding: 18px 20px; font-size: 14px; color: #1e293b; font-weight: 800; border-bottom: 2px solid #f1f5f9; background: #f8fafc; }
-    td { padding: 16px 20px; font-size: 15px; color: #334155; border-bottom: 1px solid #f1f5f9; }
-    .staff-thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px; vertical-align: middle; }
+    .recent-table h3 { margin: clamp(12px, 3vw, 20px); font-size: clamp(1rem, 3vw, 1.125rem); }
+
+    .table-scroll {
+        width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    }
+    .table-scroll table { width: 100%; min-width: 520px; border-collapse: collapse; }
+    .dashboard-page .recent-table th {
+        text-align: left; padding: clamp(10px, 2.5vw, 18px) clamp(12px, 2.5vw, 20px);
+        font-size: clamp(0.75rem, 2.2vw, 0.875rem); white-space: nowrap;
+    }
+    .dashboard-page .recent-table td {
+        padding: clamp(10px, 2.5vw, 16px) clamp(12px, 2.5vw, 20px);
+        font-size: clamp(0.8rem, 2.4vw, 0.9375rem);
+    }
+    .staff-thumb { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle; }
+
+    .dashboard-page .footer { margin-top: 24px; font-size: clamp(0.75rem, 2vw, 0.875rem); text-align: center; }
+
+    @media (max-width: 850px) {
+        .dashboard-page .search-section .search-icon { left: 14px; }
+    }
+
+    @media (max-width: 600px) {
+        .staff-thumb { width: 32px; height: 32px; }
+        .table-scroll table { min-width: 480px; }
+    }
+
+    @media (max-width: 380px) {
+        #camera-container { width: min(240px, 88vw); border-width: 4px; }
+    }
   </style>
+  <script src="/asset/js/idle-logout.js" defer></script>
 </head>
-<body>
+<body class="dashboard-page">
 
   <?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
   <div class="content">
     <div class="dashboard-header">
         <h2>Welcome, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
-        <p>System operational. Facial verification active.</p>
+        <p>Facial verification active · Auto sign-out after 1 minute of inactivity</p>
     </div>
 
     <?php if ($staff_id): ?>
@@ -139,13 +182,14 @@ try {
             <?php endif; ?>
         </div>
         
-        <p id="faceStatus" style="margin-top:8px; color:var(--text-muted); font-size:14px;">🔄 Loading face recognition...</p>
-        <p id="geoStatus" style="margin-top:8px; color:var(--text-muted); font-size:14px;">📍 Detecting location...</p>
-        <div id="apiResult" style="margin-top:15px; font-weight:600; font-size:18px;"></div>
+        <p id="faceStatus" class="status-line">🔄 Loading face recognition...</p>
+        <p id="geoStatus" class="status-line">📍 Detecting location...</p>
+        <div id="apiResult"></div>
     </div>
     
     <div class="recent-table" style="margin-top: 30px;">
-        <h3 style="margin: 20px; font-size: 18px; color: var(--text);">🕒 Your Recent Attendance</h3>
+        <h3>🕒 Your Recent Attendance</h3>
+        <div class="table-scroll">
         <table id="staffAttendanceTable">
             <thead>
                 <tr>
@@ -174,16 +218,18 @@ try {
                 ?>
             </tbody>
         </table>
+        </div>
     </div>
     <?php endif; ?>
 
     <?php if ($is_admin): ?>
-    <div class="search-section" style="position:relative;">
-        <span style="position:absolute; left:20px; top:18px; opacity:0.4;">🔍</span>
+    <div class="search-section">
+        <span class="search-icon">🔍</span>
         <input type="text" id="staffSearch" class="search-input" placeholder="Search staff records..." onkeyup="filterTable()">
     </div>
 
     <div class="recent-table">
+        <div class="table-scroll">
         <table id="attendanceTable">
             <thead>
                 <tr>
@@ -224,6 +270,7 @@ try {
                 ?>
             </tbody>
         </table>
+        </div>
     </div>
     <?php endif; ?>
 
@@ -332,6 +379,8 @@ try {
             return;
         }
 
+        if (typeof pauseIdleLogout === 'function') pauseIdleLogout();
+
         playBeep(800, 200, 'square');
         document.getElementById('scanningOverlay').style.display = 'block';
         document.getElementById('camera-container').style.borderColor = '#3b82f6';
@@ -347,6 +396,7 @@ try {
             showApiError(e.message || 'Face verification failed.');
             clockBtn.disabled = false;
             clockBtn.innerHTML = originalText;
+            if (typeof resumeIdleLogout === 'function') resumeIdleLogout();
             return;
         }
 
@@ -355,6 +405,7 @@ try {
             showApiError(faceResult.message);
             clockBtn.disabled = false;
             clockBtn.innerHTML = originalText;
+            if (typeof resumeIdleLogout === 'function') resumeIdleLogout();
             setTimeout(() => { document.getElementById('camera-container').style.borderColor = '#e2e8f0'; }, 2000);
             return;
         }
@@ -412,6 +463,8 @@ try {
             showApiError(msg);
             clockBtn.disabled = false;
             clockBtn.innerHTML = originalText;
+        } finally {
+            if (typeof resumeIdleLogout === 'function') resumeIdleLogout();
         }
     }
 

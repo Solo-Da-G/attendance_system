@@ -2,6 +2,9 @@
 include(__DIR__ . "/../includes/config.php");
 
 $error = "";
+$idle_notice = (isset($_GET['reason']) && $_GET['reason'] === 'idle')
+    ? 'You were signed out after 1 minute of inactivity.'
+    : '';
 
 // If already logged in, go to dashboard
 if (isset($_SESSION['admin_id']) || isset($_SESSION['staff_id'])) {
@@ -245,6 +248,7 @@ if (isset($_POST['login'])) {
         <button type="submit" name="login">Sign In</button>
     </form>
     
+    <?php if (!empty($idle_notice)) echo "<p class='error-msg' style='background:rgba(59,130,246,0.2);color:#bfdbfe;border-color:rgba(59,130,246,0.4);'>$idle_notice</p>"; ?>
     <?php if (!empty($error)) echo "<p class='error-msg'>$error</p>"; ?>
 </div>
 
