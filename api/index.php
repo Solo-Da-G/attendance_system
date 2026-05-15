@@ -185,7 +185,8 @@ if (isset($_POST['login'])) {
         margin-top: -8px;
         margin-bottom: 24px;
         font-size: 14px;
-        color: rgba(255,255,255,0.6);
+        color: var(--info, #3b82f6);
+        font-weight: 600;
         text-decoration: none;
         transition: color 0.3s;
     }

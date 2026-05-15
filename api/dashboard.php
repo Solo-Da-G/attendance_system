@@ -43,12 +43,21 @@ try {
     }
     
     #camera-container {
-        width: 100%; max-width: 320px; margin: 0 auto 20px;
-        border-radius: 16px; overflow: hidden; background: #000;
-        aspect-ratio: 4/3; position: relative; border: 4px solid #f1f5f9;
+        width: 100%; max-width: 280px; margin: 0 auto 20px;
+        border-radius: 50%; overflow: hidden; background: #000;
+        aspect-ratio: 1 / 1; position: relative; border: 6px solid #e2e8f0;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        transition: border-color 0.3s ease;
     }
-    #video { width: 100%; height: 100%; object-fit: cover; }
+    #video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
     #canvas { display: none; }
+    
+    .scanning-overlay {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%; box-shadow: inset 0 0 0 10px rgba(59, 130, 246, 0.5);
+        animation: pulse 1.5s infinite; display: none; z-index: 10;
+    }
+    @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.5; } 50% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.5; } }
 
     .clock-btn {
         background: var(--primary); color: white; border: none;
@@ -91,6 +100,7 @@ try {
         
         <div id="camera-container">
             <video id="video" autoplay playsinline></video>
+            <div id="scanningOverlay" class="scanning-overlay"></div>
             <canvas id="canvas" width="640" height="480"></canvas>
         </div>
 
@@ -117,7 +127,39 @@ try {
         </div>
         
         <p id="geoStatus" style="margin-top:15px; color:var(--text-muted); font-size:14px;">📍 Detecting location...</p>
-        <div id="apiResult" style="margin-top:15px; font-weight:600;"></div>
+        <div id="apiResult" style="margin-top:15px; font-weight:600; font-size:18px;"></div>
+    </div>
+    
+    <div class="recent-table" style="margin-top: 30px;">
+        <h3 style="margin: 20px; font-size: 18px; color: var(--text);">🕒 Your Recent Attendance</h3>
+        <table id="staffAttendanceTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Clock In</th>
+                    <th>Clock Out</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $stmt = $conn->prepare("SELECT clock_in, clock_out, status FROM attendance WHERE staff_id = ? ORDER BY clock_in DESC LIMIT 5");
+                if ($stmt) {
+                    $stmt->bind_param("s", $staff_id);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    while ($r = $res->fetch_assoc()) {
+                        $in = date("M d, Y h:i A", strtotime($r['clock_in']));
+                        $out = $r['clock_out'] ? date("h:i A", strtotime($r['clock_out'])) : '—';
+                        $stat = "<span class='badge badge-" . ($r['status']=='in' ? 'success' : 'warning') . "'>" . strtoupper($r['status']) . "</span>";
+                        echo "<tr><td>".date("M d, Y", strtotime($r['clock_in']))."</td><td>".date("h:i A", strtotime($r['clock_in']))."</td><td>$out</td><td>$stat</td></tr>";
+                    }
+                    if ($res->num_rows === 0) echo "<tr><td colspan='4' style='text-align:center;'>No records found.</td></tr>";
+                    $stmt->close();
+                }
+                ?>
+            </tbody>
+        </table>
     </div>
     <?php endif; ?>
 
@@ -204,8 +246,28 @@ try {
         );
     }
 
+    function playBeep(freq, duration, type='sine') {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.value = 0.1;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            setTimeout(() => { osc.stop(); ctx.close(); }, duration);
+        } catch(e) { console.log("Audio not supported"); }
+    }
+
     function processClocking(action) {
         if (!currentCoords) { alert("Waiting for location..."); return; }
+        
+        // Visual & Audio Scanning FX
+        playBeep(800, 200, 'square');
+        document.getElementById('scanningOverlay').style.display = "block";
+        document.getElementById('camera-container').style.borderColor = "#3b82f6";
         
         // Capture Frame
         const context = canvas.getContext('2d');
@@ -214,7 +276,7 @@ try {
 
         clockBtn.disabled = true;
         const originalText = clockBtn.innerHTML;
-        clockBtn.innerHTML = "Verifying...";
+        clockBtn.innerHTML = "Verifying Identity...";
 
         const formData = new FormData();
         formData.append('action', action);
@@ -225,15 +287,22 @@ try {
         fetch('/api/web_clock.php', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
+            document.getElementById('scanningOverlay').style.display = "none";
             if (data.status === 'success') {
+                playBeep(1200, 400, 'sine');
+                document.getElementById('camera-container').style.borderColor = "#10b981"; // Green Success
                 document.getElementById('apiResult').style.color = "#10b981";
-                document.getElementById('apiResult').innerHTML = data.message;
-                setTimeout(() => location.reload(), 1500);
+                document.getElementById('apiResult').innerHTML = "✅ VERIFIED! " + data.message;
+                clockBtn.innerHTML = "Verified";
+                setTimeout(() => location.reload(), 2000);
             } else {
+                playBeep(300, 400, 'sawtooth');
+                document.getElementById('camera-container').style.borderColor = "#ef4444"; // Red Error
                 document.getElementById('apiResult').style.color = "#ef4444";
-                document.getElementById('apiResult').innerHTML = data.message;
+                document.getElementById('apiResult').innerHTML = "❌ " + data.message;
                 clockBtn.disabled = false;
                 clockBtn.innerHTML = originalText;
+                setTimeout(() => { document.getElementById('camera-container').style.borderColor = "#e2e8f0"; }, 2000);
             }
         });
     }
