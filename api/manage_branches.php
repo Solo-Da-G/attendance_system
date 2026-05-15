@@ -120,18 +120,19 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                 </div>
                 <div>
                     <label>Clock-in Radius (Meters)</label>
-                    <input type="number" name="radius_meters" value="200" required>
+                    <input type="number" name="radius_meters" value="300" required>
                 </div>
                 <div>
                     <label>Latitude</label>
-                    <input type="text" name="latitude" placeholder="e.g. 6.5244" required>
+                    <input type="text" id="newBranchLat" name="latitude" placeholder="e.g. 6.5829207" required>
                 </div>
                 <div>
                     <label>Longitude</label>
-                    <input type="text" name="longitude" placeholder="e.g. 3.3792" required>
+                    <input type="text" id="newBranchLng" name="longitude" placeholder="e.g. 3.3797377" required>
                 </div>
             </div>
-            <button type="submit" name="add_branch" style="margin-top:16px;">Save Branch & Location</button>
+            <button type="button" onclick="fillBranchGps('newBranchLat','newBranchLng')" style="margin-top:12px;background:#0f766e;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;">📍 Use my device GPS</button>
+            <button type="submit" name="add_branch" style="margin-top:12px;margin-left:8px;">Save Branch & Location</button>
         </form>
     </div>
 
@@ -147,6 +148,10 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                 <div style="font-size:14px; margin-bottom:12px;">
                     Allowed Radius: <strong><?php echo $b['radius_meters']; ?> meters</strong>
                 </div>
+                <button type="button" class="action-btn edit-btn" style="width:100%;margin-bottom:8px;"
+                    onclick="updateBranchGps(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')">
+                    📍 Set coords from my device GPS
+                </button>
                 <a href="?delete_id=<?php echo $b['id']; ?>" 
                    onclick="return confirm('Delete this branch? Attendance logs will not be affected.');">
                    <button class="action-btn delete-btn" style="width:100%;">Delete Branch</button>
@@ -169,6 +174,33 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
         &copy; <?php echo date("Y"); ?> Attendance System | Geofencing Enabled
     </div>
 </div>
+
+<script>
+function fillBranchGps(latId, lngId) {
+    if (!navigator.geolocation) { alert('GPS not available'); return; }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        document.getElementById(latId).value = pos.coords.latitude.toFixed(7);
+        document.getElementById(lngId).value = pos.coords.longitude.toFixed(7);
+        alert('GPS filled: ' + pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5));
+    }, function() { alert('Could not get GPS. Allow location on this device.'); },
+    { enableHighAccuracy: true, timeout: 25000 });
+}
+
+function updateBranchGps(branchId, branchName) {
+    if (!confirm('Update "' + branchName + '" to this device\'s current GPS?')) return;
+    if (!navigator.geolocation) { alert('GPS not available'); return; }
+    navigator.geolocation.getCurrentPosition(async function(pos) {
+        const fd = new FormData();
+        fd.append('branch_id', branchId);
+        fd.append('lat', pos.coords.latitude);
+        fd.append('lng', pos.coords.longitude);
+        const res = await fetch('update_branch_gps.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const data = await res.json();
+        alert(data.message || (data.status === 'success' ? 'Updated!' : 'Failed'));
+        if (data.status === 'success') location.reload();
+    }, function() { alert('GPS failed'); }, { enableHighAccuracy: true, timeout: 25000 });
+}
+</script>
 
 </body>
 </html>

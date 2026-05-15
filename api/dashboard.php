@@ -92,6 +92,18 @@ try {
     .clock-btn.out { background: #ef4444; box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
     .clock-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
+    .geo-register-btn {
+        background: #0f766e; color: white; border: none; padding: 12px 20px;
+        border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer;
+        margin-top: 10px; width: 100%; max-width: 360px;
+    }
+    .geo-register-btn:hover { background: #0d9488; }
+    .gps-coords-box {
+        background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px;
+        padding: 12px; margin: 12px 0; font-size: 13px; text-align: left;
+        color: #0c4a6e; word-break: break-all;
+    }
+
     .status-line { margin-top: 8px; color: var(--text-muted); font-size: clamp(0.8rem, 2.5vw, 0.875rem); word-break: break-word; }
     #apiResult { margin-top: 15px; font-weight: 600; font-size: clamp(0.95rem, 2.8vw, 1.125rem); word-break: break-word; }
 
@@ -201,7 +213,18 @@ try {
         </div>
         
         <p id="faceStatus" class="status-line">🔄 Loading face recognition...</p>
+        <div id="gpsCoordsBox" class="gps-coords-box" style="display:none;">
+            <strong>Your phone GPS right now:</strong><br>
+            <span id="liveGpsText">Waiting…</span>
+        </div>
         <p id="geoStatus" class="status-line">📍 Detecting location...</p>
+        <p id="locationRegisterHint" class="status-line" style="color:#0f766e;"></p>
+        <button type="button" id="registerLocBtn" class="geo-register-btn" onclick="registerMyClockLocation()">
+            📍 Register my clock location (use once at home/office)
+        </button>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:8px;max-width:360px;margin-left:auto;margin-right:auto;">
+            Google Maps coords often differ from phone GPS by 1–3 km. Register while standing where you clock in — this fixes “outside allowed area”.
+        </p>
         <div id="apiResult"></div>
     </div>
     
@@ -309,6 +332,7 @@ try {
     let faceReady = false;
     let geoReady = false;
     let branchList = [];
+    let personalClock = null;
 
     function updateClockButtonState() {
         if (!clockBtn) return;
@@ -325,21 +349,72 @@ try {
 
     function updateGeoStatusText(coords) {
         const el = document.getElementById('geoStatus');
-        if (!el || !coords) return;
+        const live = document.getElementById('liveGpsText');
+        const box = document.getElementById('gpsCoordsBox');
+        if (!coords) return;
+        if (box) box.style.display = 'block';
+        if (live) {
+            live.textContent = coords.latitude.toFixed(7) + ', ' + coords.longitude.toFixed(7) +
+                ' (±' + Math.round(coords.accuracy || 0) + 'm)';
+        }
+        if (!el) return;
+
+        let inside = false;
         let html = '✅ GPS (±' + Math.round(coords.accuracy || 0) + 'm) · ';
-        if (branchList.length && coords.latitude) {
+
+        if (personalClock && personalClock.lat) {
+            const pd = Math.round(haversineM(coords.latitude, coords.longitude, personalClock.lat, personalClock.lng));
+            const pr = personalClock.radius + Math.min(coords.accuracy || 0, 200);
+            if (pd <= pr) inside = true;
+            html += (pd <= pr ? 'Inside' : 'Outside') + ' your registered spot (~' + pd + 'm / ' + pr + 'm)';
+        } else if (branchList.length) {
             const near = branchList.map(b => ({
                 name: b.branch_name,
                 d: Math.round(haversineM(coords.latitude, coords.longitude, parseFloat(b.latitude), parseFloat(b.longitude))),
                 r: parseInt(b.radius_meters, 10) || 200
             })).sort((a, b) => a.d - b.d);
             const closest = near[0];
-            const inside = closest.d <= closest.r + Math.min(coords.accuracy || 0, 150);
+            inside = closest.d <= closest.r + Math.min(coords.accuracy || 0, 200);
             html += (inside ? 'Inside' : 'Outside') + ' "' + closest.name + '" (~' + closest.d + 'm / ' + closest.r + 'm)';
+            if (!inside) html += ' — tap Register my clock location below';
         } else {
             html += 'Lat ' + coords.latitude.toFixed(5) + ', Lng ' + coords.longitude.toFixed(5);
         }
         el.innerHTML = html;
+        el.style.color = inside ? 'var(--success, #059669)' : '#b45309';
+    }
+
+    async function registerMyClockLocation() {
+        const hint = document.getElementById('locationRegisterHint');
+        const btn = document.getElementById('registerLocBtn');
+        if (btn) btn.disabled = true;
+        if (hint) hint.textContent = 'Getting GPS…';
+        try {
+            const pos = await getFreshPosition();
+            currentCoords = pos.coords;
+            const fd = new FormData();
+            fd.append('lat', pos.coords.latitude);
+            fd.append('lng', pos.coords.longitude);
+            fd.append('sync_branch', '1');
+            const res = await fetch('register_clock_location.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                personalClock = { lat: data.lat, lng: data.lng, radius: data.radius || 300 };
+                if (hint) {
+                    hint.innerHTML = '✅ ' + data.message +
+                        (data.branch_updated ? ' Branch "<strong>' + data.branch_updated + '</strong>" coords updated to match your phone.' : '');
+                }
+                updateGeoStatusText(pos.coords);
+                const profRes = await fetch('staff_profile.php', { credentials: 'same-origin' });
+                const prof = await profRes.json();
+                if (prof.branches) branchList = prof.branches;
+            } else {
+                if (hint) hint.textContent = '❌ ' + (data.message || 'Failed');
+            }
+        } catch (e) {
+            if (hint) hint.textContent = '❌ ' + (e.message || 'GPS failed');
+        }
+        if (btn) btn.disabled = false;
     }
 
     function getFreshPosition() {
@@ -366,6 +441,18 @@ try {
                 throw new Error(prof.message || 'Could not load staff profile');
             }
             branchList = prof.branches || [];
+            if (prof.location_set) {
+                personalClock = {
+                    lat: parseFloat(prof.clock_lat),
+                    lng: parseFloat(prof.clock_lng),
+                    radius: prof.clock_radius || 300
+                };
+                const lh = document.getElementById('locationRegisterHint');
+                if (lh) lh.textContent = '✅ Personal clock zone registered. You can re-register if you move.';
+            } else {
+                const lh = document.getElementById('locationRegisterHint');
+                if (lh) lh.innerHTML = '⚠️ <strong>First time:</strong> tap Register my clock location while at home, then clock in.';
+            }
             if (!prof.photo_ok) {
                 throw new Error('Profile photo missing or corrupted. Re-upload in Employees.');
             }

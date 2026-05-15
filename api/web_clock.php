@@ -44,7 +44,9 @@ if (!$face_verified || $face_distance > $face_threshold) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT photo, branch FROM staff WHERE staff_id = ? LIMIT 1");
+$stmt = $conn->prepare(
+    "SELECT photo, branch, clock_lat, clock_lng, clock_radius FROM staff WHERE staff_id = ? LIMIT 1"
+);
 $stmt->bind_param("s", $staff_id);
 $stmt->execute();
 $staff_row = $stmt->get_result()->fetch_assoc();
@@ -76,17 +78,39 @@ if (empty($branches)) {
     exit;
 }
 
-$accuracyBuffer = (int)min(max($gps_accuracy, 0), 150);
-$geo = Geolocation::validateAgainstBranches($lat, $lng, $branches, $accuracyBuffer);
+$accuracyBuffer = (int)min(max($gps_accuracy, 0), 200);
+$geo = ['allowed' => false];
+
+if (!empty($staff_row['clock_lat']) && !empty($staff_row['clock_lng'])) {
+    $personal = Geolocation::validateStaffClockZone(
+        $lat,
+        $lng,
+        $staff_row['clock_lat'],
+        $staff_row['clock_lng'],
+        (int)($staff_row['clock_radius'] ?? 300),
+        $accuracyBuffer
+    );
+    if ($personal['allowed']) {
+        $geo = $personal;
+    }
+}
+
+if (!$geo['allowed']) {
+    $geo = Geolocation::validateAgainstBranches($lat, $lng, $branches, $accuracyBuffer);
+}
 
 if (!$geo['allowed']) {
     $distances = Geolocation::distancesToBranches($lat, $lng, $branches);
+    $hint = empty($staff_row['clock_lat'])
+        ? ' On your phone, tap <strong>Register my clock location</strong> while standing where you clock in (this fixes GPS mismatch).'
+        : ' Move closer or re-register your clock location from the dashboard.';
     echo json_encode([
         "status"     => "error",
-        "message"    => $geo['message'],
+        "message"    => $geo['message'] . $hint,
         "distances"  => $distances,
         "your_lat"   => $lat,
         "your_lng"   => $lng,
+        "need_register" => empty($staff_row['clock_lat']),
     ]);
     exit;
 }

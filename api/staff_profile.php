@@ -13,7 +13,9 @@ if (empty($_SESSION['staff_id'])) {
 
 $staff_id = $_SESSION['staff_id'];
 
-$stmt = $conn->prepare("SELECT staff_id, full_name, photo, branch FROM staff WHERE staff_id = ? LIMIT 1");
+$stmt = $conn->prepare(
+    "SELECT staff_id, full_name, photo, branch, clock_lat, clock_lng, clock_radius FROM staff WHERE staff_id = ? LIMIT 1"
+);
 $stmt->bind_param("s", $staff_id);
 $stmt->execute();
 $row = $stmt->get_result()->fetch_assoc();
@@ -37,12 +39,16 @@ if ($all) {
 }
 
 echo json_encode([
-    'status'     => 'success',
-    'staff_id'   => $row['staff_id'],
-    'full_name'  => $row['full_name'],
-    'branch'     => $row['branch'] ?? '',
-    'photo'      => $photoOk ? $photo : '',
-    'photo_ok'   => $photoOk,
-    'photo_len'  => $photoLen,
-    'branches'   => $branches,
+    'status'        => 'success',
+    'staff_id'      => $row['staff_id'],
+    'full_name'     => $row['full_name'],
+    'branch'        => $row['branch'] ?? '',
+    'photo'         => $photoOk ? $photo : '',
+    'photo_ok'      => $photoOk,
+    'photo_len'     => $photoLen,
+    'branches'      => $branches,
+    'clock_lat'     => $row['clock_lat'] ?? null,
+    'clock_lng'     => $row['clock_lng'] ?? null,
+    'clock_radius'  => (int)($row['clock_radius'] ?? 300),
+    'location_set'  => !empty($row['clock_lat']) && !empty($row['clock_lng']),
 ]);

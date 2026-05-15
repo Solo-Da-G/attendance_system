@@ -137,6 +137,13 @@ if (empty($_SESSION['schema_checked'])) {
             }
         }
 
+        $clk_lat = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'clock_lat'");
+        if ($clk_lat && $clk_lat->num_rows === 0) {
+            $conn->query("ALTER TABLE `staff` ADD COLUMN `clock_lat` DECIMAL(10,8) NULL");
+            $conn->query("ALTER TABLE `staff` ADD COLUMN `clock_lng` DECIMAL(11,8) NULL");
+            $conn->query("ALTER TABLE `staff` ADD COLUMN `clock_radius` INT DEFAULT 300");
+        }
+
         // Ensure branches geofencing
         $chk_br = $conn->query("SHOW TABLES LIKE 'branches'");
         if ($chk_br && $chk_br->num_rows > 0) {

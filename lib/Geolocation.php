@@ -73,6 +73,30 @@ class Geolocation {
         ];
     }
 
+    /**
+     * Validate against staff's registered phone location (set once from dashboard).
+     */
+    public static function validateStaffClockZone($lat, $lng, $clockLat, $clockLng, $radiusMeters, $accuracyBuffer = 0) {
+        if ($clockLat === null || $clockLng === null) {
+            return ['allowed' => false];
+        }
+        $buffer = min(max(0, (int)$accuracyBuffer), 200);
+        $radius = max(50, (int)$radiusMeters) + $buffer;
+        $dist = self::getDistance($lat, $lng, (float)$clockLat, (float)$clockLng);
+        if ($dist <= $radius) {
+            return [
+                'allowed'     => true,
+                'branch_name' => 'Your registered location',
+                'distance_m'  => (int)round($dist),
+            ];
+        }
+        return [
+            'allowed'    => false,
+            'distance_m' => (int)round($dist),
+            'radius_m'   => $radius,
+        ];
+    }
+
     /** Distances from point to all branches (for UI debug). */
     public static function distancesToBranches($lat, $lng, array $branches) {
         $out = [];
