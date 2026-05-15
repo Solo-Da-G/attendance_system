@@ -10,15 +10,18 @@ if (!isset($_SESSION['admin_id']) && !isset($_SESSION['staff_id'])) {
 $is_admin = isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'super_admin');
 $staff_id = $_SESSION['staff_id'] ?? null;
 $display_name = $_SESSION['admin'] ?? 'User';
-$staff_profile_photo = '';
+$staff_branch_name = '';
+$staff_photo_ok = false;
 
 if ($staff_id) {
-    $photo_stmt = $conn->prepare("SELECT photo FROM staff WHERE staff_id = ? LIMIT 1");
+    $photo_stmt = $conn->prepare("SELECT photo, branch FROM staff WHERE staff_id = ? LIMIT 1");
     if ($photo_stmt) {
         $photo_stmt->bind_param("s", $staff_id);
         $photo_stmt->execute();
         $photo_row = $photo_stmt->get_result()->fetch_assoc();
-        $staff_profile_photo = $photo_row['photo'] ?? '';
+        $staff_branch_name = $photo_row['branch'] ?? '';
+        $p = $photo_row['photo'] ?? '';
+        $staff_photo_ok = strlen($p) > 500 && str_starts_with($p, 'data:image');
         $photo_stmt->close();
     }
 }
@@ -149,11 +152,26 @@ try {
         <p>Facial verification active · Auto sign-out after 1 minute of inactivity</p>
     </div>
 
+    <?php if ($is_admin && !$staff_id): ?>
+    <div style="background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:16px 20px;border-radius:16px;margin-bottom:24px;font-size:15px;line-height:1.5;">
+        <strong>Admin account:</strong> Face clock-in only works for <strong>staff</strong> logins.
+        Log out and sign in with your <strong>Staff ID</strong> and password (not your admin username).
+    </div>
+    <?php endif; ?>
+
     <?php if ($staff_id): ?>
     <div class="clocking-card" style="text-align:center;">
         <h3>📸 Face Clocking (Geofenced)</h3>
-        <p style="color:var(--text-muted); margin-bottom:20px;">Please center your face in the camera frame.</p>
-        
+        <p style="color:var(--text-muted); margin-bottom:12px;">Sign in with your <strong>Staff ID</strong> (not admin). Center your face in the camera.</p>
+        <?php if (!$staff_photo_ok): ?>
+        <p style="background:#fef2f2;color:#b91c1c;padding:12px;border-radius:12px;font-size:14px;margin-bottom:16px;">
+            ⚠️ Profile photo missing or broken. Admin: re-upload a clear face photo in <strong>Employees → Edit</strong>.
+        </p>
+        <?php endif; ?>
+        <?php if ($staff_branch_name): ?>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Branch on file: <strong><?php echo htmlspecialchars($staff_branch_name); ?></strong> — you can clock at <em>any</em> branch within its radius.</p>
+        <?php endif; ?>
+
         <div id="camera-container">
             <video id="video" autoplay playsinline></video>
             <div id="scanningOverlay" class="scanning-overlay"></div>
@@ -281,9 +299,6 @@ try {
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.js"></script>
   <script src="/asset/js/clock-face.js"></script>
-  <script>
-    const STAFF_PROFILE_PHOTO = <?php echo json_encode($staff_profile_photo); ?>;
-  </script>
   <?php endif; ?>
 
   <script>
@@ -293,21 +308,71 @@ try {
     let currentCoords = null;
     let faceReady = false;
     let geoReady = false;
+    let branchList = [];
 
     function updateClockButtonState() {
         if (!clockBtn) return;
-        const ready = faceReady && geoReady;
-        clockBtn.disabled = !ready;
+        clockBtn.disabled = !(faceReady && geoReady);
+    }
+
+    function haversineM(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function updateGeoStatusText(coords) {
+        const el = document.getElementById('geoStatus');
+        if (!el || !coords) return;
+        let html = '✅ GPS (±' + Math.round(coords.accuracy || 0) + 'm) · ';
+        if (branchList.length && coords.latitude) {
+            const near = branchList.map(b => ({
+                name: b.branch_name,
+                d: Math.round(haversineM(coords.latitude, coords.longitude, parseFloat(b.latitude), parseFloat(b.longitude))),
+                r: parseInt(b.radius_meters, 10) || 200
+            })).sort((a, b) => a.d - b.d);
+            const closest = near[0];
+            const inside = closest.d <= closest.r + Math.min(coords.accuracy || 0, 150);
+            html += (inside ? 'Inside' : 'Outside') + ' "' + closest.name + '" (~' + closest.d + 'm / ' + closest.r + 'm)';
+        } else {
+            html += 'Lat ' + coords.latitude.toFixed(5) + ', Lng ' + coords.longitude.toFixed(5);
+        }
+        el.innerHTML = html;
+    }
+
+    function getFreshPosition() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('GPS not supported on this device'));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 25000
+            });
+        });
     }
 
   <?php if ($staff_id): ?>
     (async function initStaffClocking() {
         const faceStatus = document.getElementById('faceStatus');
         try {
+            const profRes = await fetch('staff_profile.php', { credentials: 'same-origin' });
+            const prof = await profRes.json();
+            if (prof.status !== 'success') {
+                throw new Error(prof.message || 'Could not load staff profile');
+            }
+            branchList = prof.branches || [];
+            if (!prof.photo_ok) {
+                throw new Error('Profile photo missing or corrupted. Re-upload in Employees.');
+            }
             await ClockFace.loadModels();
-            await ClockFace.loadProfilePhoto(STAFF_PROFILE_PHOTO);
+            await ClockFace.loadProfilePhoto(prof.photo);
             faceReady = true;
-            faceStatus.innerHTML = '✅ Face profile loaded — look at the camera to verify';
+            faceStatus.innerHTML = '✅ Face ready for ' + (prof.full_name || 'you') + ' — tap Verify when your face is centered';
         } catch (e) {
             faceStatus.innerHTML = '❌ ' + e.message;
             if (clockBtn) clockBtn.disabled = true;
@@ -320,7 +385,7 @@ try {
         .then(stream => { video.srcObject = stream; })
         .catch(() => {
             document.getElementById('camera-container').innerHTML =
-                "<p style='color:white;padding:20px;text-align:center;'>Camera access denied. Allow camera permission and refresh.</p>";
+                "<p style='color:white;padding:20px;text-align:center;'>Camera denied. Allow camera in browser settings and refresh.</p>";
         });
     }
 
@@ -329,16 +394,15 @@ try {
             (pos) => {
                 currentCoords = pos.coords;
                 geoReady = true;
-                document.getElementById('geoStatus').innerHTML =
-                    '✅ Location ready (±' + Math.round(pos.coords.accuracy || 0) + 'm accuracy)';
+                updateGeoStatusText(pos.coords);
                 updateClockButtonState();
             },
             () => {
-                document.getElementById('geoStatus').innerHTML = '❌ GPS denied — enable location for this site';
+                document.getElementById('geoStatus').innerHTML = '❌ GPS denied — allow location (use phone, not desktop Wi‑Fi location)';
                 geoReady = false;
                 updateClockButtonState();
             },
-            { enableHighAccuracy: true, maximumAge: 8000, timeout: 20000 }
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 25000 }
         );
     }
   <?php endif; ?>
@@ -359,23 +423,24 @@ try {
     }
 
     function showApiError(msg) {
-        document.getElementById('scanningOverlay').style.display = 'none';
-        document.getElementById('camera-container').style.borderColor = '#ef4444';
-        document.getElementById('apiResult').style.color = '#ef4444';
-        document.getElementById('apiResult').innerHTML = '❌ ' + msg;
+        const overlay = document.getElementById('scanningOverlay');
+        const cam = document.getElementById('camera-container');
+        const result = document.getElementById('apiResult');
+        if (overlay) overlay.style.display = 'none';
+        if (cam) cam.style.borderColor = '#ef4444';
+        if (result) {
+            result.style.color = '#ef4444';
+            result.innerHTML = '❌ ' + msg;
+        }
     }
 
     async function processClocking(action) {
-        if (!currentCoords) {
-            alert('Waiting for GPS location…');
-            return;
-        }
         if (typeof ClockFace === 'undefined') {
-            alert('Face verification is not available. Refresh the page.');
+            alert('Face verification not loaded. Refresh the page.');
             return;
         }
         if (!ClockFace.isReady()) {
-            alert('Face recognition is still loading. Please wait.');
+            alert('Face recognition still loading. Wait for the green face message.');
             return;
         }
 
@@ -387,9 +452,24 @@ try {
 
         clockBtn.disabled = true;
         const originalText = clockBtn.innerHTML;
+        clockBtn.innerHTML = 'Getting GPS…';
+
+        try {
+            const pos = await getFreshPosition();
+            currentCoords = pos.coords;
+            geoReady = true;
+            updateGeoStatusText(pos.coords);
+        } catch (e) {
+            showApiError('GPS failed: ' + (e.message || 'enable location and try again'));
+            clockBtn.disabled = false;
+            clockBtn.innerHTML = originalText;
+            if (typeof resumeIdleLogout === 'function') resumeIdleLogout();
+            return;
+        }
+
         clockBtn.innerHTML = 'Verifying face…';
 
-        let faceResult = { match: true, distance: 0 };
+        let faceResult = { match: false, distance: 999, message: '' };
         try {
             faceResult = await ClockFace.verifyVideoFace(video);
         } catch (e) {
@@ -422,6 +502,7 @@ try {
         formData.append('action', action);
         formData.append('lat', currentCoords.latitude);
         formData.append('lng', currentCoords.longitude);
+        formData.append('gps_accuracy', String(currentCoords.accuracy || 0));
         formData.append('photo', photoData);
         formData.append('face_verified', '1');
         formData.append('face_distance', String(faceResult.distance));
@@ -450,7 +531,13 @@ try {
                 setTimeout(() => location.reload(), 2000);
             } else {
                 playBeep(300, 400, 'sawtooth');
-                showApiError(data.message || 'Verification failed.');
+                let errMsg = data.message || 'Verification failed.';
+                if (data.distances && data.distances.length) {
+                    errMsg += '<br><small style="font-weight:400;">Distances: ' +
+                        data.distances.map(d => d.name + ' ' + d.distance + 'm/' + d.radius + 'm').join(' · ') +
+                        '</small>';
+                }
+                showApiError(errMsg);
                 clockBtn.disabled = false;
                 clockBtn.innerHTML = originalText;
                 setTimeout(() => { document.getElementById('camera-container').style.borderColor = '#e2e8f0'; }, 2000);

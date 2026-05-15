@@ -3,13 +3,13 @@
  * WEB CLOCK API (Geofenced + Facial Verification)
  */
 
-include("../includes/config.php");
-include("../lib/Geolocation.php");
+include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/../lib/Geolocation.php");
 
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['admin_id']) && !isset($_SESSION['staff_id'])) {
-    echo json_encode(["status" => "error", "message" => "Session expired. Please log in again."]);
+    echo json_encode(["status" => "error", "message" => "Session expired. Please log in again with your Staff ID."]);
     exit;
 }
 
@@ -20,80 +20,77 @@ $photo          = $_POST['photo'] ?? null;
 $action         = $_POST['action'] ?? '';
 $face_verified  = ($_POST['face_verified'] ?? '') === '1';
 $face_distance  = isset($_POST['face_distance']) ? (float)$_POST['face_distance'] : 999.0;
-$face_threshold = 0.6;
+$gps_accuracy   = isset($_POST['gps_accuracy']) ? (float)$_POST['gps_accuracy'] : 0;
+$face_threshold = 0.68;
 
 if (!$staff_id) {
-    echo json_encode(["status" => "error", "message" => "Only staff accounts can clock in here."]);
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Clock-in is for staff only. Log out and sign in with your Staff ID (not admin username).",
+    ]);
     exit;
 }
 
 if ($lat === null || $lng === null) {
-    echo json_encode(["status" => "error", "message" => "Location data missing. Enable GPS and refresh."]);
+    echo json_encode(["status" => "error", "message" => "Location missing. Allow GPS for this site and try again."]);
     exit;
 }
 
 if (!$face_verified || $face_distance > $face_threshold) {
     echo json_encode([
         "status"  => "error",
-        "message" => "Face did not match your profile. Center your face in good lighting and try again.",
+        "message" => "Face did not match (score " . round($face_distance, 2) . "). Use the same lighting as your profile photo and look straight at the camera.",
     ]);
     exit;
 }
 
-// Staff must have a profile photo on file
 $stmt = $conn->prepare("SELECT photo, branch FROM staff WHERE staff_id = ? LIMIT 1");
 $stmt->bind_param("s", $staff_id);
 $stmt->execute();
 $staff_row = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if (!$staff_row || empty($staff_row['photo'])) {
+$photoStr = $staff_row['photo'] ?? '';
+if (!$staff_row || strlen($photoStr) < 500 || !str_starts_with($photoStr, 'data:image')) {
     echo json_encode([
         "status"  => "error",
-        "message" => "No profile photo on file. Ask your admin to upload your photo in Employees.",
+        "message" => "Profile photo missing or broken. Admin must re-upload your photo in Employees (clear face, JPG/PNG).",
     ]);
     exit;
 }
 
-// ---------------------------------------------------------------
-// GEOFENCE VALIDATION
-// ---------------------------------------------------------------
+// All branches — staff may clock at any registered location within radius
 $branches = [];
-
-// Prefer staff-assigned branch (case-insensitive name match)
-$stmt = $conn->prepare(
-    "SELECT b.latitude, b.longitude, b.radius_meters, b.branch_name
-     FROM branches b
-     INNER JOIN staff s ON LOWER(TRIM(s.branch)) = LOWER(TRIM(b.branch_name))
-     WHERE s.staff_id = ?"
-);
-$stmt->bind_param("s", $staff_id);
-$stmt->execute();
-$res = $stmt->get_result();
-while ($row = $res->fetch_assoc()) {
-    $branches[] = $row;
-}
-$stmt->close();
-
-// If no assigned branch match, check all branches
-if (empty($branches)) {
-    $all = $conn->query("SELECT latitude, longitude, radius_meters, branch_name FROM branches");
-    if ($all) {
-        while ($row = $all->fetch_assoc()) {
-            $branches[] = $row;
-        }
+$all = $conn->query("SELECT latitude, longitude, radius_meters, branch_name FROM branches");
+if ($all) {
+    while ($row = $all->fetch_assoc()) {
+        $branches[] = $row;
     }
 }
 
-$geo = Geolocation::validateAgainstBranches($lat, $lng, $branches);
-if (!$geo['allowed']) {
-    echo json_encode(["status" => "error", "message" => $geo['message']]);
+if (empty($branches)) {
+    echo json_encode([
+        "status"  => "error",
+        "message" => "No branches configured. Admin must add a branch under Manage Branches.",
+    ]);
     exit;
 }
 
-// ---------------------------------------------------------------
-// PROCESS CLOCKING
-// ---------------------------------------------------------------
+$accuracyBuffer = (int)min(max($gps_accuracy, 0), 150);
+$geo = Geolocation::validateAgainstBranches($lat, $lng, $branches, $accuracyBuffer);
+
+if (!$geo['allowed']) {
+    $distances = Geolocation::distancesToBranches($lat, $lng, $branches);
+    echo json_encode([
+        "status"     => "error",
+        "message"    => $geo['message'],
+        "distances"  => $distances,
+        "your_lat"   => $lat,
+        "your_lng"   => $lng,
+    ]);
+    exit;
+}
+
 $now = date("Y-m-d H:i:s");
 
 if ($action === 'clock_in') {
@@ -113,9 +110,15 @@ if ($action === 'clock_in') {
     );
     $stmt->bind_param("ssdds", $staff_id, $now, $lat, $lng, $photo);
     if ($stmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "Face verified & clocked in!"]);
+        echo json_encode([
+            "status"  => "success",
+            "message" => "Clocked in at " . ($geo['branch_name'] ?? 'branch') . "!",
+        ]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Could not save clock-in. Please try again."]);
+        echo json_encode([
+            "status"  => "error",
+            "message" => "Could not save clock-in. " . ($conn->error ?: 'Database error.'),
+        ]);
     }
     $stmt->close();
 
@@ -135,15 +138,18 @@ if ($action === 'clock_in') {
         );
         $stmt->bind_param("sdddsi", $now, $total_hours, $lat, $lng, $photo, $record['id']);
         if ($stmt->execute()) {
-            echo json_encode(["status" => "success", "message" => "Face verified & clocked out!"]);
+            echo json_encode(["status" => "success", "message" => "Clocked out successfully!"]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Could not save clock-out. Please try again."]);
+            echo json_encode([
+                "status"  => "error",
+                "message" => "Could not save clock-out. " . ($conn->error ?: 'Database error.'),
+            ]);
         }
         $stmt->close();
     } else {
-        echo json_encode(["status" => "error", "message" => "No active session found. Clock in first."]);
+        echo json_encode(["status" => "error", "message" => "No active session. Clock in first."]);
     }
 
 } else {
-    echo json_encode(["status" => "error", "message" => "Invalid clock action."]);
+    echo json_encode(["status" => "error", "message" => "Invalid action."]);
 }

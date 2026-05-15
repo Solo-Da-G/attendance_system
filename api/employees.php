@@ -36,6 +36,14 @@ if (isset($_POST['add_employee'])) {
     }
     $stmt->close();
 }
+
+$branch_options = [];
+$br_res = $conn->query("SELECT branch_name FROM branches ORDER BY branch_name ASC");
+if ($br_res) {
+    while ($br = $br_res->fetch_assoc()) {
+        $branch_options[] = $br['branch_name'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -122,7 +130,16 @@ if (isset($_POST['add_employee'])) {
       <label>Department</label>
       <input type="text" name="department" placeholder="IT Department" required>
       <label>Branch</label>
-      <input type="text" name="branch" placeholder="Head Office" required>
+      <?php if (!empty($branch_options)): ?>
+      <select name="branch" required>
+        <option value="">Select branch (must match Manage Branches)</option>
+        <?php foreach ($branch_options as $bn): ?>
+        <option value="<?php echo htmlspecialchars($bn); ?>"><?php echo htmlspecialchars($bn); ?></option>
+        <?php endforeach; ?>
+      </select>
+      <?php else: ?>
+      <input type="text" name="branch" placeholder="Add branches first in Manage Branches" required>
+      <?php endif; ?>
       <label>Email</label>
       <input type="email" name="email" placeholder="john@example.com" required>
       <label>Mobile No</label>

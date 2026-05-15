@@ -106,7 +106,28 @@ if (isset($_POST['update_employee'])) {
         <input type="text" name="department" value="<?php echo htmlspecialchars($employee['department']); ?>">
 
         <label>Branch</label>
-        <input type="text" name="branch" value="<?php echo htmlspecialchars($employee['branch']); ?>">
+        <?php
+        $branch_options = [];
+        $br_res = $conn->query("SELECT branch_name FROM branches ORDER BY branch_name ASC");
+        if ($br_res) {
+            while ($br = $br_res->fetch_assoc()) {
+                $branch_options[] = $br['branch_name'];
+            }
+        }
+        $cur_branch = $employee['branch'] ?? '';
+        if (!empty($branch_options)):
+        ?>
+        <select name="branch" required>
+            <?php foreach ($branch_options as $bn): ?>
+            <option value="<?php echo htmlspecialchars($bn); ?>" <?php echo ($cur_branch === $bn) ? 'selected' : ''; ?>><?php echo htmlspecialchars($bn); ?></option>
+            <?php endforeach; ?>
+            <?php if ($cur_branch && !in_array($cur_branch, $branch_options)): ?>
+            <option value="<?php echo htmlspecialchars($cur_branch); ?>" selected><?php echo htmlspecialchars($cur_branch); ?> (custom)</option>
+            <?php endif; ?>
+        </select>
+        <?php else: ?>
+        <input type="text" name="branch" value="<?php echo htmlspecialchars($cur_branch); ?>">
+        <?php endif; ?>
 
         <label>Email</label>
         <input type="email" name="email" value="<?php echo htmlspecialchars($employee['email']); ?>">

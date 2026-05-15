@@ -3,11 +3,8 @@
  * Geolocation Helper Class
  */
 class Geolocation {
-    /**
-     * Calculate distance between two points using Haversine formula
-     */
     public static function getDistance($lat1, $lon1, $lat2, $lon2) {
-        $earthRadius = 6371000; // in meters
+        $earthRadius = 6371000;
 
         $latDelta = deg2rad($lat2 - $lat1);
         $lonDelta = deg2rad($lon2 - $lon1);
@@ -15,61 +12,81 @@ class Geolocation {
         $a = sin($latDelta / 2) * sin($latDelta / 2) +
              cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
              sin($lonDelta / 2) * sin($lonDelta / 2);
-        
+
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
+
         return $earthRadius * $c;
     }
 
-    /**
-     * Check if a point is within a radius of another point
-     */
     public static function isWithinRadius($lat1, $lon1, $lat2, $lon2, $radiusMeters) {
-        $distance = self::getDistance($lat1, $lon1, $lat2, $lon2);
-        return $distance <= $radiusMeters;
+        return self::getDistance($lat1, $lon1, $lat2, $lon2) <= $radiusMeters;
     }
 
     /**
-     * Check if coords are inside any branch; returns result with distance details.
+     * @param float $accuracyBuffer Extra meters from GPS inaccuracy (capped)
      */
-    public static function validateAgainstBranches($lat, $lng, array $branches) {
+    public static function validateAgainstBranches($lat, $lng, array $branches, $accuracyBuffer = 0) {
         if (empty($branches)) {
             return ['allowed' => true, 'message' => null];
         }
 
+        $buffer = min(max(0, (int)$accuracyBuffer), 200);
+
         $nearestDist = null;
         $nearestName = null;
         $nearestRadius = null;
+        $matchedBranch = null;
 
         foreach ($branches as $b) {
             $dist = self::getDistance($lat, $lng, (float)$b['latitude'], (float)$b['longitude']);
-            $radius = (int)($b['radius_meters'] ?? 200);
+            $radius = (int)($b['radius_meters'] ?? 200) + $buffer;
 
             if ($dist <= $radius) {
                 return [
-                    'allowed' => true,
+                    'allowed'     => true,
                     'branch_name' => $b['branch_name'] ?? '',
-                    'distance_m' => (int)round($dist),
+                    'distance_m'  => (int)round($dist),
+                    'buffer_m'    => $buffer,
                 ];
             }
 
             if ($nearestDist === null || $dist < $nearestDist) {
                 $nearestDist = $dist;
                 $nearestName = $b['branch_name'] ?? 'office';
-                $nearestRadius = $radius;
+                $nearestRadius = (int)($b['radius_meters'] ?? 200);
+                $matchedBranch = $b['branch_name'] ?? '';
             }
         }
 
-        $metersOver = (int)round($nearestDist - $nearestRadius);
         return [
-            'allowed' => false,
-            'message' => sprintf(
-                'You are outside the allowed area (%dm from %s; limit %dm). Move closer and try again.',
-                max(0, $metersOver),
+            'allowed'      => false,
+            'message'      => sprintf(
+                'Outside allowed area: ~%dm from "%s" (allowed %dm + %dm GPS buffer). Enable precise location or move closer.',
+                (int)round($nearestDist),
                 $nearestName,
-                $nearestRadius
+                $nearestRadius,
+                $buffer
             ),
-            'distance_m' => (int)round($nearestDist),
+            'distance_m'   => (int)round($nearestDist),
+            'branch_name'  => $matchedBranch,
+            'nearest_name' => $nearestName,
         ];
+    }
+
+    /** Distances from point to all branches (for UI debug). */
+    public static function distancesToBranches($lat, $lng, array $branches) {
+        $out = [];
+        foreach ($branches as $b) {
+            $dist = self::getDistance($lat, $lng, (float)$b['latitude'], (float)$b['longitude']);
+            $radius = (int)($b['radius_meters'] ?? 200);
+            $out[] = [
+                'name'     => $b['branch_name'] ?? '',
+                'distance' => (int)round($dist),
+                'radius'   => $radius,
+                'inside'   => $dist <= $radius,
+            ];
+        }
+        usort($out, fn($a, $b) => $a['distance'] <=> $b['distance']);
+        return $out;
     }
 }
