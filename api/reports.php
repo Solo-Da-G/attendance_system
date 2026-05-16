@@ -91,7 +91,9 @@ if (!isset($_SESSION['admin_id'])) {
         echo "<tr><td colspan='8' style='text-align:center;'>No attendance records found.</td></tr>";
     }
 
-    if (isset($stmt)) $stmt->close();
+    if (isset($stmt) && $stmt instanceof mysqli_stmt) {
+        try { $stmt->close(); } catch (Throwable $e) {}
+    }
     ?>
   </table>
 
