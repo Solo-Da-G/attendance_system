@@ -12,15 +12,21 @@ $staff_id = $_SESSION['staff_id'] ?? null;
 $display_name = $_SESSION['admin'] ?? 'User';
 $staff_branch_name = '';
 $staff_photo_ok = false;
+$staff_job_title = '';
+$staff_department = '';
+$staff_photo = '';
 
 if ($staff_id) {
-    $photo_stmt = $conn->prepare("SELECT photo, branch FROM staff WHERE staff_id = ? LIMIT 1");
+    $photo_stmt = $conn->prepare("SELECT photo, branch, job_title, department FROM staff WHERE staff_id = ? LIMIT 1");
     if ($photo_stmt) {
         $photo_stmt->bind_param("s", $staff_id);
         $photo_stmt->execute();
         $photo_row = $photo_stmt->get_result()->fetch_assoc();
         $staff_branch_name = $photo_row['branch'] ?? '';
         $p = $photo_row['photo'] ?? '';
+        $staff_photo = $p;
+        $staff_job_title = $photo_row['job_title'] ?? '';
+        $staff_department = $photo_row['department'] ?? '';
         $staff_photo_ok = strlen($p) > 500 && str_starts_with($p, 'data:image');
         $photo_stmt->close();
     }
@@ -226,6 +232,31 @@ try {
             Google Maps coords often differ from phone GPS by 1–3 km. Register while standing where you clock in — this fixes “outside allowed area”.
         </p>
         <div id="apiResult"></div>
+    </div>
+
+    <div class="clocking-card">
+        <div style="display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <?php if ($staff_photo_ok): ?>
+                    <img src="<?php echo htmlspecialchars($staff_photo); ?>" alt="Profile" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid rgba(79,70,229,.35);">
+                <?php else: ?>
+                    <div style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e2e8f0;font-weight:800;">?</div>
+                <?php endif; ?>
+                <div>
+                    <div style="font-weight:800;font-size:16px;"><?php echo htmlspecialchars($display_name); ?></div>
+                    <div style="color:var(--text-muted);font-weight:600;font-size:13px;">
+                        <?php echo htmlspecialchars($staff_id); ?>
+                        <?php if ($staff_job_title): ?> · <?php echo htmlspecialchars($staff_job_title); ?><?php endif; ?>
+                        <?php if ($staff_department): ?> · <?php echo htmlspecialchars($staff_department); ?><?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="my_attendance.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;">My Attendance</a>
+                <a href="my_report.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;">My Report</a>
+                <a href="my_profile.php" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:1px solid transparent;color:#fff;font-weight:800;">My Profile</a>
+            </div>
+        </div>
     </div>
     
     <div class="recent-table" style="margin-top: 30px;">
@@ -593,6 +624,7 @@ try {
         formData.append('photo', photoData);
         formData.append('face_verified', '1');
         formData.append('face_distance', String(faceResult.distance));
+        formData.append('face_descriptor', JSON.stringify(faceResult.descriptor || []));
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 45000);

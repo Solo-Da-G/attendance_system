@@ -21,7 +21,33 @@ $action         = $_POST['action'] ?? '';
 $face_verified  = ($_POST['face_verified'] ?? '') === '1';
 $face_distance  = isset($_POST['face_distance']) ? (float)$_POST['face_distance'] : 999.0;
 $gps_accuracy   = isset($_POST['gps_accuracy']) ? (float)$_POST['gps_accuracy'] : 0;
-$face_threshold = 0.68;
+$face_threshold = 0.55;
+$face_descriptor_raw = $_POST['face_descriptor'] ?? '';
+
+function parseFaceDescriptor($raw)
+{
+    if (!is_string($raw) || $raw === '') return null;
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded) || count($decoded) !== 128) return null;
+    $out = [];
+    foreach ($decoded as $v) {
+        if (!is_numeric($v)) return null;
+        $out[] = (float)$v;
+    }
+    return $out;
+}
+
+function euclideanDistance128($a, $b)
+{
+    $sum = 0.0;
+    for ($i = 0; $i < 128; $i++) {
+        $d = ((float)$a[$i]) - ((float)$b[$i]);
+        $sum += $d * $d;
+    }
+    return sqrt($sum);
+}
+
+$face_descriptor = parseFaceDescriptor($face_descriptor_raw);
 
 if (!$staff_id) {
     echo json_encode([
@@ -118,6 +144,13 @@ if (!$geo['allowed']) {
 $now = date("Y-m-d H:i:s");
 
 if ($action === 'clock_in') {
+    if (!$face_descriptor) {
+        echo json_encode([
+            "status"  => "error",
+            "message" => "Face data missing. Refresh the page and try again.",
+        ]);
+        exit;
+    }
     $check = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND clock_out IS NULL LIMIT 1");
     $check->bind_param("s", $staff_id);
     $check->execute();
@@ -129,10 +162,11 @@ if ($action === 'clock_in') {
     $check->close();
 
     $stmt = $conn->prepare(
-        "INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, photo_in, is_geofenced)
-         VALUES (?, ?, 'in', ?, ?, ?, 1)"
+        "INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, photo_in, is_geofenced, face_descriptor_in, face_distance_in)
+         VALUES (?, ?, 'in', ?, ?, ?, 1, ?, ?)"
     );
-    $stmt->bind_param("ssdds", $staff_id, $now, $lat, $lng, $photo);
+    $face_descriptor_json = json_encode($face_descriptor);
+    $stmt->bind_param("ssddssd", $staff_id, $now, $lat, $lng, $photo, $face_descriptor_json, $face_distance);
     if ($stmt->execute()) {
         echo json_encode([
             "status"  => "success",
@@ -147,8 +181,15 @@ if ($action === 'clock_in') {
     $stmt->close();
 
 } elseif ($action === 'clock_out') {
+    if (!$face_descriptor) {
+        echo json_encode([
+            "status"  => "error",
+            "message" => "Face data missing. Refresh the page and try again.",
+        ]);
+        exit;
+    }
     $stmt = $conn->prepare(
-        "SELECT id, clock_in FROM attendance WHERE staff_id = ? AND clock_out IS NULL ORDER BY clock_in DESC LIMIT 1"
+        "SELECT id, clock_in, face_descriptor_in FROM attendance WHERE staff_id = ? AND clock_out IS NULL ORDER BY clock_in DESC LIMIT 1"
     );
     $stmt->bind_param("s", $staff_id);
     $stmt->execute();
@@ -156,11 +197,25 @@ if ($action === 'clock_in') {
     $stmt->close();
 
     if ($record) {
+        $session_threshold = 0.55;
+        $descriptor_in = parseFaceDescriptor($record['face_descriptor_in'] ?? '');
+        if ($descriptor_in && $face_descriptor) {
+            $session_distance = euclideanDistance128($descriptor_in, $face_descriptor);
+            if ($session_distance > $session_threshold) {
+                echo json_encode([
+                    "status"  => "error",
+                    "message" => "Clock-out blocked: face does not match the person who clocked in (score " . round($session_distance, 2) . ").",
+                ]);
+                exit;
+            }
+        }
+
         $total_hours = round((time() - strtotime($record['clock_in'])) / 3600, 2);
         $stmt = $conn->prepare(
-            "UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, lat_out = ?, lng_out = ?, photo_out = ? WHERE id = ?"
+            "UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, lat_out = ?, lng_out = ?, photo_out = ?, face_descriptor_out = ?, face_distance_out = ? WHERE id = ?"
         );
-        $stmt->bind_param("sdddsi", $now, $total_hours, $lat, $lng, $photo, $record['id']);
+        $face_descriptor_json = $face_descriptor ? json_encode($face_descriptor) : null;
+        $stmt->bind_param("sdddssdi", $now, $total_hours, $lat, $lng, $photo, $face_descriptor_json, $face_distance, $record['id']);
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "Clocked out successfully!"]);
         } else {

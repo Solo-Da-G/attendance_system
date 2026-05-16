@@ -128,6 +128,18 @@ if (empty($_SESSION['schema_checked'])) {
             $conn->query("ALTER TABLE `attendance` ADD COLUMN `is_geofenced` TINYINT(1) DEFAULT 0");
         }
 
+        $att_face_in = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'face_descriptor_in'");
+        if ($att_face_in && $att_face_in->num_rows === 0) {
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `face_descriptor_in` MEDIUMTEXT DEFAULT NULL");
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `face_distance_in` DECIMAL(6,4) DEFAULT NULL");
+        }
+
+        $att_face_out = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'face_descriptor_out'");
+        if ($att_face_out && $att_face_out->num_rows === 0) {
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `face_descriptor_out` MEDIUMTEXT DEFAULT NULL");
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `face_distance_out` DECIMAL(6,4) DEFAULT NULL");
+        }
+
         // staff.photo must hold base64 portraits
         $stf_photo = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'photo'");
         if ($stf_photo && $stf_photo->num_rows > 0) {

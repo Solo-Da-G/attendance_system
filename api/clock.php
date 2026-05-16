@@ -1,6 +1,14 @@
 <?php
 include(__DIR__ . "/../includes/config.php");
 
+header('Content-Type: application/json');
+http_response_code(410);
+echo json_encode([
+  "status" => "error",
+  "message" => "This endpoint is disabled. Use the face + GPS clocking on the dashboard (web_clock.php) or device push API.",
+]);
+exit;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $staff_id = $_POST['staff_id'] ?? '';
   date_default_timezone_set("Africa/Lagos");

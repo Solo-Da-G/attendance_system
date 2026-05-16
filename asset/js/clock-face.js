@@ -3,7 +3,7 @@
  */
 (function (global) {
   const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model/';
-  const MATCH_THRESHOLD = 0.68;
+  const MATCH_THRESHOLD = 0.55;
 
   let modelsReady = false;
   let profileDescriptor = null;
@@ -134,6 +134,7 @@
     return {
       match,
       distance: bestDistance,
+      descriptor: bestDet && bestDet.descriptor ? Array.from(bestDet.descriptor) : null,
       message: match
         ? 'Face matched (score ' + bestDistance.toFixed(2) + ')'
         : 'Face mismatch (score ' + bestDistance.toFixed(2) + ', need under ' + MATCH_THRESHOLD + '). Try matching your profile photo pose and lighting.',
