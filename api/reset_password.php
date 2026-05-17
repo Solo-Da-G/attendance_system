@@ -19,14 +19,20 @@ if (empty($token) || empty($email)) {
 } else {
     // Validate token
     $table = ($type === 'staff') ? 'staff' : 'admin';
-    $stmt = $conn->prepare("SELECT id FROM $table WHERE email = ? AND reset_token = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, reset_token_expires FROM $table WHERE email = ? AND reset_token = ? LIMIT 1");
     $stmt->bind_param("ss", $email, $token);
     $stmt->execute();
     $res = $stmt->get_result();
     
     if ($res->num_rows === 1) {
-        $valid_token = true;
         $user_row = $res->fetch_assoc();
+        $exp = $user_row['reset_token_expires'] ?? null;
+        if (!empty($exp) && strtotime($exp) < time()) {
+            $message = "This reset link is invalid or has expired.";
+            $msg_type = "error";
+        } else {
+            $valid_token = true;
+        }
     } else {
         $message = "This reset link is invalid or has expired.";
         $msg_type = "error";
@@ -49,7 +55,7 @@ if (isset($_POST['update_password']) && $valid_token) {
         $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
         $user_id = $user_row['id'];
         
-        $upd = $conn->prepare("UPDATE $table SET password = ?, reset_token = NULL WHERE id = ?");
+        $upd = $conn->prepare("UPDATE $table SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?");
         $upd->bind_param("si", $hashed, $user_id);
         
         if ($upd->execute()) {

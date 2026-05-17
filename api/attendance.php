@@ -6,6 +6,26 @@ if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
     exit;
 }
+
+$today = date('Y-m-d');
+$stat_total = 0;
+$stat_today = 0;
+$stat_open = 0;
+
+$r = $conn->query("SELECT COUNT(*) AS c FROM attendance");
+if ($r && !is_bool($r)) $stat_total = (int)($r->fetch_assoc()['c'] ?? 0);
+
+$stmtStat = $conn->prepare("SELECT COUNT(*) AS c FROM attendance WHERE DATE(clock_in) = ?");
+if ($stmtStat) {
+  $stmtStat->bind_param("s", $today);
+  $stmtStat->execute();
+  $resStat = $stmtStat->get_result();
+  if ($resStat) $stat_today = (int)($resStat->fetch_assoc()['c'] ?? 0);
+  $stmtStat->close();
+}
+
+$r2 = $conn->query("SELECT COUNT(*) AS c FROM attendance WHERE clock_out IS NULL");
+if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,7 +41,16 @@ if (!isset($_SESSION['admin_id'])) {
 
 <!-- Main Content -->
 <div class="content">
-  <h2>Attendance Records</h2>
+  <div style="background: linear-gradient(135deg, #0f172a, #1e293b); color:white; padding:32px; border-radius:24px; margin-bottom:22px;">
+    <h2 style="margin:0; font-size:28px;">🕒 Attendance Records</h2>
+    <p style="opacity:0.75; margin-top:10px;">All staff clock-ins and clock-outs (mobile geofencing + device fingerprint)</p>
+  </div>
+
+  <div class="cards" style="margin-top:0; margin-bottom:18px;">
+    <div class="card"><h3>Total Records</h3><p><?php echo (int)$stat_total; ?></p></div>
+    <div class="card"><h3>Today</h3><p><?php echo (int)$stat_today; ?></p></div>
+    <div class="card"><h3>Currently In</h3><p><?php echo (int)$stat_open; ?></p></div>
+  </div>
 
   <!-- Filter form -->
   <form method="GET">
@@ -42,6 +71,8 @@ if (!isset($_SESSION['admin_id'])) {
       <th>Date</th>
       <th>Time In</th>
       <th>Time Out</th>
+      <th>Source</th>
+      <th>Selfie</th>
       <th>Status</th>
     </tr>
 
@@ -51,7 +82,7 @@ if (!isset($_SESSION['admin_id'])) {
       $from = $_GET['from'];
       $to = $_GET['to'];
       $stmt = $conn->prepare("
-        SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status 
+        SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status, a.source, a.photo_in, a.photo_out
         FROM attendance a
         JOIN staff s ON a.staff_id = s.staff_id
         WHERE DATE(a.clock_in) BETWEEN ? AND ?
@@ -62,7 +93,7 @@ if (!isset($_SESSION['admin_id'])) {
       $result = $stmt->get_result();
     } else {
       $result = $conn->query("
-        SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status 
+        SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status, a.source, a.photo_in, a.photo_out
         FROM attendance a
         JOIN staff s ON a.staff_id = s.staff_id
         ORDER BY a.clock_in DESC
@@ -75,6 +106,10 @@ if (!isset($_SESSION['admin_id'])) {
         $timeIn = date("H:i:s", strtotime($row['clock_in']));
         $timeOut = $row['clock_out'] ? date("H:i:s", strtotime($row['clock_out'])) : "—";
         $statusClass = strtolower($row['status'] ?? 'in');
+        $src = strtolower(trim((string)($row['source'] ?? '')));
+        $srcLabel = $src === 'device' ? 'DEVICE' : ($src === 'mobile' ? 'MOBILE' : 'UNKNOWN');
+        $srcBadge = $src === 'device' ? 'badge-info' : ($src === 'mobile' ? 'badge-success' : 'badge-warning');
+        $selfie = $row['photo_in'] ?: ($row['photo_out'] ?: '');
 
         echo "<tr>
           <td>" . htmlspecialchars($row['full_name']) . "</td>
@@ -84,11 +119,13 @@ if (!isset($_SESSION['admin_id'])) {
           <td>{$date}</td>
           <td>{$timeIn}</td>
           <td>{$timeOut}</td>
+          <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
+          <td>" . ($selfie ? "<img src='{$selfie}' class='photo' style='border-radius:12px;' alt='Selfie'>" : "<span style='color:var(--text-muted);'>—</span>") . "</td>
           <td class='status {$statusClass}'>" . ($row['status'] ?? 'In') . "</td>
         </tr>";
       }
     } else {
-      echo "<tr><td colspan='8' style='text-align:center;'>No attendance records found</td></tr>";
+      echo "<tr><td colspan='10' style='text-align:center;'>No attendance records found</td></tr>";
     }
 
     if (isset($stmt) && $stmt instanceof mysqli_stmt) {

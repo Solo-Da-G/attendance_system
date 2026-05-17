@@ -1,19 +1,20 @@
 <?php
 include(__DIR__ . "/../includes/config.php");
 
-// Only staff who need a password change should be here
-if (empty($_SESSION['staff_id']) || empty($_SESSION['require_password_change'])) {
-    header("Location: dashboard.php");
+if (empty($_SESSION['staff_id'])) {
+    header("Location: index.php");
     exit;
 }
 
 $error = "";
+$success = "";
 
 if (isset($_POST['change_password'])) {
+    $current_pass = trim($_POST['current_password'] ?? '');
     $new_pass = trim($_POST['new_password']);
     $confirm_pass = trim($_POST['confirm_password']);
 
-    if (empty($new_pass) || empty($confirm_pass)) {
+    if (empty($current_pass) || empty($new_pass) || empty($confirm_pass)) {
         $error = "Please fill in all fields.";
     } elseif ($new_pass !== $confirm_pass) {
         $error = "Passwords do not match.";
@@ -22,24 +23,34 @@ if (isset($_POST['change_password'])) {
     } elseif (strlen($new_pass) < 6) {
         $error = "Password must be at least 6 characters long.";
     } else {
-        // Update password in DB
-        $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE staff SET password = ? WHERE staff_id = ?");
-        $stmt->bind_param("ss", $hashed, $_SESSION['staff_id']);
-        
-        if ($stmt->execute()) {
-            // Clear the flag so they can access the dashboard
-            unset($_SESSION['require_password_change']);
-            
-            // Also update the database session cookie so it doesn't log them out immediately if stateless
-            // They are already logged in via $_SESSION, so this is just a seamless transition
-            
-            echo "<script>alert('Password updated successfully! Welcome to your dashboard.'); window.location.href='dashboard.php';</script>";
-            exit;
-        } else {
-            $error = "Failed to update password. Please try again.";
-        }
+        $staff_id = $_SESSION['staff_id'];
+        $stmt = $conn->prepare("SELECT password FROM staff WHERE staff_id = ? LIMIT 1");
+        $stmt->bind_param("s", $staff_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
         $stmt->close();
+
+        if (!$row) {
+            $error = "Account not found.";
+        } else {
+            $stored_pass = $row['password'] ?: password_hash($staff_id, PASSWORD_DEFAULT);
+            $ok = password_verify($current_pass, $stored_pass) || ($current_pass === $staff_id && empty($row['password']));
+            if (!$ok) {
+                $error = "Old password is incorrect.";
+            } else {
+                $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
+                $upd = $conn->prepare("UPDATE staff SET password = ? WHERE staff_id = ?");
+                $upd->bind_param("ss", $hashed, $staff_id);
+                if ($upd->execute()) {
+                    unset($_SESSION['require_password_change']);
+                    $success = "Password updated successfully.";
+                } else {
+                    $error = "Failed to update password. Please try again.";
+                }
+                $upd->close();
+            }
+        }
     }
 }
 ?>
@@ -101,16 +112,21 @@ if (isset($_POST['change_password'])) {
 </head>
 <body>
 <div class="box">
-    <h2>Update Your Password</h2>
-    <p>For security reasons, you must change your default password before accessing your dashboard.</p>
+    <h2>Change Password</h2>
+    <p>Enter your old password, then choose a new secure password.</p>
     
     <?php if ($error) echo "<div class='error'>$error</div>"; ?>
+    <?php if ($success) echo "<div style='color:#86efac;margin-bottom:15px;font-size:14px;background:rgba(16,185,129,0.15);padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,0.3);'>$success</div>"; ?>
     
     <form method="POST">
+        <input type="password" name="current_password" placeholder="Old Password" required>
         <input type="password" name="new_password" placeholder="New Password (min 6 chars)" required>
         <input type="password" name="confirm_password" placeholder="Confirm New Password" required>
-        <button type="submit" name="change_password">Save & Continue</button>
+        <button type="submit" name="change_password">Update Password</button>
     </form>
+    <div style="margin-top:18px;">
+        <a href="my_profile.php" style="color:#93c5fd;font-weight:700;text-decoration:none;">← Back to My Profile</a>
+    </div>
 </div>
 </body>
 </html>

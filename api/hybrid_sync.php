@@ -24,11 +24,10 @@
  */
 
 if (php_sapi_name() !== 'cli') {
-    
 }
 
-include(__DIR__ . "/includes/config.php");
-include(__DIR__ . "/lib/ZKTeco.php");
+include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/../lib/ZKTeco.php");
 
 // ================================================================
 // CONFIGURATION
@@ -100,7 +99,7 @@ if ($devices && $devices->num_rows > 0) {
 
             if ($state == 0) {
                 // Clock-in
-                $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status) VALUES (?, ?, 'in')");
+                $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, source) VALUES (?, ?, 'in', 'device')");
                 $stmt->bind_param("ss", $staff_id, $timestamp);
                 $stmt->execute();
                 $stmt->close();
@@ -115,7 +114,7 @@ if ($devices && $devices->num_rows > 0) {
 
                 if ($open) {
                     $total_hours = round((strtotime($timestamp) - strtotime($open['clock_in'])) / 3600, 2);
-                    $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ? WHERE id = ?");
+                    $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, source = IFNULL(source, 'device') WHERE id = ?");
                     $stmt->bind_param("sdi", $timestamp, $total_hours, $open['id']);
                     $stmt->execute();
                     $stmt->close();
@@ -169,7 +168,7 @@ if ($staff_response && $staff_response['status'] === 'success') {
 // 2b. Push attendance data (last 7 days to catch any gaps)
 logMsg("  Pushing attendance records (last 7 days)...");
 $seven_days_ago = date("Y-m-d", strtotime("-7 days"));
-$stmt = $conn->prepare("SELECT staff_id, clock_in, clock_out, status, total_hours FROM attendance WHERE DATE(clock_in) >= ?");
+$stmt = $conn->prepare("SELECT staff_id, clock_in, clock_out, status, total_hours, source FROM attendance WHERE DATE(clock_in) >= ?");
 $stmt->bind_param("s", $seven_days_ago);
 $stmt->execute();
 $att_result = $stmt->get_result();

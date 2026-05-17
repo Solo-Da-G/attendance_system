@@ -153,7 +153,7 @@ $devices = $conn->query("SELECT * FROM zk_devices ORDER BY id ASC");
             <div class="step-number">3</div>
             <div class="step-content">
                 <h4>Real-Time Push</h4>
-                <p>The <code>hybrid_sync.php</code> script reads thumbprints from the device and "pushes" them to Vercel using your <strong>API Key</strong>. We recommend setting up a "Task Scheduler" on your laptop to run this every 5 minutes.</p>
+                <p>The <code>api/hybrid_sync.php</code> script reads thumbprints from the device and "pushes" them to Vercel using your cloud secret (the <code>X-Api-Key</code> header must match <code>API_SECRET</code> in <code>includes/config.php</code>). We recommend setting up a "Task Scheduler" on your laptop to run this every 5 minutes.</p>
             </div>
         </div>
         <div class="step-item">

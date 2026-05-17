@@ -8,6 +8,57 @@ include(__DIR__ . "/../includes/config.php");
 $message  = "";
 $msg_type = "";
 
+function sendSendGridEmail($toEmail, $toName, $subject, $textBody, $htmlBody)
+{
+    $apiKey = getenv('SENDGRID_API_KEY') ?: '';
+    if ($apiKey === '') return ['ok' => false, 'error' => 'SENDGRID_API_KEY not configured'];
+    if (!function_exists('curl_init')) return ['ok' => false, 'error' => 'cURL not available'];
+
+    $fromEmail = getenv('SENDGRID_FROM_EMAIL') ?: '';
+    $fromName  = getenv('SENDGRID_FROM_NAME') ?: 'Attendance System';
+    if ($fromEmail === '') return ['ok' => false, 'error' => 'SENDGRID_FROM_EMAIL not configured'];
+
+    $payload = [
+        'personalizations' => [[
+            'to' => [[
+                'email' => $toEmail,
+                'name'  => $toName ?: $toEmail,
+            ]],
+        ]],
+        'from' => [
+            'email' => $fromEmail,
+            'name'  => $fromName,
+        ],
+        'subject' => $subject,
+        'content' => [
+            ['type' => 'text/plain', 'value' => $textBody],
+            ['type' => 'text/html', 'value' => $htmlBody],
+        ],
+    ];
+
+    $ch = curl_init('https://api.sendgrid.com/v3/mail/send');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_CONNECTTIMEOUT => 10,
+    ]);
+
+    $resp = curl_exec($ch);
+    $err = curl_error($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($err) return ['ok' => false, 'error' => $err];
+    if ($code >= 200 && $code < 300) return ['ok' => true];
+    return ['ok' => false, 'error' => 'HTTP ' . $code . ' response: ' . substr((string)$resp, 0, 300)];
+}
+
 if (isset($_POST['reset_request'])) {
     $email = trim($_POST['email']);
 
@@ -51,10 +102,11 @@ if (isset($_POST['reset_request'])) {
         if ($user_found) {
             // Generate token
             $token = bin2hex(random_bytes(32));
+            $expires_at = date("Y-m-d H:i:s", time() + (60 * 60));
             
             // Store token in the correct table
-            $upd = $conn->prepare("UPDATE $table SET reset_token = ? WHERE id = ?");
-            $upd->bind_param("si", $token, $user_id);
+            $upd = $conn->prepare("UPDATE $table SET reset_token = ?, reset_token_expires = ? WHERE id = ?");
+            $upd->bind_param("ssi", $token, $expires_at, $user_id);
             
             if ($upd->execute()) {
                 // Construct reset link
@@ -71,15 +123,20 @@ if (isset($_POST['reset_request'])) {
                 $body .= "If you did not request this, please ignore this email.\n\n";
                 $body .= "Regards,\nAttendance System Team";
 
-                $headers = "From: no-reply@" . $host;
+                $html = "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;'>
+                    <h2 style='margin:0 0 12px;'>Password Reset</h2>
+                    <p>Hello " . htmlspecialchars($user_name) . ",</p>
+                    <p>You requested a password reset for your Attendance System account.</p>
+                    <p><a href='" . htmlspecialchars($reset_link) . "' style='display:inline-block;padding:12px 18px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;'>Reset Password</a></p>
+                    <p style='color:#64748b;font-size:13px;'>This link expires in 1 hour. If you did not request this, ignore this email.</p>
+                </div>";
 
-                // Attempt to send (might fail on Vercel without SMTP)
-                if (@mail($email, $subject, $body, $headers)) {
+                $send = sendSendGridEmail($email, $user_name, $subject, $body, $html);
+                if ($send['ok']) {
                     $message = "✅ Success! A reset link has been sent to your email.";
                     $msg_type = "success";
                 } else {
-                    // Fallback for environment verification
-                    $message = "✅ Token generated! In a live environment, an email would be sent. For now, you can use this link: <br><a href='$reset_link' style='color:#3b82f6;'>Reset My Password</a>";
+                    $message = "✅ Token generated, but email could not be sent. Use this link: <br><a href='$reset_link' style='color:#3b82f6;'>Reset My Password</a>";
                     $msg_type = "success";
                 }
             } else {

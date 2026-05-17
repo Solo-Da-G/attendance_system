@@ -101,6 +101,12 @@ if (empty($_SESSION['schema_checked'])) {
         
         $email_col = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'email'");
         if ($email_col && $email_col->num_rows === 0) $conn->query("ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(150) DEFAULT NULL");
+
+        $adm_reset = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'reset_token'");
+        if ($adm_reset && $adm_reset->num_rows === 0) $conn->query("ALTER TABLE `admin` ADD COLUMN `reset_token` VARCHAR(100) DEFAULT NULL");
+
+        $adm_reset_exp = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'reset_token_expires'");
+        if ($adm_reset_exp && $adm_reset_exp->num_rows === 0) $conn->query("ALTER TABLE `admin` ADD COLUMN `reset_token_expires` DATETIME DEFAULT NULL");
         
         // Ensure staff columns
         $pass_col = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'password'");
@@ -111,6 +117,9 @@ if (empty($_SESSION['schema_checked'])) {
         
         $res_stf = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'reset_token'");
         if ($res_stf && $res_stf->num_rows === 0) $conn->query("ALTER TABLE `staff` ADD COLUMN `reset_token` VARCHAR(100) DEFAULT NULL");
+
+        $res_stf_exp = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'reset_token_expires'");
+        if ($res_stf_exp && $res_stf_exp->num_rows === 0) $conn->query("ALTER TABLE `staff` ADD COLUMN `reset_token_expires` DATETIME DEFAULT NULL");
         
         // Ensure attendance columns
         $att_in = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'photo_in'");
@@ -138,6 +147,11 @@ if (empty($_SESSION['schema_checked'])) {
         if ($att_face_out && $att_face_out->num_rows === 0) {
             $conn->query("ALTER TABLE `attendance` ADD COLUMN `face_descriptor_out` MEDIUMTEXT DEFAULT NULL");
             $conn->query("ALTER TABLE `attendance` ADD COLUMN `face_distance_out` DECIMAL(6,4) DEFAULT NULL");
+        }
+
+        $att_source = $conn->query("SHOW COLUMNS FROM `attendance` LIKE 'source'");
+        if ($att_source && $att_source->num_rows === 0) {
+            $conn->query("ALTER TABLE `attendance` ADD COLUMN `source` VARCHAR(20) DEFAULT NULL");
         }
 
         // staff.photo must hold base64 portraits

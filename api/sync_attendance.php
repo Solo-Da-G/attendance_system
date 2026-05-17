@@ -16,8 +16,8 @@ if (php_sapi_name() !== 'cli') {
     
 }
 
-include(__DIR__ . "/includes/config.php");
-include(__DIR__ . "/lib/ZKTeco.php");
+include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/../lib/ZKTeco.php");
 
 date_default_timezone_set("Africa/Lagos");
 
@@ -176,7 +176,7 @@ function syncDevice($device, $conn) {
 
         if ($state == 0) {
             // CLOCK-IN — Insert new record
-            $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status) VALUES (?, ?, 'in')");
+            $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, source) VALUES (?, ?, 'in', 'device')");
             $stmt->bind_param("ss", $staff_id, $timestamp);
             $stmt->execute();
             $stmt->close();
@@ -196,14 +196,14 @@ function syncDevice($device, $conn) {
                 $clock_out_time = strtotime($timestamp);
                 $total_hours    = round(($clock_out_time - $clock_in_time) / 3600, 2);
 
-                $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ? WHERE id = ?");
+                $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, source = IFNULL(source, 'device') WHERE id = ?");
                 $stmt->bind_param("sdi", $timestamp, $total_hours, $open_record['id']);
                 $stmt->execute();
                 $stmt->close();
                 $result['synced']++;
             } else {
                 // No open clock-in — insert as standalone record with clock-out
-                $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, clock_out, status, total_hours) VALUES (?, ?, ?, 'out', 0)");
+                $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, clock_out, status, total_hours, source) VALUES (?, ?, ?, 'out', 0, 'device')");
                 $stmt->bind_param("sss", $staff_id, $timestamp, $timestamp);
                 $stmt->execute();
                 $stmt->close();

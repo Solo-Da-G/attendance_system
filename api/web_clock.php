@@ -162,8 +162,8 @@ if ($action === 'clock_in') {
     $check->close();
 
     $stmt = $conn->prepare(
-        "INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, photo_in, is_geofenced, face_descriptor_in, face_distance_in)
-         VALUES (?, ?, 'in', ?, ?, ?, 1, ?, ?)"
+        "INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, photo_in, is_geofenced, face_descriptor_in, face_distance_in, source)
+         VALUES (?, ?, 'in', ?, ?, ?, 1, ?, ?, 'mobile')"
     );
     $face_descriptor_json = json_encode($face_descriptor);
     $stmt->bind_param("ssddssd", $staff_id, $now, $lat, $lng, $photo, $face_descriptor_json, $face_distance);
