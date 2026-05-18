@@ -1,19 +1,16 @@
 <?php
 include(__DIR__ . "/../includes/config.php");
 
-// Auth check
 if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
     exit;
 }
 
-// Redirect if no ID provided
 if (!isset($_GET['id']) && !isset($_POST['id'])) {
     header("Location: employees.php");
     exit;
 }
 
-// Fetch employee data
 if (isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $stmt = $conn->prepare("SELECT * FROM staff WHERE id = ?");
@@ -27,7 +24,6 @@ if (isset($_GET['id'])) {
     }
 }
 
-// Handle update form submission
 if (isset($_POST['update_employee'])) {
     $id         = (int)$_POST['id'];
     $full_name  = $_POST['full_name'];
@@ -37,22 +33,28 @@ if (isset($_POST['update_employee'])) {
     $email      = $_POST['email'];
     $phone      = $_POST['phone'];
     $finger_id  = $_POST['fingerprint_id'];
-    $new_pass   = $_POST['new_password'];
 
     $params = [$full_name, $job_title, $department, $branch, $email, $phone, $finger_id];
     $types  = "sssssss";
 
     $sql = "UPDATE staff SET full_name=?, job_title=?, department=?, branch=?, email=?, phone=?, fingerprint_id=?";
 
-    // Handle password update if provided
-    if (!empty($new_pass)) {
-        $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
+    if (!empty($_POST['new_password'])) {
+        $hashed = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
+        $sql .= ", password=?";
+        $params[] = $hashed;
+        $types .= "s";
+    }
+    
+    // 🔥 Add reset to default password option
+    if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
+        $default_pass = $employee['staff_id'];
+        $hashed = password_hash($default_pass, PASSWORD_DEFAULT);
         $sql .= ", password=?";
         $params[] = $hashed;
         $types .= "s";
     }
 
-    // Handle photo update
     if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
         $imgData  = file_get_contents($_FILES['photo']['tmp_name']);
         $imgType  = mime_content_type($_FILES['photo']['tmp_name']);
@@ -70,7 +72,11 @@ if (isset($_POST['update_employee'])) {
     $stmt->bind_param($types, ...$params);
 
     if ($stmt->execute()) {
-        echo "<script>alert('Updated successfully!'); window.location='/employees.php';</script>";
+        $msg = "Updated successfully!";
+        if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
+            $msg .= " Password reset to: " . $employee['staff_id'];
+        }
+        echo "<script>alert('$msg'); window.location='/employees.php';</script>";
     } else {
         echo "<script>alert('Error updating employee.');</script>";
     }
@@ -81,7 +87,7 @@ if (isset($_POST['update_employee'])) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Edit Employee — Attendance System</title>
+    <title>Edit Employee</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/asset/css/style.css">
@@ -92,7 +98,7 @@ if (isset($_POST['update_employee'])) {
 
 <div class="content">
     <h2>Edit Employee</h2>
-
+    
     <form method="POST" enctype="multipart/form-data" style="max-width:600px;">
         <input type="hidden" name="id" value="<?php echo $employee['id']; ?>">
 
@@ -121,9 +127,6 @@ if (isset($_POST['update_employee'])) {
             <?php foreach ($branch_options as $bn): ?>
             <option value="<?php echo htmlspecialchars($bn); ?>" <?php echo ($cur_branch === $bn) ? 'selected' : ''; ?>><?php echo htmlspecialchars($bn); ?></option>
             <?php endforeach; ?>
-            <?php if ($cur_branch && !in_array($cur_branch, $branch_options)): ?>
-            <option value="<?php echo htmlspecialchars($cur_branch); ?>" selected><?php echo htmlspecialchars($cur_branch); ?> (custom)</option>
-            <?php endif; ?>
         </select>
         <?php else: ?>
         <input type="text" name="branch" value="<?php echo htmlspecialchars($cur_branch); ?>">
@@ -138,9 +141,20 @@ if (isset($_POST['update_employee'])) {
         <label>Fingerprint User ID (ZKTeco)</label>
         <input type="text" name="fingerprint_id" value="<?php echo htmlspecialchars($employee['fingerprint_id']); ?>" placeholder="e.g. 1">
 
-        <label style="color:var(--danger);font-weight:700;">Force Password Reset (Admin Only)</label>
-        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;margin-top:-5px;">As an admin, you cannot view the employee's current password. However, you can instantly reset it by typing a new one below. Leave blank to keep their current password.</p>
-        <input type="password" name="new_password" placeholder="Enter a new password to reset">
+        <hr style="margin: 20px 0;">
+        
+        <h4>🔐 Password Management</h4>
+        
+        <label>Set New Password (Optional)</label>
+        <input type="password" name="new_password" placeholder="Enter new password">
+        
+        <div style="margin: 15px 0;">
+            <label>
+                <input type="checkbox" name="reset_to_default" value="1">
+                🔄 Reset password to Staff ID (<strong><?php echo $employee['staff_id']; ?></strong>)
+            </label>
+            <br><small style="color:var(--text-muted);">Check this to force password reset to their Staff ID</small>
+        </div>
 
         <label>Current Photo</label><br>
         <?php if (!empty($employee['photo'])): ?>
@@ -158,7 +172,7 @@ if (isset($_POST['update_employee'])) {
         </div>
     </form>
 
-    <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Collins</div>
+    <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System</div>
 </div>
 
 </body>

@@ -15,7 +15,11 @@ if (isset($_POST['add_employee'])) {
     $branch = trim($_POST['branch']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
-    $password = !empty($_POST['password']) ? password_hash($_POST['password'], PASSWORD_DEFAULT) : null;
+    
+    // 🔥 FIX: If password is empty, default to Staff ID
+    $plain_password = !empty($_POST['password']) ? $_POST['password'] : $staff_id;
+    $password = password_hash($plain_password, PASSWORD_DEFAULT);
+    
     $photo = "";
 
     // Handle photo upload — stored as Base64 in DB (Vercel is read-only)
@@ -30,7 +34,7 @@ if (isset($_POST['add_employee'])) {
     $stmt->bind_param("sssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo);
 
     if ($stmt->execute()) {
-        echo "<script>alert('Employee added successfully!'); window.location='employees.php';</script>";
+        echo "<script>alert('Employee added successfully! Default password is: " . addslashes($plain_password) . "'); window.location='employees.php';</script>";
     } else {
         echo "<script>alert('Error adding employee. Please try again.');</script>";
     }
@@ -53,6 +57,17 @@ if ($br_res) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Employees</title>
 <link rel="stylesheet" href="/asset/css/style.css">
+<style>
+    .password-hint {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 12px;
+        margin: 15px 0;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #92400e;
+    }
+</style>
 </head>
 <body>
 
@@ -61,6 +76,11 @@ if ($br_res) {
 <!-- Content -->
 <div class="content">
   <h2>Employees Management</h2>
+  
+  <div class="password-hint">
+    💡 <strong>Note:</strong> If you leave the password blank, the employee's default password will be their <strong>Staff ID</strong>. 
+    They can change it after first login.
+  </div>
 
   <button class="add-btn" onclick="openModal()">+ Add New Employee</button>
 
@@ -85,7 +105,6 @@ if ($br_res) {
         echo "<tr>
           <td>";
           if (!empty($row['photo'])) {
-            // Photo stored as Base64 data URI
             echo "<img src='{$row['photo']}' class='photo' alt='Photo' style='width:40px;height:40px;border-radius:50%;object-fit:cover;'>";
           } else {
             echo "<span style='color:var(--text-muted);font-size:13px;'>No photo</span>";
@@ -101,7 +120,8 @@ if ($br_res) {
           <td>
             <a href='edit_employee.php?id={$row['id']}'><button class='action-btn edit-btn'>Edit</button></a>
             <a href='delete_employee.php?id={$row['id']}' onclick='return confirm(\"Are you sure?\");'><button class='action-btn delete-btn'>Delete</button></a>
-          </td>
+            <button class='action-btn' style='background:#6366f1;' onclick='showPasswordHint(\"{$row['staff_id']}\")'>🔑 Show Default Pass</button>
+           </td>
         </tr>";
       }
     } else {
@@ -121,33 +141,44 @@ if ($br_res) {
     <span class="close-btn" onclick="closeModal()">&times;</span>
     <h3>Add New Employee</h3>
     <form method="POST" enctype="multipart/form-data">
-      <label>Employee ID</label>
+      <label>Employee ID *</label>
       <input type="text" name="staff_id" placeholder="e.g. EMP001" required>
-      <label>Full Name</label>
+      <small style="color:var(--text-muted);">This will be the default password if left blank</small>
+      
+      <label>Full Name *</label>
       <input type="text" name="full_name" placeholder="John Doe" required>
+      
       <label>Job Title</label>
       <input type="text" name="job_title" placeholder="Software Engineer" required>
+      
       <label>Department</label>
       <input type="text" name="department" placeholder="IT Department" required>
+      
       <label>Branch</label>
       <?php if (!empty($branch_options)): ?>
       <select name="branch" required>
-        <option value="">Select branch (must match Manage Branches)</option>
+        <option value="">Select branch</option>
         <?php foreach ($branch_options as $bn): ?>
         <option value="<?php echo htmlspecialchars($bn); ?>"><?php echo htmlspecialchars($bn); ?></option>
         <?php endforeach; ?>
       </select>
       <?php else: ?>
-      <input type="text" name="branch" placeholder="Add branches first in Manage Branches" required>
+      <input type="text" name="branch" placeholder="Add branches first" required>
       <?php endif; ?>
+      
       <label>Email</label>
       <input type="email" name="email" placeholder="john@example.com" required>
+      
       <label>Mobile No</label>
       <input type="text" name="phone" placeholder="+234..." required>
-      <label>Password (Login)</label>
-      <input type="password" name="password" placeholder="Defaults to Staff ID if blank">
+      
+      <label>Password (Optional)</label>
+      <input type="password" name="password" placeholder="Leave blank to use Staff ID">
+      <small style="color:var(--text-muted);">Default: Staff ID (e.g., EMP001)</small>
+      
       <label>Photo</label>
       <input type="file" name="photo" accept="image/*">
+      
       <button type="submit" name="add_employee">Add Employee</button>
     </form>
   </div>
@@ -161,6 +192,10 @@ if ($br_res) {
   function closeModal() {
     document.getElementById('addEmployeeModal').style.display = 'none';
   }
+  
+  function showPasswordHint(staffId) {
+    alert("Default password for " + staffId + " is: " + staffId + "\n\nThey can change it after logging in.");
+  }
 
   window.onclick = function(event) {
     let modal = document.getElementById('addEmployeeModal');
@@ -171,5 +206,3 @@ if ($br_res) {
 </script>
 </body>
 </html>
-
-
