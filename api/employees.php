@@ -16,13 +16,13 @@ if (isset($_POST['add_employee'])) {
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     
-    // 🔥 FIX: If password is empty, default to Staff ID
+    // FIX: If password is empty, default to Staff ID
     $plain_password = !empty($_POST['password']) ? $_POST['password'] : $staff_id;
     $password = password_hash($plain_password, PASSWORD_DEFAULT);
     
     $photo = "";
 
-    // Handle photo upload — stored as Base64 in DB (Vercel is read-only)
+    // Handle photo upload
     if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
         $imgData = file_get_contents($_FILES['photo']['tmp_name']);
         $imgType = mime_content_type($_FILES['photo']['tmp_name']);
@@ -36,7 +36,7 @@ if (isset($_POST['add_employee'])) {
     if ($stmt->execute()) {
         echo "<script>alert('Employee added successfully! Default password is: " . addslashes($plain_password) . "'); window.location='employees.php';</script>";
     } else {
-        echo "<script>alert('Error adding employee. Please try again.');</script>";
+        echo "<script>alert('Error adding employee: " . addslashes($stmt->error) . "');</script>";
     }
     $stmt->close();
 }
@@ -73,7 +73,6 @@ if ($br_res) {
 
 <?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
-<!-- Content -->
 <div class="content">
   <h2>Employees Management</h2>
   
@@ -86,23 +85,27 @@ if ($br_res) {
 
   <!-- Table -->
   <table>
-    <tr>
-      <th>Photo</th>
-      <th>Name</th>
-      <th>Employee ID</th>
-      <th>Job Title</th>
-      <th>Department</th>
-      <th>Branch</th>
-      <th>Email</th>
-      <th>Mobile</th>
-      <th>Actions</th>
-    </tr>
-
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Photo</th>
+        <th>Name</th>
+        <th>Employee ID</th>
+        <th>Job Title</th>
+        <th>Department</th>
+        <th>Branch</th>
+        <th>Email</th>
+        <th>Mobile</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
     <?php
     $result = $conn->query("SELECT * FROM staff ORDER BY id DESC");
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
       while ($row = $result->fetch_assoc()) {
         echo "<tr>
+          <td>{$row['id']}</td>
           <td>";
           if (!empty($row['photo'])) {
             echo "<img src='{$row['photo']}' class='photo' alt='Photo' style='width:40px;height:40px;border-radius:50%;object-fit:cover;'>";
@@ -120,14 +123,14 @@ if ($br_res) {
           <td>
             <a href='edit_employee.php?id={$row['id']}'><button class='action-btn edit-btn'>Edit</button></a>
             <a href='delete_employee.php?id={$row['id']}' onclick='return confirm(\"Are you sure?\");'><button class='action-btn delete-btn'>Delete</button></a>
-            <button class='action-btn' style='background:#6366f1;' onclick='showPasswordHint(\"{$row['staff_id']}\")'>🔑 Show Default Pass</button>
-           </td>
+          </td>
         </tr>";
       }
     } else {
-      echo "<tr><td colspan='9' style='text-align:center;'>No employees found</td></tr>";
+      echo "<tr><td colspan='10' style='text-align:center;'>No employees found</td></tr>";
     }
     ?>
+    </tbody>
   </table>
 
   <div class="footer">
@@ -191,10 +194,6 @@ if ($br_res) {
 
   function closeModal() {
     document.getElementById('addEmployeeModal').style.display = 'none';
-  }
-  
-  function showPasswordHint(staffId) {
-    alert("Default password for " + staffId + " is: " + staffId + "\n\nThey can change it after logging in.");
   }
 
   window.onclick = function(event) {

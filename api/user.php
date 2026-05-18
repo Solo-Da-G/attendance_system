@@ -1,13 +1,11 @@
 <?php
 include(__DIR__ . "/../includes/config.php");
 
-// Only logged-in users
 if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
     exit;
 }
 
-// Only Super Admin allowed
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
     die("<h2 style='color:red;text-align:center;margin-top:100px;'>Access Denied.</h2>");
 }
@@ -57,16 +55,13 @@ if (isset($_POST['create_admin_user'])) {
         $stmt->bind_param("ssss", $new_user, $new_email, $new_pass, $role);
         $stmt->execute();
         $stmt->close();
-        $message = "<p class='msg-success'>Admin user created successfully. Default password: " . htmlspecialchars($_POST['new_password']) . "</p>";
+        $message = "<p class='msg-success'>Admin user created successfully.</p>";
     }
     $check->close();
 }
 
-// FETCH ADMIN USERS
 $admin_users = $conn->query("SELECT id, username, email, role, status FROM `admin` ORDER BY id ASC");
-
-// FETCH STAFF USERS
-$staff_users = $conn->query("SELECT staff_id, full_name, email, phone, branch, job_title FROM `staff` ORDER BY id DESC");
+$staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branch FROM `staff` ORDER BY id DESC");
 ?>
 
 <!DOCTYPE html>
@@ -92,13 +87,11 @@ $staff_users = $conn->query("SELECT staff_id, full_name, email, phone, branch, j
     <h2>🔑 User Management</h2>
     <?php echo $message; ?>
     
-    <!-- Tabs -->
     <div class="user-tabs">
         <button class="tab-btn active" onclick="showTab('admin-tab')">👑 Admin Users</button>
         <button class="tab-btn" onclick="showTab('staff-tab')">👥 Staff Members</button>
     </div>
     
-    <!-- ADMIN TAB -->
     <div id="admin-tab" class="tab-content active">
         <form method="POST" style="margin-bottom:30px;">
             <h3 style="margin-bottom:16px;font-size:18px;">➕ Add New Admin User</h3>
@@ -130,9 +123,7 @@ $staff_users = $conn->query("SELECT staff_id, full_name, email, phone, branch, j
         <h3 style="margin-bottom:12px;font-size:18px;">📋 Existing Admin Users</h3>
         <table>
             <thead>
-                <tr>
-                    <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th>
-                </tr>
+                <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 <?php while ($row = $admin_users->fetch_assoc()): ?>
@@ -154,11 +145,10 @@ $staff_users = $conn->query("SELECT staff_id, full_name, email, phone, branch, j
         </table>
     </div>
     
-    <!-- STAFF TAB -->
     <div id="staff-tab" class="tab-content">
         <div style="background:#fef3c7; padding:15px; border-radius:12px; margin-bottom:20px;">
             💡 <strong>Staff Login Info:</strong> Staff members login with their <strong>Staff ID</strong> as username. 
-            Default password is also their <strong>Staff ID</strong> (unless changed when created).
+            Default password is also their <strong>Staff ID</strong>.
         </div>
         
         <a href="employees.php"><button style="margin-bottom:20px;">➕ Add New Staff Member</button></a>
@@ -166,30 +156,26 @@ $staff_users = $conn->query("SELECT staff_id, full_name, email, phone, branch, j
         <h3 style="margin-bottom:12px;font-size:18px;">📋 Registered Staff Members</h3>
         <table>
             <thead>
-                <tr>
-                    <th>Staff ID</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Branch</th><th>Job Title</th><th>Default Pass</th><th>Actions</th>
-                </tr>
+                <tr><th>ID</th><th>Staff ID</th><th>Full Name</th><th>Email</th><th>Branch</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 <?php while ($row = $staff_users->fetch_assoc()): ?>
                 <tr>
+                    <td><?php echo $row['id']; ?></td>
                     <td><strong><?php echo htmlspecialchars($row['staff_id']); ?></strong></td>
                     <td><?php echo htmlspecialchars($row['full_name']); ?></td>
                     <td><?php echo htmlspecialchars($row['email'] ?: '—'); ?></td>
-                    <td><?php echo htmlspecialchars($row['phone'] ?: '—'); ?></td>
                     <td><?php echo htmlspecialchars($row['branch'] ?: '—'); ?></td>
-                    <td><?php echo htmlspecialchars($row['job_title'] ?: '—'); ?></td>
-                    <td><button class="action-btn" style="background:#6366f1;" onclick="alert('Default password for <?php echo $row['staff_id']; ?> is: <?php echo $row['staff_id']; ?>')">🔑 Show</button></td>
                     <td>
-                        <a href="edit_employee.php?id=<?php echo $row['id'] ?? 0; ?>"><button class="action-btn edit-btn">Edit</button></a>
-                        <a href="user.php?delete_staff_id=<?php echo urlencode($row['staff_id']); ?>" onclick="return confirm('Delete this staff member? This will also delete their attendance records.');">
+                        <a href="edit_employee.php?id=<?php echo $row['id']; ?>"><button class="action-btn edit-btn">Edit</button></a>
+                        <a href="user.php?delete_staff_id=<?php echo urlencode($row['staff_id']); ?>" onclick="return confirm('Delete this staff member?');">
                            <button class="action-btn delete-btn">Delete</button>
                         </a>
                     </td>
                 </tr>
                 <?php endwhile; ?>
                 <?php if ($staff_users->num_rows === 0): ?>
-                <tr><td colspan="8" style="text-align:center;">No staff members found. Click "Add New Staff Member" above.</td></tr>
+                <tr><td colspan="6" style="text-align:center;">No staff members found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
