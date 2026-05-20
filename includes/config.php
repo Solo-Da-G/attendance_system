@@ -181,6 +181,20 @@ if (empty($_SESSION['schema_checked'])) {
             }
         }
         
+        // Ensure deleted_at column for soft deletes (Recycle Bin)
+        $chk_admin_del = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'deleted_at'");
+        if ($chk_admin_del && $chk_admin_del->num_rows === 0) {
+            $conn->query("ALTER TABLE `admin` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL");
+        }
+        $chk_staff_del = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'deleted_at'");
+        if ($chk_staff_del && $chk_staff_del->num_rows === 0) {
+            $conn->query("ALTER TABLE `staff` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL");
+        }
+
+        // Auto-purge items in recycle bin older than 30 days
+        $conn->query("DELETE FROM `admin` WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL 30 DAY");
+        $conn->query("DELETE FROM `staff` WHERE deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL 30 DAY");
+        
         $_SESSION['schema_checked'] = true;
     } catch (Exception $e) {
         error_log("Migration Error: " . $e->getMessage());

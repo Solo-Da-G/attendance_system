@@ -175,6 +175,22 @@ try {
         <strong>Admin account:</strong> Face clock-in only works for <strong>staff</strong> logins.
         Log out and sign in with your <strong>Staff ID</strong> and password (not your admin username).
     </div>
+    
+    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin'): 
+        $del_adm = $conn->query("SELECT id FROM `admin` WHERE deleted_at IS NOT NULL")->num_rows;
+        $del_stf = $conn->query("SELECT id FROM `staff` WHERE deleted_at IS NOT NULL")->num_rows;
+        $total_del = $del_adm + $del_stf;
+        if ($total_del > 0):
+    ?>
+    <div style="background:rgba(255, 255, 255, 0.7);backdrop-filter:blur(16px);border:1px solid rgba(239, 68, 68, 0.2);padding:20px;border-radius:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 10px 15px -3px rgba(0,0,0,0.05);">
+        <div>
+            <h3 style="margin:0 0 4px;color:#b91c1c;font-size:16px;display:flex;align-items:center;gap:8px;">🗑️ Recycle Bin Alert</h3>
+            <p style="margin:0;color:#94a3b8;font-size:14px;">There are <strong><?php echo $total_del; ?></strong> items in the recycle bin pending permanent deletion.</p>
+        </div>
+        <a href="recycle_bin.php" style="background:#ef4444;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;transition:background 0.2s;">View Bin</a>
+    </div>
+    <?php endif; endif; ?>
+    
     <?php endif; ?>
 
     <?php if ($staff_id): ?>

@@ -101,7 +101,7 @@ if ($br_res) {
     </thead>
     <tbody>
     <?php
-    $result = $conn->query("SELECT * FROM staff ORDER BY id DESC");
+    $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id DESC");
     if ($result && $result->num_rows > 0) {
       while ($row = $result->fetch_assoc()) {
         echo "<tr>

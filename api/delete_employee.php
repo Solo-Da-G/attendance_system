@@ -9,7 +9,7 @@ if (!isset($_SESSION['admin_id'])) {
 
 if (isset($_GET['id'])) {
     $id = (int)$_GET['id'];
-    $stmt = $conn->prepare("DELETE FROM staff WHERE id = ?");
+    $stmt = $conn->prepare("UPDATE staff SET deleted_at = NOW() WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $stmt->close();

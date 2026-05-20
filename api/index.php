@@ -6,10 +6,16 @@ $idle_notice = (isset($_GET['reason']) && $_GET['reason'] === 'idle')
     ? 'You were signed out after 1 minute of inactivity.'
     : '';
 
-// If already logged in, go to dashboard
+// If already logged in, destroy session so they must log in again when visiting index.php
 if (isset($_SESSION['admin_id']) || isset($_SESSION['staff_id'])) {
-    header("Location: dashboard.php");
-    exit;
+    if (isset($_SESSION['admin_id'])) {
+        $conn->query("UPDATE `admin` SET auth_token = NULL WHERE id = " . (int)$_SESSION['admin_id']);
+    } elseif (isset($_SESSION['staff_id'])) {
+        $conn->query("UPDATE `staff` SET auth_token = NULL WHERE staff_id = '" . $conn->real_escape_string($_SESSION['staff_id']) . "'");
+    }
+    session_unset();
+    session_destroy();
+    setcookie('auth_token', '', ['expires' => time() - 3600, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
 }
 
 // Handle login form
@@ -44,7 +50,7 @@ if (isset($_POST['login'])) {
                     $upd->execute();
                     $upd->close();
                 }
-                setcookie('auth_token', $token, ['expires' => time() + (30 * 24 * 60 * 60), 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+                setcookie('auth_token', $token, ['expires' => 0, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
                 header("Location: dashboard.php");
                 exit;
             }
@@ -82,7 +88,7 @@ if (isset($_POST['login'])) {
                     $upd->execute();
                     $upd->close();
                 }
-                setcookie('auth_token', 'staff_' . $token, ['expires' => time() + (30 * 24 * 60 * 60), 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+                setcookie('auth_token', 'staff_' . $token, ['expires' => 0, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
                 
                 header("Location: dashboard.php");
                 exit;

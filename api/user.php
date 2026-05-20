@@ -18,22 +18,27 @@ if (isset($_GET['delete_admin_id'])) {
     if (isset($_SESSION['admin_id']) && $_SESSION['admin_id'] == $id) {
         $message = "<p class='msg-error'>You cannot delete yourself.</p>";
     } else {
-        $del = $conn->prepare("DELETE FROM `admin` WHERE id = ?");
-        $del->bind_param("i", $id);
-        $del->execute();
-        $del->close();
-        $message = "<p class='msg-success'>Admin user deleted successfully.</p>";
+        // Prevent normal admin from deleting super_admin
+        $check_role = $conn->query("SELECT role FROM `admin` WHERE id = $id")->fetch_assoc();
+        if ($check_role && $check_role['role'] === 'super_admin' && $_SESSION['role'] !== 'super_admin') {
+            $message = "<p class='msg-error'>Access Denied: Admins cannot delete Super Admins.</p>";
+        } else {
+            $del = $conn->prepare("UPDATE `admin` SET deleted_at = NOW() WHERE id = ?");
+            $del->bind_param("i", $id);
+            $del->execute();
+            $del->close();
+            $message = "<p class='msg-success'>Admin user moved to Recycle Bin.</p>";
+        }
     }
 }
 
-// DELETE STAFF USER
 if (isset($_GET['delete_staff_id'])) {
     $staff_id = $_GET['delete_staff_id'];
-    $del = $conn->prepare("DELETE FROM `staff` WHERE staff_id = ?");
+    $del = $conn->prepare("UPDATE `staff` SET deleted_at = NOW() WHERE staff_id = ?");
     $del->bind_param("s", $staff_id);
     $del->execute();
     $del->close();
-    $message = "<p class='msg-success'>Staff member deleted successfully.</p>";
+    $message = "<p class='msg-success'>Staff member moved to Recycle Bin.</p>";
 }
 
 // CREATE ADMIN USER
@@ -60,8 +65,8 @@ if (isset($_POST['create_admin_user'])) {
     $check->close();
 }
 
-$admin_users = $conn->query("SELECT id, username, email, role, status FROM `admin` ORDER BY id ASC");
-$staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branch FROM `staff` ORDER BY id DESC");
+$admin_users = $conn->query("SELECT id, username, email, role, status FROM `admin` WHERE deleted_at IS NULL ORDER BY id ASC");
+$staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branch FROM `staff` WHERE deleted_at IS NULL ORDER BY id DESC");
 ?>
 
 <!DOCTYPE html>

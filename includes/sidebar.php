@@ -38,6 +38,7 @@ $is_admin = in_array($role, ['admin', 'super_admin'], true);
       <?php endif; ?>
       <?php if ($role === 'super_admin'): ?>
         <a href="user.php" class="<?php echo ($current_page == 'user.php') ? 'active' : ''; ?>">🔑 Users</a>
+        <a href="recycle_bin.php" class="<?php echo ($current_page == 'recycle_bin.php') ? 'active' : ''; ?>">🗑️ Recycle Bin</a>
       <?php endif; ?>
     </nav>
   </div>
