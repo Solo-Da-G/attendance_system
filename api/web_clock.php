@@ -143,6 +143,15 @@ if (!$geo['allowed']) {
 
 $now = date("Y-m-d H:i:s");
 
+// Auto-cancel previous day unclosed clock-ins
+$today_date = date("Y-m-d");
+$cancel_stmt = $conn->prepare("UPDATE attendance SET status = 'missed', clock_out = CONCAT(DATE(clock_in), ' 23:59:59') WHERE staff_id = ? AND clock_out IS NULL AND DATE(clock_in) < ?");
+if ($cancel_stmt) {
+    $cancel_stmt->bind_param("ss", $staff_id, $today_date);
+    $cancel_stmt->execute();
+    $cancel_stmt->close();
+}
+
 if ($action === 'clock_in') {
     if (!$face_descriptor) {
         echo json_encode([

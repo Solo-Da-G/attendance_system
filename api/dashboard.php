@@ -206,6 +206,8 @@ try {
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Branch on file: <strong><?php echo htmlspecialchars($staff_branch_name); ?></strong> — you can clock at <em>any</em> branch within its radius.</p>
         <?php endif; ?>
 
+        <div id="apiResult" style="margin-bottom: 15px;"></div>
+
         <div id="camera-container">
             <video id="video" autoplay playsinline></video>
             <div id="scanningOverlay" class="scanning-overlay"></div>
@@ -247,7 +249,6 @@ try {
         <p style="font-size:12px;color:var(--text-muted);margin-top:8px;max-width:360px;margin-left:auto;margin-right:auto;">
             Google Maps coords often differ from phone GPS by 1–3 km. Register while standing where you clock in — this fixes “outside allowed area”.
         </p>
-        <div id="apiResult"></div>
     </div>
 
     <div class="clocking-card">
