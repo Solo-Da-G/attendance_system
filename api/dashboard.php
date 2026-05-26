@@ -347,6 +347,52 @@ try {
         </table>
         </div>
     </div>
+    
+    <?php
+    $th = 0;
+    $th_today = 0;
+    $stmt_th = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ?");
+    if ($stmt_th) {
+        $stmt_th->bind_param("s", $staff_id);
+        $stmt_th->execute();
+        $th = $stmt_th->get_result()->fetch_assoc()['th'] ?? 0;
+        $stmt_th->close();
+    }
+    
+    $stmt_today = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ? AND DATE(clock_in) = CURDATE()");
+    if ($stmt_today) {
+        $stmt_today->bind_param("s", $staff_id);
+        $stmt_today->execute();
+        $th_today = $stmt_today->get_result()->fetch_assoc()['th'] ?? 0;
+        $stmt_today->close();
+    }
+    
+    if (!function_exists('formatHours')) {
+        function formatHours($decimal) {
+            if (!$decimal) return "0 hrs 0 min";
+            $h = floor($decimal);
+            $m = floor(($decimal - $h) * 60);
+            $s = round((($decimal - $h) * 60 - $m) * 60);
+            $str = "";
+            if ($h > 0) $str .= "{$h}hrs ";
+            $str .= "{$m}min";
+            if ($s > 0) $str .= " {$s}sec";
+            return trim($str);
+        }
+    }
+    ?>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 24px;">
+        <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+            <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⏳</div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; position: relative; z-index: 2;">Total Time in Office</div>
+            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;"><?php echo formatHours($th); ?></div>
+        </div>
+        <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+            <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⌚</div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; position: relative; z-index: 2;">Time Tracked Today</div>
+            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;"><?php echo formatHours($th_today); ?></div>
+        </div>
+    </div>
     <?php endif; ?>
 
     <?php if ($is_admin): ?>

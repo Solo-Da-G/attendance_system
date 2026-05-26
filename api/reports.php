@@ -12,6 +12,18 @@ $stat_total = 0;
 $stat_today = 0;
 $stat_hours = 0.0;
 
+function formatHours($decimal) {
+    if (!$decimal) return "0 hrs 0 min";
+    $h = floor($decimal);
+    $m = floor(($decimal - $h) * 60);
+    $s = round((($decimal - $h) * 60 - $m) * 60);
+    $str = "";
+    if ($h > 0) $str .= "{$h}hrs ";
+    $str .= "{$m}min";
+    if ($s > 0) $str .= " {$s}sec";
+    return trim($str);
+}
+
 $r = $conn->query("SELECT COUNT(*) AS c, SUM(COALESCE(total_hours,0)) AS h FROM attendance");
 if ($r && !is_bool($r)) {
   $row = $r->fetch_assoc();
@@ -49,7 +61,7 @@ if ($stmtStat) {
   <div class="cards" style="margin-top:0; margin-bottom:18px;">
     <div class="card"><h3>Total Records</h3><p><?php echo (int)$stat_total; ?></p></div>
     <div class="card"><h3>Today</h3><p><?php echo (int)$stat_today; ?></p></div>
-    <div class="card"><h3>Total Hours</h3><p><?php echo htmlspecialchars(number_format($stat_hours, 2)); ?></p></div>
+    <div class="card"><h3>Total Hours</h3><p style="font-size: 20px;"><?php echo formatHours($stat_hours); ?></p></div>
   </div>
 
   <form method="GET">
@@ -117,7 +129,7 @@ if ($stmtStat) {
                     <td>" . ($row['clock_out'] ?? '—') . "</td>
                     <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
                     <td class='status {$statusClass}'>" . ($row['status'] ?? 'In') . "</td>
-                    <td>{$hours} hrs</td>
+                    <td>" . formatHours($hours) . "</td>
                   </tr>";
             $totalRecords++;
             $totalHoursAll += $hours;
@@ -134,7 +146,7 @@ if ($stmtStat) {
 
   <div class="summary">
     <p>Total Records: <?php echo $totalRecords; ?></p>
-    <p>Total Hours (All Staff): <?php echo round($totalHoursAll, 2); ?> hrs</p>
+    <p>Total Hours (All Staff): <?php echo formatHours($totalHoursAll); ?></p>
   </div>
 </div>
 

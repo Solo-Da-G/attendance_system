@@ -1,6 +1,18 @@
 <?php
 include(__DIR__ . "/../includes/config.php");
 
+function formatHours($decimal) {
+    if (!$decimal) return "0 hrs 0 min";
+    $h = floor($decimal);
+    $m = floor(($decimal - $h) * 60);
+    $s = round((($decimal - $h) * 60 - $m) * 60);
+    $str = "";
+    if ($h > 0) $str .= "{$h}hrs ";
+    $str .= "{$m}min";
+    if ($s > 0) $str .= " {$s}sec";
+    return trim($str);
+}
+
 if (empty($_SESSION['staff_id'])) {
     header("Location: index.php");
     exit;
@@ -65,7 +77,7 @@ $stmt->close();
   <div class="cards">
     <div class="card">
       <h3>Total Hours</h3>
-      <p><?php echo htmlspecialchars(number_format($totalHours, 2)); ?></p>
+      <p style="font-size: 20px;"><?php echo formatHours($totalHours); ?></p>
     </div>
     <div class="card">
       <h3>Attendance Days</h3>
@@ -88,7 +100,7 @@ $stmt->close();
         <tr>
           <td><?php echo htmlspecialchars($row['day']); ?></td>
           <td><?php echo htmlspecialchars((string)$row['sessions']); ?></td>
-          <td><?php echo htmlspecialchars(number_format((float)($row['hours'] ?? 0), 2)); ?> hrs</td>
+          <td><?php echo formatHours((float)($row['hours'] ?? 0)); ?></td>
         </tr>
       <?php endforeach; ?>
     <?php else: ?>
