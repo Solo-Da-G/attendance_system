@@ -170,6 +170,16 @@ if ($action === 'clock_in') {
     }
     $check->close();
 
+    $check_today = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND DATE(clock_in) = CURDATE() AND clock_out IS NOT NULL LIMIT 1");
+    $check_today->bind_param("s", $staff_id);
+    $check_today->execute();
+    if ($check_today->get_result()->num_rows > 0) {
+        echo json_encode(["status" => "error", "message" => "You have already completed your shift today. Next clock-in available tomorrow."]);
+        $check_today->close();
+        exit;
+    }
+    $check_today->close();
+
     $stmt = $conn->prepare(
         "INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, photo_in, is_geofenced, face_descriptor_in, face_distance_in, source)
          VALUES (?, ?, 'in', ?, ?, ?, 1, ?, ?, 'mobile')"
