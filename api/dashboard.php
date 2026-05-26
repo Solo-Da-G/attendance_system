@@ -367,6 +367,14 @@ try {
         $stmt_today->close();
     }
     
+    $stmt_yest = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ? AND DATE(clock_in) = CURDATE() - INTERVAL 1 DAY");
+    if ($stmt_yest) {
+        $stmt_yest->bind_param("s", $staff_id);
+        $stmt_yest->execute();
+        $th_yest = $stmt_yest->get_result()->fetch_assoc()['th'] ?? 0;
+        $stmt_yest->close();
+    }
+    
     if (!function_exists('formatHours')) {
         function formatHours($decimal) {
             if (!$decimal) return "0 hrs 0 min";
@@ -389,8 +397,36 @@ try {
         </div>
         <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
             <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⌚</div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; position: relative; z-index: 2;">Time Tracked Today</div>
-            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;"><?php echo formatHours($th_today); ?></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; margin-bottom: 8px;">
+                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;" id="timeTrackedLabel">Time Tracked Today</div>
+                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Toggle Day">
+                    <svg id="timeTrackedIcon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
+                </button>
+            </div>
+            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
+            <script>
+                const timeToday = "<?php echo formatHours($th_today); ?>";
+                const timeYest = "<?php echo formatHours($th_yest); ?>";
+                let showingToday = true;
+                
+                function toggleDayTracked() {
+                    const label = document.getElementById('timeTrackedLabel');
+                    const val = document.getElementById('timeTrackedValue');
+                    const icon = document.getElementById('timeTrackedIcon');
+                    
+                    if (showingToday) {
+                        label.textContent = "Time Tracked Yesterday";
+                        val.textContent = timeYest;
+                        icon.innerHTML = '<path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>';
+                        showingToday = false;
+                    } else {
+                        label.textContent = "Time Tracked Today";
+                        val.textContent = timeToday;
+                        icon.innerHTML = '<path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>';
+                        showingToday = true;
+                    }
+                }
+            </script>
         </div>
     </div>
     <?php endif; ?>
