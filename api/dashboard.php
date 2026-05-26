@@ -165,9 +165,47 @@ try {
   <?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
   <div class="content">
+<?php
+    $hour = date('H');
+    $greeting = "Good evening";
+    if ($hour < 12) {
+        $greeting = "Good morning";
+    } elseif ($hour < 18) {
+        $greeting = "Good afternoon";
+    }
+?>
     <div class="dashboard-header">
-        <h2>Welcome, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
+        <h2><?php echo $greeting; ?>, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
         <p>Facial verification active · Auto sign-out after 1 minute of inactivity</p>
+    </div>
+
+    <!-- Live Time & Date Widgets -->
+    <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 30px;">
+        <div class="widget-card time-widget" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 24px 30px; border-radius: 24px; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -40px; left: 10px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;" id="liveDateStr">Loading...</div>
+                <div style="font-size: 42px; font-weight: 800; margin: 4px 0; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 8px; letter-spacing: -1px;">
+                    <span id="liveTime">00:00:00</span>
+                    <span id="liveAmPm" style="font-size: 20px; font-weight: 600; opacity: 0.9;"></span>
+                </div>
+            </div>
+            <div style="position: relative; z-index: 2; opacity: 0.9; font-size: 48px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">
+                ⏰
+            </div>
+        </div>
+        
+        <div class="widget-card info-widget" style="background: white; padding: 24px 30px; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 24px;">
+            <div style="width: 64px; height: 64px; border-radius: 18px; background: var(--info-bg); color: var(--info); display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);">
+                📅
+            </div>
+            <div>
+                <div style="font-size: 13px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Today is</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--text);" id="liveDayName">Loading...</div>
+            </div>
+        </div>
     </div>
 
     <?php if ($is_admin && !$staff_id): ?>
@@ -706,6 +744,39 @@ try {
     }
 
     function showFull(src) { window.open(src, '_blank'); }
+
+    function updateClock() {
+        const now = new Date();
+        
+        // Time
+        let h = now.getHours();
+        let m = now.getMinutes();
+        let s = now.getSeconds();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12;
+        
+        m = m < 10 ? '0' + m : m;
+        s = s < 10 ? '0' + s : s;
+        
+        const liveTime = document.getElementById('liveTime');
+        const liveAmPm = document.getElementById('liveAmPm');
+        if(liveTime) liveTime.textContent = h + ':' + m + ':' + s;
+        if(liveAmPm) liveAmPm.textContent = ampm;
+        
+        // Date
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const liveDayName = document.getElementById('liveDayName');
+        const liveDateStr = document.getElementById('liveDateStr');
+        
+        if(liveDayName) liveDayName.textContent = days[now.getDay()];
+        if(liveDateStr) liveDateStr.textContent = months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+    }
+    
+    setInterval(updateClock, 1000);
+    updateClock();
   </script>
 </body>
 </html>
