@@ -1,12 +1,25 @@
 {
   "functions": {
-    "api/*.php": { "runtime": "vercel-php@0.7.2" },
-    "*.php": { "runtime": "vercel-php@0.7.2" }
+    "*.php": {
+      "runtime": "vercel-php@0.9.0"
+    }
   },
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/asset/(.*)", "destination": "/asset/$1" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/$1.php" }
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/asset/(.*)",
+      "dest": "/asset/$1"
+    },
+    {
+      "src": "/(.*)\\.php",
+      "dest": "/$1.php"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.php"
+    }
   ]
 }
