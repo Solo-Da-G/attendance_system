@@ -67,6 +67,13 @@ if ($conn->connect_error) {
 
 $conn->set_charset("utf8mb4");
 
+
+// Add after connection
+if ($conn->connect_error) {
+    error_log("DB Connection Failed: " . $conn->connect_error);
+    die("Database connection failed. Please check your environment variables.");
+}
+
 // ================================================================
 // SECURITY HEADERS (for cloud)
 // ================================================================
