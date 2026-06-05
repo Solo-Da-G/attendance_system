@@ -15,21 +15,24 @@
  */
 
 // ================================================================
-// ENVIRONMENT: 'local' | 'lan' | 'cloud'
+// DATABASE CREDENTIALS (Auto-detect environment)
 // ================================================================
-define('ENVIRONMENT', 'local');
-
-// ================================================================
-// DATABASE CREDENTIALS (per environment)
-// ================================================================
-if (ENVIRONMENT === 'cloud') {
-    // ---- CLOUD HOSTING (fill these in when deploying) ----
-    $servername = "localhost";          // Usually 'localhost' on shared hosting
-    $username   = "your_db_username";  // From your hosting cPanel
-    $password   = "your_db_password";  // From your hosting cPanel
-    $database   = "your_db_name";      // From your hosting cPanel
+if (getenv('DB_HOST')) {
+    // ---- VERCEL / CLOUD ENVIRONMENT ----
+    define('ENVIRONMENT', 'cloud');
+    $servername = getenv('DB_HOST');
+    $username   = getenv('DB_USER');
+    $password   = getenv('DB_PASSWORD');
+    $database   = getenv('DB_NAME');
+    $port       = getenv('DB_PORT') ?: 3306;
+    
+    // Adjust servername for port if needed
+    if ($port != 3306 && !str_contains($servername, ':')) {
+        $servername .= ":" . $port;
+    }
 } else {
     // ---- LOCAL / LAN (XAMPP defaults) ----
+    define('ENVIRONMENT', 'local');
     $servername = "localhost";
     $username   = "root";
     $password   = "";
