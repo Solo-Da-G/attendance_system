@@ -2,8 +2,8 @@
 /**
  * Register staff phone GPS as allowed clock-in zone (fixes branch coords vs real GPS).
  */
-include(__DIR__ . "/../includes/config.php");
-include(__DIR__ . "/../lib/Geolocation.php");
+include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/lib/Geolocation.php");
 
 header('Content-Type: application/json');
 

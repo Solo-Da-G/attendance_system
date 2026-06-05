@@ -1,5 +1,5 @@
 <?php
-include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/includes/config.php");
 
 if (!isset($_SESSION['test_value'])) {
     $_SESSION['test_value'] = "Memory is working! " . date('H:i:s');

@@ -1,5 +1,5 @@
 <?php
-include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/includes/config.php");
 
 if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
@@ -130,7 +130,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
 </head>
 <body>
 
-<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
 <div class="content">
     

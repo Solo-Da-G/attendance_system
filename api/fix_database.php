@@ -4,7 +4,7 @@
  * Visit: https://attendance-system-delta-five.vercel.app/api/fix_database.php
  * DELETE AFTER RUNNING!
  */
-include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/includes/config.php");
 
 header('Content-Type: text/html; charset=utf-8');
 echo "<h2>🔧 Database Fix Script</h2><pre>";

@@ -16,8 +16,8 @@ if (php_sapi_name() !== 'cli') {
     
 }
 
-include(__DIR__ . "/../includes/config.php");
-include(__DIR__ . "/../lib/ZKTeco.php");
+include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/lib/ZKTeco.php");
 
 date_default_timezone_set("Africa/Lagos");
 

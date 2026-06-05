@@ -1,5 +1,5 @@
 <?php
-include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/includes/config.php");
 
 if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
@@ -86,7 +86,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
 </head>
 <body>
 
-<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
 <div class="content">
     <h2>🔑 User Management</h2>

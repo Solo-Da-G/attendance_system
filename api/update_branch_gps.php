@@ -2,7 +2,7 @@
 /**
  * Admin: update branch lat/lng from device GPS (Manage Branches).
  */
-include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/includes/config.php");
 
 header('Content-Type: application/json');
 

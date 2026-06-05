@@ -1,6 +1,6 @@
 <?php
 
-include(__DIR__ . "/../includes/config.php");
+include(__DIR__ . "/includes/config.php");
 
 // Only Admin/Super Admin
 if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'super_admin')) {
@@ -97,7 +97,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
 </head>
 <body>
 
-<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
 <div class="content">
     <h2>📍 Manage Branches & Geofencing</h2>
