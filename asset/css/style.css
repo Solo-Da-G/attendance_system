@@ -51,45 +51,10 @@
   --shadow-lg:  0 10px 30px rgba(0,0,0,.10);
   --shadow-xl:  0 20px 50px rgba(0,0,0,.15);
 
-  /* Glassmorphism */
-  --glass-bg:      rgba(255, 255, 255, 0.7);
-  --glass-border:  rgba(255, 255, 255, 0.2);
-  --glass-shadow:  0 8px 32px 0 rgba(31, 38, 135, 0.37);
-
   /* Transitions */
   --ease: cubic-bezier(.4,0,.2,1);
 }
 
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-}
-
-/* Animations */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-.animate-fade-in { animation: fadeInUp 0.6s var(--ease) forwards; }
-.animate-slide-in { animation: slideInRight 0.5s var(--ease) forwards; }
-.delay-1 { animation-delay: 0.1s; }
-.delay-2 { animation-delay: 0.2s; }
-.delay-3 { animation-delay: 0.3s; }
 
 /* ---------- Reset & Base ---------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

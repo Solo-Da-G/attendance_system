@@ -192,34 +192,62 @@ $staff_id = $_SESSION['staff_id'] ?? null;
     </div>
   </div>
 
-  <!-- face-api.js loaded ONLY when needed (lazy load) -->
-  <!-- Unified Auth Module -->
-  <script src="asset/js/face-api.min.js"></script>
-  <script src="asset/js/auth.js"></script>
   <script>
-    // Configure AuthManager for Dashboard
-    AuthManager.video = document.getElementById('faceVideo');
-    AuthManager.guide = document.getElementById('faceGuide');
-    AuthManager.statusEl = document.getElementById('faceStatus');
-    AuthManager.scanLine = document.getElementById('scanLine');
-
+    // ============================================================
+    // GLOBAL STATE
+    // ============================================================
+    let currentCoords = null;
     let pendingAction = null;
+    let faceModelsLoaded = false;
+    let videoStream = null;
+    let profilePhotoUrl = null;
+    let profileDescriptor = null;
+
     const geoStatus = document.getElementById('geoStatus');
     const clockBtn = document.getElementById('clockBtn');
     const apiResult = document.getElementById('apiResult');
 
-    // Run Geolocation on load
-    AuthManager.initGeolocation()
-        .then(pos => {
-            geoStatus.innerHTML = `✅ Location Ready: ${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}`;
-        })
-        .catch(err => {
-            geoStatus.innerHTML = "❌ " + err;
-            if (clockBtn) clockBtn.disabled = true;
-        });
+    // ============================================================
+    // GEOLOCATION (runs on page load — lightweight, no delay)
+    // ============================================================
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                currentCoords = pos.coords;
+                geoStatus.innerHTML = `✅ Location Ready: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+            },
+            (err) => {
+                geoStatus.innerHTML = "❌ Error: Please enable Location Access to clock in/out.";
+                if (clockBtn) clockBtn.disabled = true;
+            }
+        );
+    } else {
+        geoStatus.innerHTML = "❌ Geolocation is not supported by this browser.";
+        if (clockBtn) clockBtn.disabled = true;
+    }
 
+    // ============================================================
+    // PRELOAD PROFILE PHOTO (background, after page loads)
+    // ============================================================
+    window.addEventListener('load', () => {
+        fetch('api/verify_face.php')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    profilePhotoUrl = data.photo_url;
+                    // Preload the image
+                    const img = new Image();
+                    img.src = profilePhotoUrl;
+                }
+            })
+            .catch(() => {}); // Silent fail — will re-check when modal opens
+    });
+
+    // ============================================================
+    // FACE VERIFICATION FLOW
+    // ============================================================
     function startFaceVerification(action) {
-        if (!AuthManager.currentCoords) {
+        if (!currentCoords) {
             alert("Location not ready. Please wait or enable GPS.");
             return;
         }
@@ -232,91 +260,335 @@ $staff_id = $_SESSION['staff_id'] ?? null;
         document.getElementById('faceGuide').className = 'face-guide';
         document.getElementById('scanLine').classList.remove('active');
         
+        const captureBtn = document.getElementById('captureBtn');
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '📸 Verify My Face';
+
         const actionsDiv = document.getElementById('faceActions');
         actionsDiv.innerHTML = '<button class="btn-capture" id="captureBtn" onclick="captureAndVerify()" disabled>📸 Verify My Face</button>';
 
-        AuthManager.setStatus('loading', '📷 Starting camera...');
-        
-        Promise.all([
-            AuthManager.loadFaceModels(),
-            AuthManager.startCamera()
-        ]).then(() => {
-            AuthManager.setStatus('scanning', '🔍 Position your face and click "Verify"');
-            document.getElementById('faceGuide').classList.add('scanning');
-            document.getElementById('scanLine').classList.add('active');
-            document.getElementById('captureBtn').disabled = false;
-        }).catch(err => {
-            AuthManager.setStatus('error', '❌ ' + err.message);
-        });
+        // Step 1: Check profile photo
+        setFaceStatus('loading', '⏳ Checking your profile photo...');
+
+        fetch('api/verify_face.php')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status !== 'success') {
+                    setFaceStatus('error', '⚠️ ' + data.message);
+                    return;
+                }
+
+                profilePhotoUrl = data.photo_url;
+                document.getElementById('profileFaceImg').src = profilePhotoUrl;
+
+                // Step 2: Start camera
+                setFaceStatus('loading', '📷 Starting camera...');
+                startCamera();
+            })
+            .catch(err => {
+                setFaceStatus('error', '❌ Failed to check profile. Please try again.');
+            });
     }
 
-    async function captureAndVerify() {
-        const btn = document.getElementById('captureBtn');
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Analyzing...';
-
+    async function startCamera() {
         try {
-            // First get profile photo URL
-            const res = await fetch('api/verify_face.php');
-            const data = await res.json();
-            if (data.status !== 'success') throw new Error(data.message);
+            videoStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    width: { ideal: 640 }, 
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                }
+            });
 
-            const result = await AuthManager.verifyFace(data.photo_url);
+            const video = document.getElementById('faceVideo');
+            video.srcObject = videoStream;
+            
+            video.onloadedmetadata = async () => {
+                video.play();
+                
+                // Step 3: Load face-api models (lazy load)
+                await loadFaceModels();
+                
+                if (faceModelsLoaded) {
+                    setFaceStatus('scanning', '🔍 Position your face in the circle and click "Verify"');
+                    document.getElementById('faceGuide').classList.add('scanning');
+                    document.getElementById('scanLine').classList.add('active');
+                    document.getElementById('captureBtn').disabled = false;
 
-            if (result.isMatch) {
-                AuthManager.setStatus('matched', `✅ Face Verified (${result.confidence}%)`);
-                btn.innerHTML = '✅ Confirmed';
-                setTimeout(() => {
-                    closeFaceModal();
-                    processClocking(pendingAction);
-                }, 1000);
-            } else {
-                AuthManager.setStatus('rejected', `❌ Face mismatch (${result.confidence}%)`);
-                btn.disabled = false;
-                btn.innerHTML = 'Retry Verification';
-            }
+                    // Start live face detection indicator
+                    startLiveFaceDetection();
+                }
+            };
         } catch (err) {
-            AuthManager.setStatus('error', '❌ ' + err.message);
-            btn.disabled = false;
-            btn.innerHTML = 'Retry Verification';
+            console.error('Camera error:', err);
+            setFaceStatus('error', '❌ Camera access denied. Please allow camera permission and try again.');
         }
     }
 
-    function closeFaceModal() {
-        document.getElementById('faceModal').classList.remove('active');
-        AuthManager.stopCamera();
+    async function loadFaceModels() {
+        if (faceModelsLoaded) return;
+
+        setFaceStatus('loading', '🧠 Loading AI face recognition models...');
+
+        try {
+            // Lazy load face-api.js
+            if (typeof faceapi === 'undefined') {
+                await loadScript('asset/js/face-api.min.js');
+            }
+
+            // Load models from local directory
+            const MODEL_URL = 'asset/models';
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+
+            faceModelsLoaded = true;
+            console.log('Face-api models loaded successfully');
+        } catch (err) {
+            console.error('Model loading error:', err);
+            setFaceStatus('error', '❌ Failed to load face recognition models. Please refresh and try again.');
+        }
     }
 
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    // Live face detection overlay (shows green when face detected)
+    let liveDetectionInterval = null;
+
+    function startLiveFaceDetection() {
+        const video = document.getElementById('faceVideo');
+        const guide = document.getElementById('faceGuide');
+
+        liveDetectionInterval = setInterval(async () => {
+            try {
+                const detection = await faceapi.detectSingleFace(
+                    video, 
+                    new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+                );
+                
+                if (detection) {
+                    guide.classList.add('detected');
+                    guide.classList.remove('scanning');
+                } else {
+                    guide.classList.remove('detected');
+                    guide.classList.add('scanning');
+                }
+            } catch (e) {
+                // Ignore detection errors during live feed
+            }
+        }, 500);
+    }
+
+    function stopLiveFaceDetection() {
+        if (liveDetectionInterval) {
+            clearInterval(liveDetectionInterval);
+            liveDetectionInterval = null;
+        }
+    }
+
+    // ============================================================
+    // CAPTURE AND VERIFY
+    // ============================================================
+    async function captureAndVerify() {
+        const video = document.getElementById('faceVideo');
+        const captureBtn = document.getElementById('captureBtn');
+        
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '⏳ Analyzing face...';
+        stopLiveFaceDetection();
+
+        setFaceStatus('scanning', '🔍 Analyzing your face...');
+        document.getElementById('scanLine').classList.add('active');
+
+        try {
+            // Step 1: Detect face in webcam
+            const webcamDetection = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            if (!webcamDetection) {
+                setFaceStatus('rejected', '❌ No face detected. Please position your face clearly in the circle.');
+                showRetryButton();
+                return;
+            }
+
+            // Capture webcam frame as image for comparison display
+            const captureCanvas = document.createElement('canvas');
+            captureCanvas.width = video.videoWidth;
+            captureCanvas.height = video.videoHeight;
+            captureCanvas.getContext('2d').drawImage(video, 0, 0);
+            document.getElementById('capturedFaceImg').src = captureCanvas.toDataURL('image/jpeg');
+
+            setFaceStatus('scanning', '🔍 Comparing with your profile photo...');
+
+            // Step 2: Load and analyze profile photo
+            const profileImg = await faceapi.fetchImage(profilePhotoUrl);
+            const profileDetection = await faceapi
+                .detectSingleFace(profileImg, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            if (!profileDetection) {
+                setFaceStatus('error', '⚠️ Cannot detect face in your profile photo. Please ask admin to upload a clear front-facing photo.');
+                showRetryButton();
+                return;
+            }
+
+            // Step 3: Compare face descriptors
+            const distance = faceapi.euclideanDistance(webcamDetection.descriptor, profileDetection.descriptor);
+            const threshold = 0.5;
+            const isMatch = distance < threshold;
+            
+            // Calculate confidence percentage (inverse of distance, capped)
+            const confidence = Math.max(0, Math.min(100, Math.round((1 - distance) * 100)));
+
+            // Show comparison UI
+            document.getElementById('faceCompareSection').style.display = 'block';
+            document.getElementById('scanLine').classList.remove('active');
+            
+            const confidenceFill = document.getElementById('confidenceFill');
+            confidenceFill.style.width = confidence + '%';
+            confidenceFill.className = 'confidence-fill ' + (isMatch ? 'high' : 'low');
+
+            const capturedImg = document.getElementById('capturedFaceImg');
+            const profileImgEl = document.getElementById('profileFaceImg');
+            capturedImg.classList.toggle('match', isMatch);
+            capturedImg.classList.toggle('no-match', !isMatch);
+            profileImgEl.classList.toggle('match', isMatch);
+            profileImgEl.classList.toggle('no-match', !isMatch);
+
+            const guide = document.getElementById('faceGuide');
+            guide.classList.remove('scanning', 'detected');
+            guide.classList.add(isMatch ? 'detected' : 'no-match');
+
+            if (isMatch) {
+                // ✅ FACE MATCHED — proceed with clock
+                setFaceStatus('matched', `✅ Face verified! Confidence: ${confidence}%`);
+                document.getElementById('compareResult').innerHTML = 
+                    `<strong style="color: var(--success);">Identity Confirmed</strong> — Match score: ${confidence}%`;
+
+                // Auto-proceed with clocking after short delay
+                const actionsDiv = document.getElementById('faceActions');
+                actionsDiv.innerHTML = '<button class="btn-capture" style="background:linear-gradient(135deg, var(--success), #059669) !important;" disabled>✅ Verified — Processing clock...</button>';
+
+                setTimeout(() => {
+                    closeFaceModal();
+                    processClocking(pendingAction);
+                }, 1500);
+
+            } else {
+                // ❌ FACE DOES NOT MATCH
+                setFaceStatus('rejected', `❌ Face does not match! Confidence: ${confidence}% (Required: 50%+)`);
+                document.getElementById('compareResult').innerHTML = 
+                    `<strong style="color: var(--danger);">Identity NOT Confirmed</strong> — The face captured does not match your profile photo.`;
+
+                showRetryButton();
+            }
+
+        } catch (err) {
+            console.error('Face verification error:', err);
+            setFaceStatus('error', '❌ Face verification failed. Please try again.');
+            showRetryButton();
+        }
+    }
+
+    function showRetryButton() {
+        const actionsDiv = document.getElementById('faceActions');
+        actionsDiv.innerHTML = `
+            <button class="btn-retry" onclick="retryVerification()">🔄 Try Again</button>
+            <button class="btn-retry" onclick="closeFaceModal()" style="flex:0.5;">Cancel</button>
+        `;
+    }
+
+    function retryVerification() {
+        document.getElementById('faceCompareSection').style.display = 'none';
+        document.getElementById('faceGuide').className = 'face-guide scanning';
+        document.getElementById('scanLine').classList.add('active');
+        
+        const actionsDiv = document.getElementById('faceActions');
+        actionsDiv.innerHTML = '<button class="btn-capture" id="captureBtn" onclick="captureAndVerify()">📸 Verify My Face</button>';
+        
+        setFaceStatus('scanning', '🔍 Position your face in the circle and click "Verify"');
+        startLiveFaceDetection();
+    }
+
+    // ============================================================
+    // MODAL CONTROLS
+    // ============================================================
+    function closeFaceModal() {
+        document.getElementById('faceModal').classList.remove('active');
+        stopLiveFaceDetection();
+
+        // Stop camera
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+        const video = document.getElementById('faceVideo');
+        if (video) video.srcObject = null;
+    }
+
+    function setFaceStatus(type, message) {
+        const el = document.getElementById('faceStatus');
+        el.className = 'face-status ' + type;
+        el.innerHTML = message;
+    }
+
+    // ============================================================
+    // PROCESS CLOCKING (after face verification passes)
+    // ============================================================
     function processClocking(action) {
+        if (!currentCoords) {
+            alert("Location not ready. Please wait or enable GPS.");
+            return;
+        }
+
         clockBtn.disabled = true;
         clockBtn.innerHTML = "Processing...";
         apiResult.innerHTML = "";
 
         const formData = new FormData();
         formData.append('action', action);
-        formData.append('lat', AuthManager.currentCoords.latitude);
-        formData.append('lng', AuthManager.currentCoords.longitude);
+        formData.append('lat', currentCoords.latitude);
+        formData.append('lng', currentCoords.longitude);
 
-        fetch('api/web_clock.php', { method: 'POST', body: formData })
+        fetch('api/web_clock.php', {
+            method: 'POST',
+            body: formData
+        })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                apiResult.style.color = "var(--success)";
+                apiResult.style.color = "#86efac";
                 apiResult.innerHTML = data.message;
                 setTimeout(() => location.reload(), 1500);
             } else {
-                apiResult.style.color = "var(--danger)";
+                apiResult.style.color = "#fca5a5";
                 apiResult.innerHTML = "❌ " + data.message;
+                if (data.debug) {
+                    console.log("Distance check:", data.debug);
+                }
                 clockBtn.disabled = false;
                 clockBtn.innerHTML = action === 'clock_in' ? '🔒 Clock In Now' : '🔒 Clock Out Now';
             }
         })
-        .catch(() => {
-            apiResult.innerHTML = "❌ System error.";
+        .catch(err => {
+            console.error(err);
+            apiResult.innerHTML = "❌ Something went wrong.";
             clockBtn.disabled = false;
         });
     }
   </script>
-
 </body>
 </html>
