@@ -10,32 +10,32 @@ header('Content-Type: text/html; charset=utf-8');
 echo "<h2>🔧 Database Fix Script</h2><pre>";
 
 $queries = [
-    // Add missing columns to admin table
-    "ALTER TABLE `admin` ADD COLUMN IF NOT EXISTS `email` VARCHAR(150) NULL AFTER `password`",
-    "ALTER TABLE `admin` ADD COLUMN IF NOT EXISTS `reset_token` VARCHAR(64) NULL",
-    "ALTER TABLE `admin` ADD COLUMN IF NOT EXISTS `reset_token_expires` DATETIME NULL",
-    "ALTER TABLE `admin` ADD COLUMN IF NOT EXISTS `auth_token` VARCHAR(64) NULL",
-    "ALTER TABLE `admin` ADD COLUMN IF NOT EXISTS `deleted_at` DATETIME NULL",
+    // Add missing columns to admin table (These will error if column exists, which is fine to ignore)
+    "ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(150) NULL AFTER `password`",
+    "ALTER TABLE `admin` ADD COLUMN `reset_token` VARCHAR(64) NULL",
+    "ALTER TABLE `admin` ADD COLUMN `reset_token_expires` DATETIME NULL",
+    "ALTER TABLE `admin` ADD COLUMN `auth_token` VARCHAR(64) NULL",
+    "ALTER TABLE `admin` ADD COLUMN `deleted_at` DATETIME NULL",
     
     // Add missing columns to staff table
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `password` VARCHAR(255) NULL",
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `reset_token` VARCHAR(64) NULL",
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `reset_token_expires` DATETIME NULL",
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `auth_token` VARCHAR(64) NULL",
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `deleted_at` DATETIME NULL",
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `clock_lat` DECIMAL(10,8) NULL",
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `clock_lng` DECIMAL(11,8) NULL",
-    "ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `clock_radius` INT DEFAULT 300",
+    "ALTER TABLE `staff` ADD COLUMN `password` VARCHAR(255) NULL",
+    "ALTER TABLE `staff` ADD COLUMN `reset_token` VARCHAR(64) NULL",
+    "ALTER TABLE `staff` ADD COLUMN `reset_token_expires` DATETIME NULL",
+    "ALTER TABLE `staff` ADD COLUMN `auth_token` VARCHAR(64) NULL",
+    "ALTER TABLE `staff` ADD COLUMN `deleted_at` DATETIME NULL",
+    "ALTER TABLE `staff` ADD COLUMN `clock_lat` DECIMAL(10,8) NULL",
+    "ALTER TABLE `staff` ADD COLUMN `clock_lng` DECIMAL(11,8) NULL",
+    "ALTER TABLE `staff` ADD COLUMN `clock_radius` INT DEFAULT 300",
     
     // Add missing columns to attendance table
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `source` VARCHAR(20) DEFAULT 'web'",
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `photo_in` TEXT NULL",
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `photo_out` TEXT NULL",
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `lat_in` DECIMAL(10,8) NULL",
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `lng_in` DECIMAL(11,8) NULL",
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `lat_out` DECIMAL(10,8) NULL",
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `lng_out` DECIMAL(11,8) NULL",
-    "ALTER TABLE `attendance` ADD COLUMN IF NOT EXISTS `is_geofenced` TINYINT(1) DEFAULT 0",
+    "ALTER TABLE `attendance` ADD COLUMN `source` VARCHAR(20) DEFAULT 'web'",
+    "ALTER TABLE `attendance` ADD COLUMN `photo_in` TEXT NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `photo_out` TEXT NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `lat_in` DECIMAL(10,8) NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `lng_in` DECIMAL(11,8) NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `lat_out` DECIMAL(10,8) NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `lng_out` DECIMAL(11,8) NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `is_geofenced` TINYINT(1) DEFAULT 0",
     
     // Create branches table if not exists
     "CREATE TABLE IF NOT EXISTS `branches` (

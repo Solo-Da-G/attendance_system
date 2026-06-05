@@ -79,8 +79,15 @@ if (isset($_POST['login'])) {
                 
                 // Set auth_token for staff to survive Vercel statelessness
                 $token = bin2hex(random_bytes(32));
-                // Add column if it doesn't exist just in case (will fail silently if mysqli exceptions are off)
-                $conn->query("ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `auth_token` VARCHAR(64) DEFAULT NULL");
+                // Add column if it doesn't exist securely
+                try {
+                    $colCheck = $conn->query("SHOW COLUMNS FROM `staff` LIKE 'auth_token'");
+                    if ($colCheck && $colCheck->num_rows === 0) {
+                        $conn->query("ALTER TABLE `staff` ADD COLUMN `auth_token` VARCHAR(64) DEFAULT NULL");
+                    }
+                } catch (Exception $e) {
+                    // Ignore column existence errors
+                }
                 
                 $upd = $conn->prepare("UPDATE `staff` SET auth_token = ? WHERE id = ?");
                 if ($upd) {

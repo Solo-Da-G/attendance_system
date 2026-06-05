@@ -12,7 +12,7 @@ echo "<pre>";
 
 $queries = [
     // 1. Add email column to admin table
-    "ALTER TABLE `admin` ADD COLUMN IF NOT EXISTS `email` VARCHAR(150) NULL AFTER `password`"
+    "ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(150) NULL AFTER `password`"
 ];
 
 foreach ($queries as $sql) {
