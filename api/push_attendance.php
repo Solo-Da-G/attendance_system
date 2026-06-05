@@ -61,8 +61,6 @@ if ($action === 'push_attendance') {
         $clock_out   = $rec['clock_out'] ?? null;
         $status      = $rec['status'] ?? 'in';
         $total_hours = $rec['total_hours'] ?? 0;
-        $source      = $rec['source'] ?? null;
-        if (empty($source)) $source = 'device';
 
         if (empty($staff_id) || empty($clock_in)) {
             $skipped++;
@@ -79,8 +77,8 @@ if ($action === 'push_attendance') {
         if ($dup->num_rows > 0) {
             // Update clock_out if it was missing
             if ($clock_out) {
-                $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = ?, total_hours = ?, source = IFNULL(source, ?) WHERE staff_id = ? AND clock_in = ? AND clock_out IS NULL");
-                $stmt->bind_param("ssdsss", $clock_out, $status, $total_hours, $source, $staff_id, $clock_in);
+                $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = ?, total_hours = ? WHERE staff_id = ? AND clock_in = ? AND clock_out IS NULL");
+                $stmt->bind_param("ssdss", $clock_out, $status, $total_hours, $staff_id, $clock_in);
                 $stmt->execute();
                 $stmt->close();
                 if ($conn->affected_rows > 0) $inserted++;
@@ -92,8 +90,8 @@ if ($action === 'push_attendance') {
         }
 
         // Insert new record
-        $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, clock_out, status, total_hours, source) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssds", $staff_id, $clock_in, $clock_out, $status, $total_hours, $source);
+        $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, clock_out, status, total_hours) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssd", $staff_id, $clock_in, $clock_out, $status, $total_hours);
 
         if ($stmt->execute()) {
             $inserted++;
@@ -170,5 +168,3 @@ if ($action === 'health') {
 // Unknown action
 http_response_code(400);
 echo json_encode(["status" => "error", "message" => "Unknown action: $action"]);
-
-

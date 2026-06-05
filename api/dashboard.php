@@ -165,9 +165,47 @@ try {
   <?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
   <div class="content">
+<?php
+    $hour = date('H');
+    $greeting = "Good evening";
+    if ($hour < 12) {
+        $greeting = "Good morning";
+    } elseif ($hour < 18) {
+        $greeting = "Good afternoon";
+    }
+?>
     <div class="dashboard-header">
-        <h2>Welcome, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
+        <h2><?php echo $greeting; ?>, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
         <p>Facial verification active · Auto sign-out after 1 minute of inactivity</p>
+    </div>
+
+    <!-- Live Time & Date Widgets -->
+    <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 30px;">
+        <div class="widget-card time-widget" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 24px 30px; border-radius: 24px; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -40px; left: 10px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+            
+            <div style="position: relative; z-index: 2;">
+                <div style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;" id="liveDateStr">Loading...</div>
+                <div style="font-size: 42px; font-weight: 800; margin: 4px 0; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 8px; letter-spacing: -1px;">
+                    <span id="liveTime">00:00:00</span>
+                    <span id="liveAmPm" style="font-size: 20px; font-weight: 600; opacity: 0.9;"></span>
+                </div>
+            </div>
+            <div style="position: relative; z-index: 2; opacity: 0.9; font-size: 48px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));">
+                ⏰
+            </div>
+        </div>
+        
+        <div class="widget-card info-widget" style="background: white; padding: 24px 30px; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 24px;">
+            <div style="width: 64px; height: 64px; border-radius: 18px; background: var(--info-bg); color: var(--info); display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);">
+                📅
+            </div>
+            <div>
+                <div style="font-size: 13px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Today is</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--text);" id="liveDayName">Loading...</div>
+            </div>
+        </div>
     </div>
 
     <?php if ($is_admin && !$staff_id): ?>
@@ -205,6 +243,8 @@ try {
         <?php if ($staff_branch_name): ?>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Branch on file: <strong><?php echo htmlspecialchars($staff_branch_name); ?></strong> — you can clock at <em>any</em> branch within its radius.</p>
         <?php endif; ?>
+
+        <div id="apiResult" style="margin-bottom: 15px;"></div>
 
         <div id="camera-container">
             <video id="video" autoplay playsinline></video>
@@ -247,7 +287,6 @@ try {
         <p style="font-size:12px;color:var(--text-muted);margin-top:8px;max-width:360px;margin-left:auto;margin-right:auto;">
             Google Maps coords often differ from phone GPS by 1–3 km. Register while standing where you clock in — this fixes “outside allowed area”.
         </p>
-        <div id="apiResult"></div>
     </div>
 
     <div class="clocking-card">
@@ -306,6 +345,88 @@ try {
                 ?>
             </tbody>
         </table>
+        </div>
+    </div>
+    
+    <?php
+    $th = 0;
+    $th_today = 0;
+    $stmt_th = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ? AND YEARWEEK(clock_in, 1) = YEARWEEK(CURDATE(), 1) AND WEEKDAY(clock_in) <= 4");
+    if ($stmt_th) {
+        $stmt_th->bind_param("s", $staff_id);
+        $stmt_th->execute();
+        $th = $stmt_th->get_result()->fetch_assoc()['th'] ?? 0;
+        $stmt_th->close();
+    }
+    
+    $stmt_today = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ? AND DATE(clock_in) = CURDATE()");
+    if ($stmt_today) {
+        $stmt_today->bind_param("s", $staff_id);
+        $stmt_today->execute();
+        $th_today = $stmt_today->get_result()->fetch_assoc()['th'] ?? 0;
+        $stmt_today->close();
+    }
+    
+    $stmt_yest = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ? AND DATE(clock_in) = CURDATE() - INTERVAL 1 DAY");
+    if ($stmt_yest) {
+        $stmt_yest->bind_param("s", $staff_id);
+        $stmt_yest->execute();
+        $th_yest = $stmt_yest->get_result()->fetch_assoc()['th'] ?? 0;
+        $stmt_yest->close();
+    }
+    
+    if (!function_exists('formatHours')) {
+        function formatHours($decimal) {
+            if (!$decimal) return "0 hrs 0 min";
+            $h = floor($decimal);
+            $m = floor(($decimal - $h) * 60);
+            $s = round((($decimal - $h) * 60 - $m) * 60);
+            $str = "";
+            if ($h > 0) $str .= "{$h}hrs ";
+            $str .= "{$m}min";
+            if ($s > 0) $str .= " {$s}sec";
+            return trim($str);
+        }
+    }
+    ?>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 24px;">
+        <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+            <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⏳</div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; position: relative; z-index: 2;">Total Time in the Week</div>
+            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;"><?php echo formatHours($th); ?></div>
+        </div>
+        <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+            <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⌚</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; margin-bottom: 8px;">
+                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;" id="timeTrackedLabel">Time Tracked Today</div>
+                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Toggle Day">
+                    <svg id="timeTrackedIcon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
+                </button>
+            </div>
+            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
+            <script>
+                const timeToday = "<?php echo formatHours($th_today); ?>";
+                const timeYest = "<?php echo formatHours($th_yest); ?>";
+                let showingToday = true;
+                
+                function toggleDayTracked() {
+                    const label = document.getElementById('timeTrackedLabel');
+                    const val = document.getElementById('timeTrackedValue');
+                    const icon = document.getElementById('timeTrackedIcon');
+                    
+                    if (showingToday) {
+                        label.textContent = "Time Tracked Yesterday";
+                        val.textContent = timeYest;
+                        icon.innerHTML = '<path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>';
+                        showingToday = false;
+                    } else {
+                        label.textContent = "Time Tracked Today";
+                        val.textContent = timeToday;
+                        icon.innerHTML = '<path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>';
+                        showingToday = true;
+                    }
+                }
+            </script>
         </div>
     </div>
     <?php endif; ?>
@@ -705,6 +826,39 @@ try {
     }
 
     function showFull(src) { window.open(src, '_blank'); }
+
+    function updateClock() {
+        const now = new Date();
+        
+        // Time
+        let h = now.getHours();
+        let m = now.getMinutes();
+        let s = now.getSeconds();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12;
+        
+        m = m < 10 ? '0' + m : m;
+        s = s < 10 ? '0' + s : s;
+        
+        const liveTime = document.getElementById('liveTime');
+        const liveAmPm = document.getElementById('liveAmPm');
+        if(liveTime) liveTime.textContent = h + ':' + m + ':' + s;
+        if(liveAmPm) liveAmPm.textContent = ampm;
+        
+        // Date
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const liveDayName = document.getElementById('liveDayName');
+        const liveDateStr = document.getElementById('liveDateStr');
+        
+        if(liveDayName) liveDayName.textContent = days[now.getDay()];
+        if(liveDateStr) liveDateStr.textContent = months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+    }
+    
+    setInterval(updateClock, 1000);
+    updateClock();
   </script>
 </body>
 </html>
