@@ -7,9 +7,7 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/asset/(.*)", "destination": "/asset/$1" },
-    { "source": "/api/(.*).php", "destination": "/$1.php" },
     { "source": "/api/(.*)", "destination": "/$1.php" },
-    { "source": "/", "destination": "/index.php" },
     { "source": "/(.*)", "destination": "/$1.php" }
   ]
 }
