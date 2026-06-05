@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 /**
  * ATTENDANCE SYSTEM — Configuration
  * 
@@ -82,5 +85,42 @@ if (ENVIRONMENT === 'cloud') {
     header("X-Frame-Options: SAMEORIGIN");
     header("X-XSS-Protection: 1; mode=block");
     header("Referrer-Policy: strict-origin-when-cross-origin");
+}
+// ================================================================
+// VERCEL STATELESS SESSION RESTORE
+// ================================================================
+if (empty($_SESSION['admin_id']) && empty($_SESSION['staff_id']) && isset($_COOKIE['auth_token'])) {
+    $token = $_COOKIE['auth_token'];
+    
+    if (str_starts_with($token, 'staff_')) {
+        $real_token = substr($token, 6);
+        $stmt = $conn->prepare("SELECT id, staff_id, full_name FROM `staff` WHERE auth_token = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param("s", $real_token);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && $res->num_rows === 1) {
+                $row = $res->fetch_assoc();
+                $_SESSION['staff_id'] = $row['staff_id'];
+                $_SESSION['admin']    = $row['full_name'];
+                $_SESSION['role']     = 'staff';
+            }
+            $stmt->close();
+        }
+    } else {
+        $stmt = $conn->prepare("SELECT id, username, role FROM `admin` WHERE auth_token = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param("s", $token);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && $res->num_rows === 1) {
+                $row = $res->fetch_assoc();
+                $_SESSION['admin_id'] = $row['id'];
+                $_SESSION['admin']    = $row['username'];
+                $_SESSION['role']     = $row['role'];
+            }
+            $stmt->close();
+        }
+    }
 }
 ?>
