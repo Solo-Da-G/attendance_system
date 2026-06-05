@@ -1,5 +1,5 @@
 <?php
-include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
@@ -60,7 +60,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recycle Bin</title>
-<link rel="stylesheet" href="/asset/css/style.css">
+<link rel="stylesheet" href="/../asset/css/style.css">
 <style>
     body {
         background: #f8fafc;
@@ -130,7 +130,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
 </head>
 <body>
 
-<?php include(__DIR__ . "/includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <div class="content">
     

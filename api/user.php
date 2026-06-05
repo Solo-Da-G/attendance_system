@@ -1,5 +1,5 @@
 <?php
-include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
@@ -75,7 +75,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
     <title>User Management</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/asset/css/style.css">
+    <link rel="stylesheet" href="/../asset/css/style.css">
     <style>
         .user-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
         .tab-btn { padding: 10px 20px; background: none; border: none; cursor: pointer; font-weight: 600; }
@@ -86,7 +86,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
 </head>
 <body>
 
-<?php include(__DIR__ . "/includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <div class="content">
     <h2>🔑 User Management</h2>

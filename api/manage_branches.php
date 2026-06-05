@@ -1,6 +1,6 @@
 <?php
 
-include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 // Only Admin/Super Admin
 if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'super_admin')) {
@@ -55,7 +55,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Branches & Geofencing</title>
-    <link rel="stylesheet" href="/asset/css/style.css">
+    <link rel="stylesheet" href="/../asset/css/style.css">
     <style>
         .geo-box {
             background: var(--surface);
@@ -97,7 +97,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
 </head>
 <body>
 
-<?php include(__DIR__ . "/includes/sidebar.php"); ?>
+<?php include(__DIR__ . "/../includes/sidebar.php"); ?>
 
 <div class="content">
     <h2>📍 Manage Branches & Geofencing</h2>

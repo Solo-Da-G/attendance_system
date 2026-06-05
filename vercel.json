@@ -1,13 +1,11 @@
 {
   "functions": {
-    "*.php": {
-      "runtime": "vercel-php@0.7.2"
-    }
+    "api/*.php": { "runtime": "vercel-php@0.7.2" },
+    "*.php": { "runtime": "vercel-php@0.7.2" }
   },
   "cleanUrls": true,
   "rewrites": [
     { "source": "/asset/(.*)", "destination": "/asset/$1" },
-    { "source": "/api/(.*)", "destination": "/$1.php" },
-    { "source": "/(.*)", "destination": "/$1.php" }
+    { "source": "/", "destination": "/index.php" }
   ]
 }

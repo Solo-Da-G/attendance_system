@@ -2,7 +2,7 @@
 /**
  * Staff profile data for face clocking (avoids huge inline JSON on dashboard).
  */
-include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 header('Content-Type: application/json');
 

@@ -1,5 +1,4 @@
 {
-  "engines": {
-    "node": "20.x"
-  }
+  "name": "attendance-system",
+  "version": "1.0.0"
 }

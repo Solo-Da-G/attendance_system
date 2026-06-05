@@ -12,14 +12,14 @@ if (!extension_loaded('mysqli')) {
 }
 
 // 2. Check Config File
-if (file_exists(__DIR__ . "/includes/config.php")) {
+if (file_exists(__DIR__ . "/../includes/config.php")) {
     echo "✅ includes/config.php exists<br>";
 } else {
     echo "❌ includes/config.php MISSING<br>";
 }
 
 // 2. Try DB Connection
-include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/../includes/config.php");
 
 if (isset($conn) && $conn->ping()) {
     echo "✅ Database Connection OK<br>";
