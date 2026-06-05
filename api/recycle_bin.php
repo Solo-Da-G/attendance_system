@@ -27,10 +27,10 @@ if (isset($_GET['restore_type']) && isset($_GET['id'])) {
     
     if ($type === 'admin') {
         $conn->query("UPDATE `admin` SET deleted_at = NULL WHERE id = $id");
-        $message = "<div class='alert success'>✅ Admin restored successfully.</div>";
+        $message = "<div class='alert success'>âœ… Admin restored successfully.</div>";
     } elseif ($type === 'staff') {
         $conn->query("UPDATE `staff` SET deleted_at = NULL WHERE id = $id");
-        $message = "<div class='alert success'>✅ Staff member restored successfully.</div>";
+        $message = "<div class='alert success'>âœ… Staff member restored successfully.</div>";
     }
 }
 
@@ -41,10 +41,10 @@ if (isset($_GET['perm_delete_type']) && isset($_GET['id'])) {
     
     if ($type === 'admin') {
         $conn->query("DELETE FROM `admin` WHERE id = $id");
-        $message = "<div class='alert error'>🗑️ Admin permanently deleted.</div>";
+        $message = "<div class='alert error'>ðŸ—‘ï¸ Admin permanently deleted.</div>";
     } elseif ($type === 'staff') {
         $conn->query("DELETE FROM `staff` WHERE id = $id");
-        $message = "<div class='alert error'>🗑️ Staff member permanently deleted.</div>";
+        $message = "<div class='alert error'>ðŸ—‘ï¸ Staff member permanently deleted.</div>";
     }
 }
 
@@ -60,7 +60,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recycle Bin</title>
-<link rel="stylesheet" href="/../asset/css/style.css">
+<link rel="stylesheet" href="/asset/css/style.css">
 <style>
     body {
         background: #f8fafc;
@@ -136,7 +136,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
     
     <div class="rb-header">
         <div>
-            <h2>🗑️ Recycle Bin <span class="badge-count"><?php echo $total_items; ?> Items</span></h2>
+            <h2>ðŸ—‘ï¸ Recycle Bin <span class="badge-count"><?php echo $total_items; ?> Items</span></h2>
             <p>Deleted items are kept here for 30 days before being permanently removed.</p>
         </div>
     </div>
@@ -144,7 +144,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
     <?php if ($message) echo $message; ?>
 
     <div class="glass-card">
-        <h3>👥 Deleted Staff</h3>
+        <h3>ðŸ‘¥ Deleted Staff</h3>
         <?php if ($deleted_staff && $deleted_staff->num_rows > 0): ?>
         <div style="overflow-x:auto;">
             <table>
@@ -167,11 +167,11 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
                     <tr>
                         <td><strong><?php echo htmlspecialchars($r['staff_id']); ?></strong></td>
                         <td><?php echo htmlspecialchars($r['full_name']); ?></td>
-                        <td><?php echo htmlspecialchars($r['branch'] ?: '—'); ?></td>
+                        <td><?php echo htmlspecialchars($r['branch'] ?: 'â€”'); ?></td>
                         <td><?php echo date('M d, Y h:i A', $del_time); ?></td>
                         <td><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
                         <td style="display:flex; gap:8px;">
-                            <a href="?restore_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this staff member?');">↺ Restore</a>
+                            <a href="?restore_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this staff member?');">â†º Restore</a>
                             <a href="?perm_delete_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-delete" onclick="return confirm('Permanently delete? This cannot be undone.');">Delete</a>
                         </td>
                     </tr>
@@ -188,7 +188,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
     </div>
 
     <div class="glass-card">
-        <h3>👑 Deleted Admins</h3>
+        <h3>ðŸ‘‘ Deleted Admins</h3>
         <?php if ($deleted_admins && $deleted_admins->num_rows > 0): ?>
         <div style="overflow-x:auto;">
             <table>
@@ -209,11 +209,11 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
                     ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($r['username']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($r['email'] ?: '—'); ?></td>
+                        <td><?php echo htmlspecialchars($r['email'] ?: 'â€”'); ?></td>
                         <td><?php echo date('M d, Y h:i A', $del_time); ?></td>
                         <td><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
                         <td style="display:flex; gap:8px;">
-                            <a href="?restore_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this admin?');">↺ Restore</a>
+                            <a href="?restore_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this admin?');">â†º Restore</a>
                             <a href="?perm_delete_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-delete" onclick="return confirm('Permanently delete? This cannot be undone.');">Delete</a>
                         </td>
                     </tr>

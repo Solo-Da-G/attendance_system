@@ -75,7 +75,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
     <title>User Management</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/../asset/css/style.css">
+    <link rel="stylesheet" href="/asset/css/style.css">
     <style>
         .user-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
         .tab-btn { padding: 10px 20px; background: none; border: none; cursor: pointer; font-weight: 600; }
@@ -89,17 +89,17 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
 <div class="content">
-    <h2>🔑 User Management</h2>
+    <h2>ðŸ”‘ User Management</h2>
     <?php echo $message; ?>
     
     <div class="user-tabs">
-        <button class="tab-btn active" onclick="showTab('admin-tab')">👑 Admin Users</button>
-        <button class="tab-btn" onclick="showTab('staff-tab')">👥 Staff Members</button>
+        <button class="tab-btn active" onclick="showTab('admin-tab')">ðŸ‘‘ Admin Users</button>
+        <button class="tab-btn" onclick="showTab('staff-tab')">ðŸ‘¥ Staff Members</button>
     </div>
     
     <div id="admin-tab" class="tab-content active">
         <form method="POST" style="margin-bottom:30px;">
-            <h3 style="margin-bottom:16px;font-size:18px;">➕ Add New Admin User</h3>
+            <h3 style="margin-bottom:16px;font-size:18px;">âž• Add New Admin User</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>
                     <label>Username</label>
@@ -125,7 +125,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
             <button type="submit" name="create_admin_user" style="margin-top:12px;">Create Admin User</button>
         </form>
         
-        <h3 style="margin-bottom:12px;font-size:18px;">📋 Existing Admin Users</h3>
+        <h3 style="margin-bottom:12px;font-size:18px;">ðŸ“‹ Existing Admin Users</h3>
         <table>
             <thead>
                 <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
@@ -135,7 +135,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
                 <tr>
                     <td><?php echo $row['id']; ?></td>
                     <td><?php echo htmlspecialchars($row['username']); ?></td>
-                    <td><?php echo htmlspecialchars($row['email'] ?: '—'); ?></td>
+                    <td><?php echo htmlspecialchars($row['email'] ?: 'â€”'); ?></td>
                     <td><span class="badge <?php echo ($row['role']=='super_admin') ? 'badge-danger' : (($row['role']=='admin') ? 'badge-warning' : 'badge-info'); ?>"><?php echo $row['role']; ?></span></td>
                     <td><span class="badge badge-success"><?php echo $row['status'] ?? 'active'; ?></span></td>
                     <td>
@@ -152,13 +152,13 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
     
     <div id="staff-tab" class="tab-content">
         <div style="background:#fef3c7; padding:15px; border-radius:12px; margin-bottom:20px;">
-            💡 <strong>Staff Login Info:</strong> Staff members login with their <strong>Staff ID</strong> as username. 
+            ðŸ’¡ <strong>Staff Login Info:</strong> Staff members login with their <strong>Staff ID</strong> as username. 
             Default password is also their <strong>Staff ID</strong>.
         </div>
         
-        <a href="employees.php"><button style="margin-bottom:20px;">➕ Add New Staff Member</button></a>
+        <a href="employees.php"><button style="margin-bottom:20px;">âž• Add New Staff Member</button></a>
         
-        <h3 style="margin-bottom:12px;font-size:18px;">📋 Registered Staff Members</h3>
+        <h3 style="margin-bottom:12px;font-size:18px;">ðŸ“‹ Registered Staff Members</h3>
         <table>
             <thead>
                 <tr><th>ID</th><th>Staff ID</th><th>Full Name</th><th>Email</th><th>Branch</th><th>Actions</th></tr>
@@ -169,8 +169,8 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
                     <td><?php echo $row['id']; ?></td>
                     <td><strong><?php echo htmlspecialchars($row['staff_id']); ?></strong></td>
                     <td><?php echo htmlspecialchars($row['full_name']); ?></td>
-                    <td><?php echo htmlspecialchars($row['email'] ?: '—'); ?></td>
-                    <td><?php echo htmlspecialchars($row['branch'] ?: '—'); ?></td>
+                    <td><?php echo htmlspecialchars($row['email'] ?: 'â€”'); ?></td>
+                    <td><?php echo htmlspecialchars($row['branch'] ?: 'â€”'); ?></td>
                     <td>
                         <a href="edit_employee.php?id=<?php echo $row['id']; ?>"><button class="action-btn edit-btn">Edit</button></a>
                         <a href="user.php?delete_staff_id=<?php echo urlencode($row['staff_id']); ?>" onclick="return confirm('Delete this staff member?');">
