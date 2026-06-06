@@ -15,9 +15,19 @@ error_reporting(0);
 ini_set('display_errors', 0);
 @ob_start();
 
-if (!isset($_SESSION['admin'])) {
-    echo json_encode(["status" => "error", "message" => "Unauthorized"]);
+function json_response($arr, $code = 200) {
+    // Drop any accidental output (warnings/notices) so JSON.parse never fails
+    if (function_exists('ob_get_length') && ob_get_length()) {
+        @ob_clean();
+    }
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($arr);
     exit;
+}
+
+if (!isset($_SESSION['admin'])) {
+    json_response(["status" => "error", "message" => "Unauthorized"], 401);
 }
 
 $staff_id = $_SESSION['staff_id'] ?? null; // We need to ensure staff_id is in session
@@ -26,18 +36,15 @@ $lng      = isset($_POST['lng']) ? (float)$_POST['lng'] : null;
 $action   = $_POST['action'] ?? ''; // 'clock_in' or 'clock_out'
 
 if (!$staff_id) {
-    echo json_encode(["status" => "error", "message" => "Staff ID not found in session."]);
-    exit;
+    json_response(["status" => "error", "message" => "Staff ID not found in session."], 400);
 }
 
 if ($lat === null || $lng === null) {
-    echo json_encode(["status" => "error", "message" => "Location data missing. Please enable GPS."]);
-    exit;
+    json_response(["status" => "error", "message" => "Location data missing. Please enable GPS."], 400);
 }
 
 if ($action !== 'clock_in' && $action !== 'clock_out') {
-    echo json_encode(["status" => "error", "message" => "Invalid action."]);
-    exit;
+    json_response(["status" => "error", "message" => "Invalid action."], 400);
 }
 
 // ---------------------------------------------------------------
@@ -89,15 +96,14 @@ if (!$branch) {
 if ($branch) {
     $is_near = Geolocation::isWithinRadius($lat, $lng, $branch['latitude'], $branch['longitude'], $branch['radius_meters']);
     if (!$is_near) {
-        echo json_encode([
+        json_response([
             "status" => "error", 
             "message" => "You are too far from the office to clock in/out.",
             "debug" => [
                 "dist" => round(Geolocation::getDistance($lat, $lng, $branch['latitude'], $branch['longitude'])),
                 "limit" => $branch['radius_meters']
             ]
-        ]);
-        exit;
+        ], 400);
     }
 }
 
@@ -116,17 +122,16 @@ if ($action === 'clock_in') {
         $open = $chk->get_result()->fetch_assoc();
         $chk->close();
         if ($open) {
-            echo json_encode(["status" => "error", "message" => "You are already clocked in today. Please clock out first."]);
-            exit;
+            json_response(["status" => "error", "message" => "You are already clocked in today. Please clock out first."], 400);
         }
     }
 
     $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, is_geofenced) VALUES (?, ?, 'in', ?, ?, 1)");
     $stmt->bind_param("ssdd", $staff_id, $now, $lat, $lng);
     if ($stmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "Clocked in successfully!"]);
+        json_response(["status" => "success", "message" => "Clocked in successfully!"]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Database error: " . $conn->error]);
+        json_response(["status" => "error", "message" => "Database error. Please try again."], 500);
     }
     $stmt->close();
 
@@ -145,15 +150,15 @@ if ($action === 'clock_in') {
         $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, lat_out = ?, lng_out = ? WHERE id = ?");
         $stmt->bind_param("sdddi", $now, $total_hours, $lat, $lng, $record['id']);
         if ($stmt->execute()) {
-            echo json_encode(["status" => "success", "message" => "Clocked out successfully! Total: $total_hours hours"]);
+            json_response(["status" => "success", "message" => "Clocked out successfully! Total: $total_hours hours"]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Database error: " . $conn->error]);
+            json_response(["status" => "error", "message" => "Database error. Please try again."], 500);
         }
         $stmt->close();
     } else {
-        echo json_encode(["status" => "error", "message" => "No active clock-in found for today."]);
+        json_response(["status" => "error", "message" => "No active clock-in found for today."], 400);
     }
 }
 
-// Flush any accidental output (keep JSON clean)
-@ob_end_flush();
+// Nothing should reach here, but just in case:
+json_response(["status" => "error", "message" => "Unexpected server flow."], 500);

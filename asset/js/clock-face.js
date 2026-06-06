@@ -44,9 +44,11 @@
   }
 
   async function descriptorFromImage(imgEl, relaxed) {
-    const thresholds = relaxed ? [0.35, 0.25] : [0.45, 0.35];
+    // Fewer passes for speed on mobile
+    const thresholds = relaxed ? [0.35] : [0.40];
     for (const score of thresholds) {
-      const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: score });
+      // Smaller inputSize = faster (still accurate enough for clock-in)
+      const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: score });
       const det = await faceapi
         .detectSingleFace(imgEl, opts)
         .withFaceLandmarks()
@@ -99,12 +101,12 @@
 
     let bestDistance = 999;
     let bestDet = null;
-    const attempts = 3;
+    const attempts = 2;
 
     for (let i = 0; i < attempts; i++) {
       const opts = new faceapi.TinyFaceDetectorOptions({
-        inputSize: 416,
-        scoreThreshold: i === 0 ? 0.4 : 0.3,
+        inputSize: 320,
+        scoreThreshold: 0.35,
       });
       const det = await faceapi
         .detectSingleFace(videoEl, opts)
@@ -119,7 +121,7 @@
         }
       }
       if (i < attempts - 1) {
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 120));
       }
     }
 

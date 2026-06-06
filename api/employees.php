@@ -103,7 +103,19 @@ if ($br_res) {
     </div>
 
     <div style="overflow:auto;max-width:100%;">
-      <table class="responsive-table" id="employeesTable">
+      <table class="responsive-table pro-table" id="employeesTable">
+        <colgroup>
+          <col style="width: 60px;">
+          <col style="width: 84px;">
+          <col style="width: 220px;">
+          <col style="width: 110px;">
+          <col style="width: 170px;">
+          <col style="width: 150px;">
+          <col style="width: 190px;">
+          <col style="width: 220px;">
+          <col style="width: 130px;">
+          <col style="width: 150px;">
+        </colgroup>
         <thead>
           <tr>
             <th>ID</th>
@@ -123,6 +135,14 @@ if ($br_res) {
         $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id DESC");
         if ($result && $result->num_rows > 0) {
           while ($row = $result->fetch_assoc()) {
+            $fullName = htmlspecialchars($row['full_name']);
+            $staffId  = htmlspecialchars($row['staff_id']);
+            $jobTitle = htmlspecialchars($row['job_title']);
+            $dept     = htmlspecialchars($row['department']);
+            $branch   = htmlspecialchars($row['branch']);
+            $email    = htmlspecialchars($row['email']);
+            $phone    = htmlspecialchars($row['phone']);
+
             echo "<tr>
               <td data-label='ID'>{$row['id']}</td>
               <td data-label='Photo'>";
@@ -132,13 +152,13 @@ if ($br_res) {
                 echo "<span style='color:var(--text-muted);font-size:13px;'>No photo</span>";
               }
             echo "</td>
-              <td data-label='Name'><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
-              <td data-label='Staff ID'>" . htmlspecialchars($row['staff_id']) . "</td>
-              <td data-label='Job Title'>" . htmlspecialchars($row['job_title']) . "</td>
-              <td data-label='Department'>" . htmlspecialchars($row['department']) . "</td>
-              <td data-label='Branch'>" . htmlspecialchars($row['branch']) . "</td>
-              <td data-label='Email'>" . htmlspecialchars($row['email']) . "</td>
-              <td data-label='Mobile'>" . htmlspecialchars($row['phone']) . "</td>
+              <td data-label='Name' title='{$fullName}'><strong>{$fullName}</strong></td>
+              <td data-label='Staff ID' title='{$staffId}'><code>{$staffId}</code></td>
+              <td data-label='Job Title' title='{$jobTitle}'>{$jobTitle}</td>
+              <td data-label='Department' title='{$dept}'>{$dept}</td>
+              <td data-label='Branch' title='{$branch}'>{$branch}</td>
+              <td data-label='Email' title='{$email}'>{$email}</td>
+              <td data-label='Mobile' title='{$phone}'>{$phone}</td>
               <td data-label='Actions' style='white-space:nowrap;'>
                 <a href='edit_employee.php?id={$row['id']}'><button class='action-btn edit-btn'>Edit</button></a>
                 <a href='delete_employee.php?id={$row['id']}' onclick='return confirm(\"Are you sure?\");'><button class='action-btn delete-btn'>Delete</button></a>

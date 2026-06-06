@@ -430,6 +430,34 @@ tr:hover td {
   }
 }
 
+/* Extra compact on very small phones */
+@media (max-width: 420px) {
+  table.responsive-table td {
+    padding: 10px 12px;
+    gap: 10px;
+    font-size: 12px;
+  }
+  table.responsive-table td::before {
+    flex: 0 0 40%;
+    max-width: 40%;
+    font-size: 10px;
+  }
+}
+
+/* Professional dense tables for desktop */
+table.pro-table th, table.pro-table td {
+  font-size: 13px;
+  padding: 12px 14px;
+}
+table.pro-table td strong { font-weight: 700; }
+@media (min-width: 900px) {
+  table.pro-table td, table.pro-table th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 /* ============================================================
    FORMS & INPUTS
    ============================================================ */

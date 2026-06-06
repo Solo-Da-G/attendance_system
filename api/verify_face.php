@@ -6,24 +6,20 @@
  * Used by the face verification JavaScript to compare webcam capture
  * against the stored profile photo.
  */
-session_start();
 include("../includes/config.php");
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['admin'])) {
-    echo json_encode(["status" => "error", "message" => "Unauthorized"]);
+// This endpoint is kept for backward compatibility.
+// The system now stores staff photos as base64 data URIs in the database.
+
+if (empty($_SESSION['staff_id'])) {
+    echo json_encode(["status" => "error", "message" => "Staff session required."]);
     exit;
 }
 
-$staff_id = $_SESSION['staff_id'] ?? null;
+$staff_id = $_SESSION['staff_id'];
 
-if (!$staff_id) {
-    echo json_encode(["status" => "error", "message" => "Staff ID not found in session."]);
-    exit;
-}
-
-// Fetch staff photo
 $stmt = $conn->prepare("SELECT photo, full_name FROM staff WHERE staff_id = ? LIMIT 1");
 $stmt->bind_param("s", $staff_id);
 $stmt->execute();
@@ -36,27 +32,20 @@ if (!$staff) {
     exit;
 }
 
-if (empty($staff['photo'])) {
-    echo json_encode([
-        "status" => "error", 
-        "message" => "No profile photo found. Please contact your admin to upload your photo before clocking in."
-    ]);
-    exit;
-}
+$photo = $staff['photo'] ?? '';
+$ok = is_string($photo) && strlen($photo) > 500 && str_starts_with($photo, 'data:image');
 
-// Check if photo file actually exists
-$photo_path = "../uploads/" . $staff['photo'];
-if (!file_exists($photo_path)) {
+if (!$ok) {
     echo json_encode([
-        "status" => "error", 
-        "message" => "Profile photo file is missing. Please contact your admin to re-upload your photo."
+        "status" => "error",
+        "message" => "Profile photo missing or invalid. Admin should re-upload a clear JPG/PNG in Employees."
     ]);
     exit;
 }
 
 echo json_encode([
     "status" => "success",
-    "photo_url" => "uploads/" . $staff['photo'],
+    "photo" => $photo,
     "staff_name" => $staff['full_name']
 ]);
 ?>

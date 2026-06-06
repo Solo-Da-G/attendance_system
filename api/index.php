@@ -226,10 +226,10 @@ render_form:
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-top: 1px solid rgba(255, 255, 255, 0.2);
         border-left: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 48px;
+        padding: 34px 34px;
         border-radius: 32px;
         width: 100%;
-        max-width: 440px;
+        max-width: 380px;
         text-align: center;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
         transform: translateY(0);
@@ -266,14 +266,14 @@ render_form:
     .login-container h2 { 
         color: #ffffff; 
         margin-bottom: 8px; 
-        font-weight: 800; 
-        font-size: 32px; 
+        font-weight: 750; 
+        font-size: 28px; 
         letter-spacing: -0.5px;
     }
     .login-container p.subtitle { 
         color: rgba(255, 255, 255, 0.65); 
-        font-size: 16px; 
-        margin-bottom: 40px; 
+        font-size: 14px; 
+        margin-bottom: 26px; 
     }
 
     .login-container h2,
@@ -291,18 +291,18 @@ render_form:
     
     .input-group {
         position: relative;
-        margin-bottom: 20px;
+        margin-bottom: 14px;
         text-align: left;
     }
     .login-container input {
         width: 100%;
-        padding: 16px 24px;
+        padding: 14px 18px;
         background-color: rgba(15, 23, 42, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
         border-radius: 16px;
         color: #ffffff !important;
-        font-size: 16px;
-        font-weight: 500;
+        font-size: 15px;
+        font-weight: 520;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-sizing: border-box;
         display: block;
@@ -348,10 +348,10 @@ render_form:
         display: block;
         text-align: right;
         margin-top: -8px;
-        margin-bottom: 32px;
+        margin-bottom: 22px;
         font-size: 14px;
         color: var(--primary-light);
-        font-weight: 600;
+        font-weight: 650;
         text-decoration: none;
         transition: all 0.3s;
         opacity: 0.9;
@@ -364,13 +364,13 @@ render_form:
     
     .login-container button {
         width: 100%;
-        padding: 16px;
+        padding: 14px;
         background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
         border: none;
         border-radius: 16px;
         color: #ffffff;
-        font-weight: 700;
-        font-size: 16px;
+        font-weight: 750;
+        font-size: 15px;
         letter-spacing: 0.5px;
         cursor: pointer;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);

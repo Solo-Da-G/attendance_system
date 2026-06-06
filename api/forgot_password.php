@@ -100,47 +100,44 @@ if (isset($_POST['reset_request'])) {
         }
 
         if ($user_found) {
-            // Generate token
-            $token = bin2hex(random_bytes(32));
-            $expires_at = date("Y-m-d H:i:s", time() + (60 * 60));
-            
-            // Store token in the correct table
-            $upd = $conn->prepare("UPDATE $table SET reset_token = ?, reset_token_expires = ? WHERE id = ?");
-            $upd->bind_param("ssi", $token, $expires_at, $user_id);
-            
-            if ($upd->execute()) {
-                // Construct reset link
-                $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-                $host = $_SERVER['HTTP_HOST'];
-                $reset_link = "$protocol://$host/api/reset_password.php?token=$token&email=" . urlencode($email) . "&type=$table";
+            // Generate a temporary password and set it immediately.
+            // This matches your requirement: "send the temporary password to the person's email".
+            $tempPass = substr(bin2hex(random_bytes(8)), 0, 10);
+            $hashed = password_hash($tempPass, PASSWORD_DEFAULT);
 
-                // Email content
-                $subject = "Password Reset Request — Attendance System";
+            $upd = $conn->prepare("UPDATE $table SET password = ? WHERE id = ?");
+            $upd->bind_param("si", $hashed, $user_id);
+
+            if ($upd->execute()) {
+                $subject = "Your Temporary Password — Attendance System";
                 $body = "Hello $user_name,\n\n";
-                $body .= "You requested a password reset for your Attendance System account.\n";
-                $body .= "Click the link below to set a new password:\n\n";
-                $body .= $reset_link . "\n\n";
-                $body .= "If you did not request this, please ignore this email.\n\n";
+                $body .= "Here is your temporary password:\n\n";
+                $body .= $tempPass . "\n\n";
+                $body .= "Login and change your password immediately.\n\n";
                 $body .= "Regards,\nAttendance System Team";
 
                 $html = "<div style='font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;'>
-                    <h2 style='margin:0 0 12px;'>Password Reset</h2>
+                    <h2 style='margin:0 0 12px;'>Temporary Password</h2>
                     <p>Hello " . htmlspecialchars($user_name) . ",</p>
-                    <p>You requested a password reset for your Attendance System account.</p>
-                    <p><a href='" . htmlspecialchars($reset_link) . "' style='display:inline-block;padding:12px 18px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;'>Reset Password</a></p>
-                    <p style='color:#64748b;font-size:13px;'>This link expires in 1 hour. If you did not request this, ignore this email.</p>
+                    <p>Your temporary password is:</p>
+                    <div style='display:inline-block;background:#0f172a;color:#fff;padding:10px 14px;border-radius:10px;font-weight:800;letter-spacing:1px;'>
+                        " . htmlspecialchars($tempPass) . "
+                    </div>
+                    <p style='margin-top:16px;'><strong>Important:</strong> Please login and change your password immediately.</p>
+                    <p style='color:#64748b;font-size:13px;'>If you did not request this, contact your admin.</p>
                 </div>";
 
                 $send = sendSendGridEmail($email, $user_name, $subject, $body, $html);
                 if ($send['ok']) {
-                    $message = "✅ Success! A reset link has been sent to your email.";
+                    $message = "✅ Temporary password sent to your email.";
                     $msg_type = "success";
                 } else {
-                    $message = "✅ Token generated, but email could not be sent. Use this link: <br><a href='$reset_link' style='color:#3b82f6;'>Reset My Password</a>";
+                    // On Vercel, sending email requires SENDGRID_API_KEY + sender identity.
+                    $message = "✅ Password reset done, but email could not be sent (email service not configured). Please contact admin to configure SendGrid in Vercel env vars. Temporary password: <strong>" . htmlspecialchars($tempPass) . "</strong>";
                     $msg_type = "success";
                 }
             } else {
-                $message = "❌ Error generating reset token.";
+                $message = "❌ Failed to set temporary password. Please try again.";
                 $msg_type = "error";
             }
             $upd->close();
@@ -194,6 +191,11 @@ if (isset($_POST['reset_request'])) {
             font-weight: 600;
             margin-bottom: 20px;
             box-sizing: border-box;
+        }
+        .login-container input:focus {
+            outline: none;
+            border-color: rgba(129, 140, 248, 0.85) !important;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.25);
         }
         .login-container input::placeholder { color: rgba(255,255,255,0.5) !important; }
 
