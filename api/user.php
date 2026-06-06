@@ -84,17 +84,17 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
         .tab-content.active { display: block; }
     </style>
 </head>
-<body>
+<body class="app-page users-page">
 
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
 <div class="content">
-    <h2>ðŸ”‘ User Management</h2>
+    <h2>🔑 User Management</h2>
     <?php echo $message; ?>
     
     <div class="user-tabs">
-        <button class="tab-btn active" onclick="showTab('admin-tab')">ðŸ‘‘ Admin Users</button>
-        <button class="tab-btn" onclick="showTab('staff-tab')">ðŸ‘¥ Staff Members</button>
+        <button class="tab-btn active" onclick="showTab('admin-tab')">👤 Admin Users</button>
+        <button class="tab-btn" onclick="showTab('staff-tab')">👥 Staff Members</button>
     </div>
     
     <div id="admin-tab" class="tab-content active">
@@ -125,20 +125,27 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
             <button type="submit" name="create_admin_user" style="margin-top:12px;">Create Admin User</button>
         </form>
         
-        <h3 style="margin-bottom:12px;font-size:18px;">ðŸ“‹ Existing Admin Users</h3>
-        <table>
+        <div class="search-section" style="margin: 0 0 14px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="adminUserSearch" class="search-input" placeholder="Search admin users (username/email/role)..." onkeyup="filterTable('adminUserSearch','adminUsersTable')">
+        </div>
+
+        <h3 style="margin-bottom:12px;font-size:18px;">📋 Existing Admin Users</h3>
+        <div class="table-card">
+        <div style="overflow:auto;max-width:100%;">
+        <table class="responsive-table" id="adminUsersTable">
             <thead>
                 <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 <?php while ($row = $admin_users->fetch_assoc()): ?>
                 <tr>
-                    <td><?php echo $row['id']; ?></td>
-                    <td><?php echo htmlspecialchars($row['username']); ?></td>
-                    <td><?php echo htmlspecialchars($row['email'] ?: 'â€”'); ?></td>
-                    <td><span class="badge <?php echo ($row['role']=='super_admin') ? 'badge-danger' : (($row['role']=='admin') ? 'badge-warning' : 'badge-info'); ?>"><?php echo $row['role']; ?></span></td>
-                    <td><span class="badge badge-success"><?php echo $row['status'] ?? 'active'; ?></span></td>
-                    <td>
+                    <td data-label="ID"><?php echo $row['id']; ?></td>
+                    <td data-label="Username"><?php echo htmlspecialchars($row['username']); ?></td>
+                    <td data-label="Email"><?php echo htmlspecialchars($row['email'] ?: '—'); ?></td>
+                    <td data-label="Role"><span class="badge <?php echo ($row['role']=='super_admin') ? 'badge-danger' : (($row['role']=='admin') ? 'badge-warning' : 'badge-info'); ?>"><?php echo $row['role']; ?></span></td>
+                    <td data-label="Status"><span class="badge badge-success"><?php echo $row['status'] ?? 'active'; ?></span></td>
+                    <td data-label="Actions">
                         <a href="edit_user.php?id=<?php echo $row['id']; ?>"><button class="action-btn edit-btn">Edit</button></a>
                         <a href="user.php?delete_admin_id=<?php echo $row['id']; ?>" onclick="return confirm('Delete this admin user?');">
                            <button class="action-btn delete-btn">Delete</button>
@@ -148,30 +155,39 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
                 <?php endwhile; ?>
             </tbody>
         </table>
+        </div>
+        </div>
     </div>
     
     <div id="staff-tab" class="tab-content">
         <div style="background:#fef3c7; padding:15px; border-radius:12px; margin-bottom:20px;">
-            ðŸ’¡ <strong>Staff Login Info:</strong> Staff members login with their <strong>Staff ID</strong> as username. 
+            💡 <strong>Staff Login Info:</strong> Staff members login with their <strong>Staff ID</strong> as username. 
             Default password is also their <strong>Staff ID</strong>.
         </div>
         
-        <a href="employees.php"><button style="margin-bottom:20px;">âž• Add New Staff Member</button></a>
+        <a href="employees.php"><button style="margin-bottom:20px;">➕ Add New Staff Member</button></a>
+
+        <div class="search-section" style="margin: 0 0 14px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="staffUserSearch" class="search-input" placeholder="Search staff (name/phone/staff ID/branch)..." onkeyup="filterTable('staffUserSearch','staffUsersTable')">
+        </div>
         
-        <h3 style="margin-bottom:12px;font-size:18px;">ðŸ“‹ Registered Staff Members</h3>
-        <table>
+        <h3 style="margin-bottom:12px;font-size:18px;">📋 Registered Staff Members</h3>
+        <div class="table-card">
+        <div style="overflow:auto;max-width:100%;">
+        <table class="responsive-table" id="staffUsersTable">
             <thead>
                 <tr><th>ID</th><th>Staff ID</th><th>Full Name</th><th>Email</th><th>Branch</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 <?php while ($row = $staff_users->fetch_assoc()): ?>
                 <tr>
-                    <td><?php echo $row['id']; ?></td>
-                    <td><strong><?php echo htmlspecialchars($row['staff_id']); ?></strong></td>
-                    <td><?php echo htmlspecialchars($row['full_name']); ?></td>
-                    <td><?php echo htmlspecialchars($row['email'] ?: 'â€”'); ?></td>
-                    <td><?php echo htmlspecialchars($row['branch'] ?: 'â€”'); ?></td>
-                    <td>
+                    <td data-label="ID"><?php echo $row['id']; ?></td>
+                    <td data-label="Staff ID"><strong><?php echo htmlspecialchars($row['staff_id']); ?></strong></td>
+                    <td data-label="Full Name"><?php echo htmlspecialchars($row['full_name']); ?></td>
+                    <td data-label="Email"><?php echo htmlspecialchars($row['email'] ?: '—'); ?></td>
+                    <td data-label="Branch"><?php echo htmlspecialchars($row['branch'] ?: '—'); ?></td>
+                    <td data-label="Actions">
                         <a href="edit_employee.php?id=<?php echo $row['id']; ?>"><button class="action-btn edit-btn">Edit</button></a>
                         <a href="user.php?delete_staff_id=<?php echo urlencode($row['staff_id']); ?>" onclick="return confirm('Delete this staff member?');">
                            <button class="action-btn delete-btn">Delete</button>
@@ -184,6 +200,8 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
+        </div>
     </div>
 
     <div class="footer">
@@ -198,6 +216,22 @@ function showTab(tabId) {
     document.getElementById(tabId).classList.add('active');
     event.target.classList.add('active');
 }
+
+function filterTable(inputId, tableId) {
+    const input = document.getElementById(inputId);
+    const filter = (input.value || '').toUpperCase();
+    const table = document.getElementById(tableId);
+    const tr = table.getElementsByTagName("tr");
+    for (let i = 1; i < tr.length; i++) {
+        let found = false;
+        const tds = tr[i].getElementsByTagName("td");
+        for (let j = 0; j < tds.length; j++) {
+            if ((tds[j].textContent || '').toUpperCase().indexOf(filter) > -1) { found = true; break; }
+        }
+        tr[i].style.display = found ? "" : "none";
+    }
+}
 </script>
+<script src="/asset/js/ui-enhancements.js" defer></script>
 </body>
 </html>

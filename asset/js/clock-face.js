@@ -2,7 +2,8 @@
  * Face verification for staff clock-in/out (face-api.js).
  */
 (function (global) {
-  const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model/';
+  // Use local models (faster + avoids CDN delays/timeouts on mobile)
+  const MODEL_URL = '/asset/models';
   const MATCH_THRESHOLD = 0.55;
 
   let modelsReady = false;

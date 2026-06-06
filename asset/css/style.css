@@ -239,6 +239,42 @@ img { max-width: 100%; height: auto; }
 }
 
 /* ============================================================
+   SEARCH INPUTS
+   ============================================================ */
+.search-section {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+}
+
+.search-section .search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.45;
+  pointer-events: none;
+  font-size: 16px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.85);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
+
+/* ============================================================
    DASHBOARD CARDS
    ============================================================ */
 .cards {
@@ -338,12 +374,60 @@ th {
 td {
   border-bottom: 1px solid var(--border);
   color: var(--text);
+  vertical-align: top;
+  /* Allow long texts (emails, branch names) to wrap instead of hiding */
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 tr:last-child td { border-bottom: none; }
 
 tr:hover td {
   background: var(--primary-glow);
+}
+
+/* ============================================================
+   RESPONSIVE TABLE (mobile-friendly)
+   Add class="responsive-table" to any table you want to stack on phones.
+   ============================================================ */
+@media (max-width: 600px) {
+  table.responsive-table thead { display: none; }
+  table.responsive-table,
+  table.responsive-table tbody,
+  table.responsive-table tr,
+  table.responsive-table td {
+    display: block;
+    width: 100%;
+  }
+  table.responsive-table tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: rgba(255,255,255,0.9);
+  }
+  table.responsive-table td {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px dashed rgba(226,232,240,.9);
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  table.responsive-table td:last-child { border-bottom: none; }
+  table.responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    font-size: 11px;
+    max-width: 44%;
+    flex: 0 0 44%;
+  }
 }
 
 /* ============================================================

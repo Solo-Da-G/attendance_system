@@ -10,6 +10,11 @@ include("../lib/Geolocation.php");
 
 header('Content-Type: application/json');
 
+// Ensure this endpoint always returns valid JSON (avoid PHP warnings breaking responses)
+error_reporting(0);
+ini_set('display_errors', 0);
+@ob_start();
+
 if (!isset($_SESSION['admin'])) {
     echo json_encode(["status" => "error", "message" => "Unauthorized"]);
     exit;
@@ -28,6 +33,39 @@ if (!$staff_id) {
 if ($lat === null || $lng === null) {
     echo json_encode(["status" => "error", "message" => "Location data missing. Please enable GPS."]);
     exit;
+}
+
+if ($action !== 'clock_in' && $action !== 'clock_out') {
+    echo json_encode(["status" => "error", "message" => "Invalid action."]);
+    exit;
+}
+
+// ---------------------------------------------------------------
+// AUTO-CLOSE MISSED CLOCK-OUTS (previous day) at 12:00am
+// ---------------------------------------------------------------
+try {
+    $stmtMiss = $conn->prepare("SELECT id, clock_in FROM attendance WHERE staff_id = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
+    if ($stmtMiss) {
+        $stmtMiss->bind_param("s", $staff_id);
+        $stmtMiss->execute();
+        $miss = $stmtMiss->get_result()->fetch_assoc();
+        $stmtMiss->close();
+        if ($miss) {
+            $clock_in_date = date("Y-m-d", strtotime($miss['clock_in']));
+            $today_date = date("Y-m-d");
+            if ($clock_in_date < $today_date) {
+                $midnight = date("Y-m-d 00:00:00", strtotime($clock_in_date . " +1 day"));
+                $upd = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'missed_out', total_hours = 0 WHERE id = ? AND clock_out IS NULL");
+                if ($upd) {
+                    $upd->bind_param("si", $midnight, $miss['id']);
+                    $upd->execute();
+                    $upd->close();
+                }
+            }
+        }
+    }
+} catch (Throwable $t) {
+    // ignore - clocking will still proceed
 }
 
 // ---------------------------------------------------------------
@@ -70,6 +108,19 @@ $now  = date("Y-m-d H:i:s");
 $date = date("Y-m-d");
 
 if ($action === 'clock_in') {
+    // Prevent double clock-in: if there's an open record already (today), require clock-out.
+    $chk = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
+    if ($chk) {
+        $chk->bind_param("ss", $staff_id, $date);
+        $chk->execute();
+        $open = $chk->get_result()->fetch_assoc();
+        $chk->close();
+        if ($open) {
+            echo json_encode(["status" => "error", "message" => "You are already clocked in today. Please clock out first."]);
+            exit;
+        }
+    }
+
     $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, is_geofenced) VALUES (?, ?, 'in', ?, ?, 1)");
     $stmt->bind_param("ssdd", $staff_id, $now, $lat, $lng);
     if ($stmt->execute()) {
@@ -103,3 +154,6 @@ if ($action === 'clock_in') {
         echo json_encode(["status" => "error", "message" => "No active clock-in found for today."]);
     }
 }
+
+// Flush any accidental output (keep JSON clean)
+@ob_end_flush();

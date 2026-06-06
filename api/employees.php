@@ -87,6 +87,11 @@ if ($br_res) {
     <button class="add-btn" onclick="openModal()">+ Add New Employee</button>
   </div>
 
+  <div class="search-section" style="margin-top: 12px;">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="employeeSearch" class="search-input" placeholder="Search staff by name, phone, staff ID, branch..." onkeyup="filterEmployees()">
+  </div>
+
   <div class="password-hint">
     💡 <strong>Note:</strong> If you leave the password blank, the employee's default password will be their <strong>Staff ID</strong>.
   </div>
@@ -98,7 +103,7 @@ if ($br_res) {
     </div>
 
     <div style="overflow:auto;max-width:100%;">
-      <table>
+      <table class="responsive-table" id="employeesTable">
         <thead>
           <tr>
             <th>ID</th>
@@ -119,22 +124,22 @@ if ($br_res) {
         if ($result && $result->num_rows > 0) {
           while ($row = $result->fetch_assoc()) {
             echo "<tr>
-              <td>{$row['id']}</td>
-              <td>";
+              <td data-label='ID'>{$row['id']}</td>
+              <td data-label='Photo'>";
               if (!empty($row['photo'])) {
                 echo "<img src='{$row['photo']}' class='photo' alt='Photo'>";
               } else {
                 echo "<span style='color:var(--text-muted);font-size:13px;'>No photo</span>";
               }
             echo "</td>
-              <td><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
-              <td>" . htmlspecialchars($row['staff_id']) . "</td>
-              <td>" . htmlspecialchars($row['job_title']) . "</td>
-              <td>" . htmlspecialchars($row['department']) . "</td>
-              <td>" . htmlspecialchars($row['branch']) . "</td>
-              <td>" . htmlspecialchars($row['email']) . "</td>
-              <td>" . htmlspecialchars($row['phone']) . "</td>
-              <td style='white-space:nowrap;'>
+              <td data-label='Name'><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
+              <td data-label='Staff ID'>" . htmlspecialchars($row['staff_id']) . "</td>
+              <td data-label='Job Title'>" . htmlspecialchars($row['job_title']) . "</td>
+              <td data-label='Department'>" . htmlspecialchars($row['department']) . "</td>
+              <td data-label='Branch'>" . htmlspecialchars($row['branch']) . "</td>
+              <td data-label='Email'>" . htmlspecialchars($row['email']) . "</td>
+              <td data-label='Mobile'>" . htmlspecialchars($row['phone']) . "</td>
+              <td data-label='Actions' style='white-space:nowrap;'>
                 <a href='edit_employee.php?id={$row['id']}'><button class='action-btn edit-btn'>Edit</button></a>
                 <a href='delete_employee.php?id={$row['id']}' onclick='return confirm(\"Are you sure?\");'><button class='action-btn delete-btn'>Delete</button></a>
               </td>
@@ -218,8 +223,22 @@ if ($br_res) {
       modal.style.display = "none";
     }
   }
+
+  function filterEmployees() {
+    const input = document.getElementById('employeeSearch');
+    const filter = (input.value || '').toUpperCase();
+    const table = document.getElementById('employeesTable');
+    const rows = table.getElementsByTagName('tr');
+    for (let i = 1; i < rows.length; i++) {
+      const tds = rows[i].getElementsByTagName('td');
+      let found = false;
+      for (let j = 0; j < tds.length; j++) {
+        if ((tds[j].textContent || '').toUpperCase().indexOf(filter) > -1) { found = true; break; }
+      }
+      rows[i].style.display = found ? '' : 'none';
+    }
+  }
 </script>
 <script src="/asset/js/ui-enhancements.js" defer></script>
 </body>
 </html>
-

@@ -25,6 +25,29 @@ if ($staff->num_rows == 0) {
 }
 $stmt->close();
 
+// ---------------------------------------------------------------
+// Auto-close missed clock-outs (previous day) at 12:00am
+// ---------------------------------------------------------------
+$stmtMiss = $conn->prepare("SELECT id, clock_in FROM attendance WHERE staff_id = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
+if ($stmtMiss) {
+    $stmtMiss->bind_param("s", $staff_id);
+    $stmtMiss->execute();
+    $miss = $stmtMiss->get_result()->fetch_assoc();
+    $stmtMiss->close();
+    if ($miss) {
+        $clock_in_date = date("Y-m-d", strtotime($miss['clock_in']));
+        if ($clock_in_date < $today) {
+            $midnight = date("Y-m-d 00:00:00", strtotime($clock_in_date . " +1 day"));
+            $upd = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'missed_out', total_hours = 0 WHERE id = ? AND clock_out IS NULL");
+            if ($upd) {
+                $upd->bind_param("si", $midnight, $miss['id']);
+                $upd->execute();
+                $upd->close();
+            }
+        }
+    }
+}
+
 // Check if already clocked in today
 $stmt = $conn->prepare("SELECT id, clock_in, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
 $stmt->bind_param("ss", $staff_id, $today);

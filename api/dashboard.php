@@ -7,6 +7,28 @@ if (!isset($_SESSION['admin_id']) && !isset($_SESSION['staff_id'])) {
     exit;
 }
 
+$today_date = date("Y-m-d");
+// Auto-close any stale open attendance (previous days) so they show as "Missed clock-out" from 12:00am.
+// This runs for admins and staff whenever the dashboard is opened.
+try {
+    $stale = $conn->prepare("SELECT id, clock_in FROM attendance WHERE clock_out IS NULL AND DATE(clock_in) < CURDATE() ORDER BY id DESC LIMIT 50");
+    if ($stale) {
+        $stale->execute();
+        $rs = $stale->get_result();
+        while ($r = $rs->fetch_assoc()) {
+            $clock_in_date = date("Y-m-d", strtotime($r['clock_in']));
+            $midnight = date("Y-m-d 00:00:00", strtotime($clock_in_date . " +1 day"));
+            $upd = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'missed_out', total_hours = 0 WHERE id = ? AND clock_out IS NULL");
+            if ($upd) {
+                $upd->bind_param("si", $midnight, $r['id']);
+                $upd->execute();
+                $upd->close();
+            }
+        }
+        $stale->close();
+    }
+} catch (Throwable $t) { /* ignore */ }
+
 $is_admin = isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'super_admin');
 $staff_id = $_SESSION['staff_id'] ?? null;
 $display_name = $_SESSION['admin'] ?? 'User';
@@ -254,6 +276,33 @@ try {
         </div>
 
         <?php
+            // -----------------------------------------------------------
+            // Auto-close "missed clock-out" from previous day(s)
+            // If a staff forgot to clock out, at the next day (12:00am) we mark it as MISSED and allow new clock-in.
+            // -----------------------------------------------------------
+            $missed_stmt = $conn->prepare("SELECT id, clock_in FROM `attendance` WHERE staff_id = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
+            if ($missed_stmt) {
+                $missed_stmt->bind_param("s", $staff_id);
+                $missed_stmt->execute();
+                $missed_res = $missed_stmt->get_result();
+                if ($missed_res && $missed_res->num_rows > 0) {
+                    $m = $missed_res->fetch_assoc();
+                    $clock_in_date = date("Y-m-d", strtotime($m['clock_in']));
+                    $today_date = date("Y-m-d");
+                    if ($clock_in_date < $today_date) {
+                        $midnight = date("Y-m-d 00:00:00", strtotime($clock_in_date . " +1 day"));
+                        // Set total_hours to 0 to avoid over-counting overnight hours.
+                        $upd_missed = $conn->prepare("UPDATE `attendance` SET clock_out = ?, status = 'missed_out', total_hours = 0 WHERE id = ? AND clock_out IS NULL");
+                        if ($upd_missed) {
+                            $upd_missed->bind_param("si", $midnight, $m['id']);
+                            $upd_missed->execute();
+                            $upd_missed->close();
+                        }
+                    }
+                }
+                $missed_stmt->close();
+            }
+
             $is_clocked_in = false;
             $stmt = $conn->prepare("SELECT id FROM `attendance` WHERE staff_id = ? AND clock_out IS NULL ORDER BY clock_in DESC LIMIT 1");
             if ($stmt) {
@@ -318,7 +367,7 @@ try {
     <div class="recent-table" style="margin-top: 30px;">
         <h3>🕒 Your Recent Attendance</h3>
         <div class="table-scroll">
-        <table id="staffAttendanceTable">
+        <table id="staffAttendanceTable" class="responsive-table">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -335,10 +384,19 @@ try {
                     $stmt->execute();
                     $res = $stmt->get_result();
                     while ($r = $res->fetch_assoc()) {
-                        $in = date("M d, Y h:i A", strtotime($r['clock_in']));
+                        $badgeClass = 'badge-warning';
+                        $label = strtoupper((string)($r['status'] ?? ''));
+                        if ($r['status'] === 'in') { $badgeClass = 'badge-success'; $label = 'IN'; }
+                        elseif ($r['status'] === 'out') { $badgeClass = 'badge-info'; $label = 'OUT'; }
+                        elseif ($r['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'MISSED OUT'; }
+                        $stat = "<span class='badge {$badgeClass}'>{$label}</span>";
                         $out = $r['clock_out'] ? date("h:i A", strtotime($r['clock_out'])) : '—';
-                        $stat = "<span class='badge badge-" . ($r['status']=='in' ? 'success' : 'warning') . "'>" . strtoupper($r['status']) . "</span>";
-                        echo "<tr><td>".date("M d, Y", strtotime($r['clock_in']))."</td><td>".date("h:i A", strtotime($r['clock_in']))."</td><td>$out</td><td>$stat</td></tr>";
+                        echo "<tr>";
+                        echo "<td data-label='Date'>".date("M d, Y", strtotime($r['clock_in']))."</td>";
+                        echo "<td data-label='Clock In'>".date("h:i A", strtotime($r['clock_in']))."</td>";
+                        echo "<td data-label='Clock Out'>".$out."</td>";
+                        echo "<td data-label='Status'>".$stat."</td>";
+                        echo "</tr>";
                     }
                     if ($res->num_rows === 0) echo "<tr><td colspan='4' style='text-align:center;'>No records found.</td></tr>";
                     $stmt->close();
@@ -400,7 +458,7 @@ try {
             <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⌚</div>
             <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; margin-bottom: 8px;">
                 <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;" id="timeTrackedLabel">Time Tracked Today</div>
-                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Toggle Day">
+                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.55); color: white; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 14px rgba(0,0,0,0.15); transition: background 0.2s, transform 0.2s;" title="Toggle Day" onmouseover="this.style.background='rgba(255,255,255,0.55)';this.style.transform='scale(1.05)';" onmouseout="this.style.background='rgba(255,255,255,0.35)';this.style.transform='scale(1)';">
                     <svg id="timeTrackedIcon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
                 </button>
             </div>
@@ -440,7 +498,7 @@ try {
 
     <div class="recent-table">
         <div class="table-scroll">
-        <table id="attendanceTable">
+        <table id="attendanceTable" class="responsive-table">
             <thead>
                 <tr>
                     <th>Staff Name</th>
@@ -456,22 +514,34 @@ try {
                     $res = $conn->query("SELECT a.*, s.full_name, s.photo FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 50");
                     if ($res && !is_bool($res) && $res->num_rows > 0) {
                         while($row = $res->fetch_assoc()){
-                        $status_badge = $row['clock_out'] ? 'badge-info' : 'badge-success';
-                        $status_text = $row['clock_out'] ? 'Completed' : 'Working';
+                        $status_badge = 'badge-success';
+                        $status_text = 'Working';
+                        if (($row['status'] ?? '') === 'missed_out') {
+                            $status_badge = 'badge-danger';
+                            $status_text = 'Missed clock-out';
+                        } elseif (!empty($row['clock_out'])) {
+                            $status_badge = 'badge-info';
+                            $status_text = 'Completed';
+                        }
                         $selfie = $row['photo_in'] ?: $row['photo_out'];
                         
                         echo "<tr>";
-                        echo "<td>";
+                        echo "<td data-label='Staff Name'>";
                         if($row['photo']) echo "<img src='{$row['photo']}' class='staff-thumb'>";
                         echo "<strong>".htmlspecialchars($row['full_name'])."</strong></td>";
-                        echo "<td><code>".htmlspecialchars($row['staff_id'])."</code></td>";
-                        echo "<td>".date('M j, g:i A', strtotime($row['clock_in']))."</td>";
-                        echo "<td>".($row['clock_out'] ? date('M j, g:i A', strtotime($row['clock_out'])) : '—')."</td>";
-                        echo "<td>";
+                        echo "<td data-label='Staff ID'><code>".htmlspecialchars($row['staff_id'])."</code></td>";
+                        echo "<td data-label='Clock In'>".date('M j, g:i A', strtotime($row['clock_in']))."</td>";
+                        $clockOutLabel = '—';
+                        if (!empty($row['clock_out'])) {
+                            $clockOutLabel = date('M j, g:i A', strtotime($row['clock_out']));
+                            if (($row['status'] ?? '') === 'missed_out') $clockOutLabel .= " <small style='opacity:.8;'>(missed)</small>";
+                        }
+                        echo "<td data-label='Clock Out'>".$clockOutLabel."</td>";
+                        echo "<td data-label='Selfie'>";
                         if($selfie) echo "<img src='{$selfie}' class='staff-thumb' style='border-radius:4px; cursor:pointer;' onclick='showFull(this.src)'>";
                         else echo "<span style='color:#ccc;'>No photo</span>";
                         echo "</td>";
-                        echo "<td><span class='badge {$status_badge}'>{$status_text}</span></td>";
+                        echo "<td data-label='Status'><span class='badge {$status_badge}'>{$status_text}</span></td>";
                         echo "</tr>";
                         }
                     } else {

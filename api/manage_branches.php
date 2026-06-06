@@ -95,12 +95,12 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
         }
     </style>
 </head>
-<body>
+<body class="app-page branches-page">
 
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
 <div class="content">
-    <h2>ðŸ“ Manage Branches & Geofencing</h2>
+    <h2>📍 Manage Branches & Geofencing</h2>
     <p class="subtitle">Define your office locations and allowed clock-in radius.</p>
 
     <?php if ($message): ?>
@@ -131,16 +131,21 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                     <input type="text" id="newBranchLng" name="longitude" placeholder="e.g. 3.3797377" required>
                 </div>
             </div>
-            <button type="button" onclick="fillBranchGps('newBranchLat','newBranchLng')" style="margin-top:12px;background:#0f766e;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;">ðŸ“ Use my device GPS</button>
+            <button type="button" onclick="fillBranchGps('newBranchLat','newBranchLng')" style="margin-top:12px;background:#0f766e;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;">📍 Use my device GPS</button>
             <button type="submit" name="add_branch" style="margin-top:12px;margin-left:8px;">Save Branch & Location</button>
         </form>
     </div>
 
     <!-- BRANCH LIST -->
-    <h3>ðŸ“Œ Registered Branches</h3>
+    <div class="search-section" style="margin: 8px 0 16px;">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="branchSearch" class="search-input" placeholder="Search branches..." onkeyup="filterBranches()">
+    </div>
+
+    <h3>📌 Registered Branches</h3>
     <div class="branch-grid">
         <?php while ($b = $branches->fetch_assoc()): ?>
-            <div class="branch-card">
+            <div class="branch-card" data-branch="<?php echo htmlspecialchars(strtoupper($b['branch_name'])); ?>">
                 <h4><?php echo htmlspecialchars($b['branch_name']); ?></h4>
                 <div class="coordinates">
                     LAT: <?php echo $b['latitude']; ?> | LNG: <?php echo $b['longitude']; ?>
@@ -150,7 +155,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                 </div>
                 <button type="button" class="action-btn edit-btn" style="width:100%;margin-bottom:8px;"
                     onclick="updateBranchGps(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')">
-                    ðŸ“ Set coords from my device GPS
+                    📍 Set coords from my device GPS
                 </button>
                 <a href="?delete_id=<?php echo $b['id']; ?>" 
                    onclick="return confirm('Delete this branch? Attendance logs will not be affected.');">
@@ -161,7 +166,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
     </div>
 
     <div style="background:#fdf4ff; border:1px solid #f5d0fe; padding:24px; border-radius:20px; margin-top:40px;">
-        <h3 style="color:#86198f; margin-bottom:12px;">ðŸŒ How Geofencing Works</h3>
+        <h3 style="color:#86198f; margin-bottom:12px;">🌍 How Geofencing Works</h3>
         <p style="font-size:14px; color:#86198f; line-height:1.6;">
             1. <strong>Define Branch</strong>: Add your office location above by providing the exact Latitude and Longitude.<br>
             2. <strong>Set Radius</strong>: The "Radius" is the allowed distance (in meters) from the center of the office. 200m is recommended.<br>
@@ -176,6 +181,14 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
 </div>
 
 <script>
+function filterBranches() {
+    const q = (document.getElementById('branchSearch').value || '').toUpperCase();
+    document.querySelectorAll('.branch-card').forEach(card => {
+        const name = card.getAttribute('data-branch') || '';
+        card.style.display = name.indexOf(q) > -1 ? '' : 'none';
+    });
+}
+
 function fillBranchGps(latId, lngId) {
     if (!navigator.geolocation) { alert('GPS not available'); return; }
     navigator.geolocation.getCurrentPosition(function(pos) {
@@ -202,6 +215,7 @@ function updateBranchGps(branchId, branchName) {
 }
 </script>
 
+<script src="/asset/js/ui-enhancements.js" defer></script>
 </body>
 </html>
 
