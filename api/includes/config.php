@@ -1,5 +1,29 @@
 <?php
+/**
+ * Determine whether the current request is HTTPS.
+ * (Vercel sits behind a proxy, so we also check X-Forwarded-Proto.)
+ */
+if (!function_exists('is_https_request')) {
+    function is_https_request(): bool
+    {
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return true;
+        if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') return true;
+        return false;
+    }
+}
+
+// Start session (with sane cookie settings for both local + HTTPS deployments)
 if (session_status() === PHP_SESSION_NONE) {
+    $secure = is_https_request();
+    // Ensure the session cookie works correctly on HTTPS and doesn't break local HTTP.
+    // Note: must be called BEFORE session_start()
+    @session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 /**

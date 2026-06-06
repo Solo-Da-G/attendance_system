@@ -6,16 +6,11 @@ $idle_notice = (isset($_GET['reason']) && $_GET['reason'] === 'idle')
     ? 'You were signed out after 1 minute of inactivity.'
     : '';
 
-// If already logged in, destroy session so they must log in again when visiting index.php
+// If already logged in, do NOT destroy the session (this was causing "random logouts" on Vercel).
+// Instead, just send the user to the dashboard.
 if (isset($_SESSION['admin_id']) || isset($_SESSION['staff_id'])) {
-    if (isset($_SESSION['admin_id'])) {
-        $conn->query("UPDATE `admin` SET auth_token = NULL WHERE id = " . (int)$_SESSION['admin_id']);
-    } elseif (isset($_SESSION['staff_id'])) {
-        $conn->query("UPDATE `staff` SET auth_token = NULL WHERE staff_id = '" . $conn->real_escape_string($_SESSION['staff_id']) . "'");
-    }
-    session_unset();
-    session_destroy();
-    setcookie('auth_token', '', ['expires' => time() - 3600, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+    header("Location: /dashboard.php");
+    exit;
 }
 
 // Handle login form
@@ -52,15 +47,24 @@ if (isset($_POST['login'])) {
                     }
                 } catch (Exception $e) { }
 
+                $saved = false;
                 $upd = $conn->prepare("UPDATE `admin` SET auth_token = ? WHERE id = ?");
                 if ($upd) {
                     $upd->bind_param("si", $token, $row['id']);
-                    $upd->execute();
+                    $saved = (bool)$upd->execute();
                     $upd->close();
                 }
-                setcookie('auth_token', $token, ['expires' => 0, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
-                header("Location: dashboard.php");
-                exit;
+
+                if (!$saved) {
+                    // On Vercel, PHP sessions may not persist reliably, so we MUST be able to save/restore auth_token.
+                    $error = "Server setup incomplete (admin auth token not saved). Please run api/fix_database.php on your cloud DB or add the admin.auth_token column (and ensure DB user has ALTER/UPDATE permission).";
+                    goto render_form;
+                } else {
+                    $secure = function_exists('is_https_request') ? is_https_request() : true;
+                    setcookie('auth_token', $token, ['expires' => 0, 'path' => '/', 'secure' => $secure, 'httponly' => true, 'samesite' => 'Lax']);
+                    header("Location: /dashboard.php");
+                    exit;
+                }
             }
         }
 
@@ -97,22 +101,32 @@ if (isset($_POST['login'])) {
                     // Ignore column existence errors
                 }
                 
+                $saved = false;
                 $upd = $conn->prepare("UPDATE `staff` SET auth_token = ? WHERE id = ?");
                 if ($upd) {
                     $upd->bind_param("si", $token, $row['id']);
-                    $upd->execute();
+                    $saved = (bool)$upd->execute();
                     $upd->close();
                 }
-                setcookie('auth_token', 'staff_' . $token, ['expires' => 0, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
-                
-                header("Location: dashboard.php");
-                exit;
+
+                if (!$saved) {
+                    $error = "Server setup incomplete (staff auth token not saved). Please run api/fix_database.php on your cloud DB or add the staff.auth_token column (and ensure DB user has ALTER/UPDATE permission).";
+                    goto render_form;
+                } else {
+                    $secure = function_exists('is_https_request') ? is_https_request() : true;
+                    setcookie('auth_token', 'staff_' . $token, ['expires' => 0, 'path' => '/', 'secure' => $secure, 'httponly' => true, 'samesite' => 'Lax']);
+                    header("Location: /dashboard.php");
+                    exit;
+                }
             }
         }
 
-        $error = "Invalid username or password!";
+        if (empty($error)) {
+            $error = "Invalid username or password!";
+        }
     }
 }
+render_form:
 ?>
 <!DOCTYPE html>
 <html lang="en">

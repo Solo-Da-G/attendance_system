@@ -1,6 +1,9 @@
 <?php
 include(__DIR__ . "/includes/config.php");
 
+// Preserve reason (used for idle auto logout notice)
+$reason = (isset($_GET['reason']) && $_GET['reason'] === 'idle') ? 'idle' : '';
+
 // Clear auth token from Database for maximum security
 if (isset($_SESSION['admin_id'])) {
     $conn->query("UPDATE `admin` SET auth_token = NULL WHERE id = " . (int)$_SESSION['admin_id']);
@@ -21,15 +24,17 @@ if (ini_get("session.use_cookies")) {
 }
 
 // Clear the auth cookie in the browser
+$secure = function_exists('is_https_request') ? is_https_request() : true;
 setcookie('auth_token', '', [
     'expires'  => time() - 3600,
     'path'     => '/',
-    'secure'   => true,
+    'secure'   => $secure,
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
 
-header("Location: index.php");
+$dest = '/' . ($reason ? '?reason=idle' : '');
+header("Location: " . $dest);
 exit;
 ?>
 
