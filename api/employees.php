@@ -8,39 +8,41 @@ if (!isset($_SESSION['admin_id'])) {
 
 // Handle form submission (Add Employee)
 if (isset($_POST['add_employee'])) {
-    $staff_id = trim($_POST['staff_id']);
-    $full_name = trim($_POST['full_name']);
-    $job_title = trim($_POST['job_title']);
-    $department = trim($_POST['department']);
-    $branch = trim($_POST['branch']);
-    $email = trim($_POST['email']);
-    $phone = trim($_POST['phone']);
-    
-    // FIX: If password is empty, default to Staff ID
-    $plain_password = !empty($_POST['password']) ? $_POST['password'] : $staff_id;
-    $password = password_hash($plain_password, PASSWORD_DEFAULT);
-    
-    $photo = "";
+    $staff_id    = trim($_POST['staff_id']);
+    $full_name   = trim($_POST['full_name']);
+    $job_title   = trim($_POST['job_title']);
+    $department  = trim($_POST['department']);
+    $branch      = trim($_POST['branch']);
+    $email       = trim($_POST['email']);
+    $phone       = trim($_POST['phone']);
 
-    // Handle photo upload
+    // If password is empty, default to Staff ID
+    $plain_password = !empty($_POST['password']) ? $_POST['password'] : $staff_id;
+    $password       = password_hash($plain_password, PASSWORD_DEFAULT);
+
+    $photo = "";
     if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
         $imgData = file_get_contents($_FILES['photo']['tmp_name']);
         $imgType = mime_content_type($_FILES['photo']['tmp_name']);
         $photo   = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
     }
 
-    // Insert new record
     $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo);
-
-    if ($stmt->execute()) {
-        echo "<script>alert('Employee added successfully! Default password is: " . addslashes($plain_password) . "'); window.location='employees.php';</script>";
+    if ($stmt) {
+        $stmt->bind_param("sssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo);
+        if ($stmt->execute()) {
+            echo "<script>alert('Employee added successfully! Default password is: " . addslashes($plain_password) . "'); window.location='employees.php';</script>";
+            exit;
+        } else {
+            echo "<script>alert('Error adding employee: " . addslashes($stmt->error) . "');</script>";
+        }
+        $stmt->close();
     } else {
-        echo "<script>alert('Error adding employee: " . addslashes($stmt->error) . "');</script>";
+        echo "<script>alert('Server error: could not prepare statement.');</script>";
     }
-    $stmt->close();
 }
 
+// Branch options
 $branch_options = [];
 $br_res = $conn->query("SELECT branch_name FROM branches ORDER BY branch_name ASC");
 if ($br_res) {
@@ -59,79 +61,93 @@ if ($br_res) {
 <link rel="stylesheet" href="/asset/css/style.css">
 <style>
     .password-hint {
-        background: #fef3c7;
-        border-left: 4px solid #f59e0b;
-        padding: 12px;
-        margin: 15px 0;
-        border-radius: 8px;
+        background: rgba(254, 243, 199, 0.9);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-left: 5px solid #f59e0b;
+        padding: 14px 16px;
+        margin: 14px 0 18px;
+        border-radius: 14px;
         font-size: 13px;
         color: #92400e;
+        box-shadow: var(--shadow-sm);
+        backdrop-filter: blur(10px);
     }
 </style>
 </head>
-<body>
+<body class="app-page employees-page">
 
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
 <div class="content">
-  <h2>Employees Management</h2>
-  
-  <div class="password-hint">
-    💡 <strong>Note:</strong> If you leave the password blank, the employee's default password will be their <strong>Staff ID</strong>. 
-    They can change it after first login.
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;">
+    <div>
+      <h2>Employees</h2>
+      <p class="subtitle">Manage staff records, photos, and default passwords.</p>
+    </div>
+    <button class="add-btn" onclick="openModal()">+ Add New Employee</button>
   </div>
 
-  <button class="add-btn" onclick="openModal()">+ Add New Employee</button>
+  <div class="password-hint">
+    💡 <strong>Note:</strong> If you leave the password blank, the employee's default password will be their <strong>Staff ID</strong>.
+  </div>
 
-  <!-- Table -->
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Photo</th>
-        <th>Name</th>
-        <th>Employee ID</th>
-        <th>Job Title</th>
-        <th>Department</th>
-        <th>Branch</th>
-        <th>Email</th>
-        <th>Mobile</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-    <?php
-    $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id DESC");
-    if ($result && $result->num_rows > 0) {
-      while ($row = $result->fetch_assoc()) {
-        echo "<tr>
-          <td>{$row['id']}</td>
-          <td>";
-          if (!empty($row['photo'])) {
-            echo "<img src='{$row['photo']}' class='photo' alt='Photo' style='width:40px;height:40px;border-radius:50%;object-fit:cover;'>";
-          } else {
-            echo "<span style='color:var(--text-muted);font-size:13px;'>No photo</span>";
+  <div class="table-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+      <div style="font-weight:800;">Staff List</div>
+      <div style="color:var(--text-muted);font-size:13px;">Tip: Hover a row to highlight it.</div>
+    </div>
+
+    <div style="overflow:auto;max-width:100%;">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Photo</th>
+            <th>Name</th>
+            <th>Staff ID</th>
+            <th>Job Title</th>
+            <th>Department</th>
+            <th>Branch</th>
+            <th>Email</th>
+            <th>Mobile</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php
+        $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id DESC");
+        if ($result && $result->num_rows > 0) {
+          while ($row = $result->fetch_assoc()) {
+            echo "<tr>
+              <td>{$row['id']}</td>
+              <td>";
+              if (!empty($row['photo'])) {
+                echo "<img src='{$row['photo']}' class='photo' alt='Photo'>";
+              } else {
+                echo "<span style='color:var(--text-muted);font-size:13px;'>No photo</span>";
+              }
+            echo "</td>
+              <td><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
+              <td>" . htmlspecialchars($row['staff_id']) . "</td>
+              <td>" . htmlspecialchars($row['job_title']) . "</td>
+              <td>" . htmlspecialchars($row['department']) . "</td>
+              <td>" . htmlspecialchars($row['branch']) . "</td>
+              <td>" . htmlspecialchars($row['email']) . "</td>
+              <td>" . htmlspecialchars($row['phone']) . "</td>
+              <td style='white-space:nowrap;'>
+                <a href='edit_employee.php?id={$row['id']}'><button class='action-btn edit-btn'>Edit</button></a>
+                <a href='delete_employee.php?id={$row['id']}' onclick='return confirm(\"Are you sure?\");'><button class='action-btn delete-btn'>Delete</button></a>
+              </td>
+            </tr>";
           }
-        echo "</td>
-          <td><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
-          <td>{$row['staff_id']}</td>
-          <td>{$row['job_title']}</td>
-          <td>{$row['department']}</td>
-          <td>{$row['branch']}</td>
-          <td>{$row['email']}</td>
-          <td>{$row['phone']}</td>
-          <td>
-            <a href='edit_employee.php?id={$row['id']}'><button class='action-btn edit-btn'>Edit</button></a>
-            <a href='delete_employee.php?id={$row['id']}' onclick='return confirm(\"Are you sure?\");'><button class='action-btn delete-btn'>Delete</button></a>
-          </td>
-        </tr>";
-      }
-    } else {
-      echo "<tr><td colspan='10' style='text-align:center;'>No employees found</td></tr>";
-    }
-    ?>
-    </tbody>
-  </table>
+        } else {
+          echo "<tr><td colspan='10' style='text-align:center;color:var(--text-muted);'>No employees found</td></tr>";
+        }
+        ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <div class="footer">
     &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu
@@ -144,19 +160,19 @@ if ($br_res) {
     <span class="close-btn" onclick="closeModal()">&times;</span>
     <h3>Add New Employee</h3>
     <form method="POST" enctype="multipart/form-data">
-      <label>Employee ID *</label>
+      <label>Staff ID *</label>
       <input type="text" name="staff_id" placeholder="e.g. EMP001" required>
       <small style="color:var(--text-muted);">This will be the default password if left blank</small>
-      
+
       <label>Full Name *</label>
       <input type="text" name="full_name" placeholder="John Doe" required>
-      
+
       <label>Job Title</label>
       <input type="text" name="job_title" placeholder="Software Engineer" required>
-      
+
       <label>Department</label>
       <input type="text" name="department" placeholder="IT Department" required>
-      
+
       <label>Branch</label>
       <?php if (!empty($branch_options)): ?>
       <select name="branch" required>
@@ -168,20 +184,20 @@ if ($br_res) {
       <?php else: ?>
       <input type="text" name="branch" placeholder="Add branches first" required>
       <?php endif; ?>
-      
+
       <label>Email</label>
       <input type="email" name="email" placeholder="john@example.com" required>
-      
+
       <label>Mobile No</label>
       <input type="text" name="phone" placeholder="+234..." required>
-      
+
       <label>Password (Optional)</label>
       <input type="password" name="password" placeholder="Leave blank to use Staff ID">
-      <small style="color:var(--text-muted);">Default: Staff ID (e.g., EMP001)</small>
-      
+      <small style="color:var(--text-muted);">Default: Staff ID</small>
+
       <label>Photo</label>
       <input type="file" name="photo" accept="image/*">
-      
+
       <button type="submit" name="add_employee">Add Employee</button>
     </form>
   </div>
@@ -203,5 +219,7 @@ if ($br_res) {
     }
   }
 </script>
+<script src="/asset/js/ui-enhancements.js" defer></script>
 </body>
 </html>
+

@@ -197,6 +197,25 @@ render_form:
         0% { transform: translate(0, 0); }
         100% { transform: translate(40px, 40px); }
     }
+
+    /* Faint watermark (clock-in / clock-out / time icons) */
+    .login-watermark {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.12;
+        background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='70' cy='80' r='26' opacity='0.9'/%3E%3Cpath d='M70 64v18l13 7' opacity='0.9'/%3E%3Cpath d='M136 78h60' opacity='0.9'/%3E%3Cpath d='M196 78l-10-10' opacity='0.9'/%3E%3Cpath d='M196 78l-10 10' opacity='0.9'/%3E%3Cpath d='M136 168h60' opacity='0.9'/%3E%3Cpath d='M196 168l-10-10' opacity='0.9'/%3E%3Cpath d='M196 168l-10 10' opacity='0.9'/%3E%3Crect x='42' y='150' width='64' height='44' rx='14' opacity='0.9'/%3E%3Cpath d='M58 172h32' opacity='0.9'/%3E%3C/g%3E%3C/svg%3E");
+        background-repeat: repeat;
+        background-size: 320px 320px;
+        animation: watermarkMove 28s linear infinite;
+    }
+
+    @keyframes watermarkMove {
+        0% { background-position: 0 0; }
+        100% { background-position: 320px 320px; }
+    }
     
     .login-container {
         position: relative;
@@ -215,6 +234,21 @@ render_form:
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
         transform: translateY(0);
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .login-container::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 32px;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05), rgba(255,255,255,0.12));
+        -webkit-mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.9;
     }
     .login-container:hover {
         transform: translateY(-4px);
@@ -240,6 +274,19 @@ render_form:
         color: rgba(255, 255, 255, 0.65); 
         font-size: 16px; 
         margin-bottom: 40px; 
+    }
+
+    .login-container h2,
+    .login-container p.subtitle,
+    .login-container form {
+        animation: fadeUp .7s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    .login-container p.subtitle { animation-delay: .05s; }
+    .login-container form { animation-delay: .10s; }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
     }
     
     .input-group {
@@ -373,6 +420,7 @@ render_form:
 </style>
 </head>
 <body class="login-page">
+<div class="login-watermark"></div>
 <div class="login-container">
     <img src="/asset/img/miss_logo.png" alt="Logo" width="90">
     <h2>Welcome Back</h2>
@@ -415,5 +463,6 @@ render_form:
         }
     }
 </script>
+<script src="/asset/js/ui-enhancements.js" defer></script>
 </body>
 </html>

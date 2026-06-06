@@ -49,7 +49,7 @@ try {
   <link rel="stylesheet" href="/asset/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; overflow-x: hidden; }
+    body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); overflow-x: hidden; }
     .dashboard-page .content { width: 100%; max-width: 100%; box-sizing: border-box; }
 
     .dashboard-header {
@@ -159,8 +159,9 @@ try {
     }
   </style>
   <script src="/asset/js/idle-logout.js" defer></script>
+  <script src="/asset/js/ui-enhancements.js" defer></script>
 </head>
-<body class="dashboard-page">
+<body class="app-page dashboard-page">
 
   <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
