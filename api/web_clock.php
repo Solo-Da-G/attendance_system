@@ -4,27 +4,45 @@
  * 
  * Handles clock-in/out from the web/mobile dashboard with location verification.
  */
-session_start();
-include("../includes/config.php");
-include("../lib/Geolocation.php");
+// IMPORTANT:
+// "Server returned an invalid response" happens when the response is not valid JSON.
+// This can be caused by PHP warnings/notices, HTML error pages, or fatal errors.
+// So we buffer ALL output from the very beginning and always emit JSON (even on fatal errors).
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+@ob_start();
 
 header('Content-Type: application/json');
 
-// Ensure this endpoint always returns valid JSON (avoid PHP warnings breaking responses)
-error_reporting(0);
-ini_set('display_errors', 0);
-@ob_start();
-
 function json_response($arr, $code = 200) {
-    // Drop any accidental output (warnings/notices) so JSON.parse never fails
     if (function_exists('ob_get_length') && ob_get_length()) {
-        @ob_clean();
+        @ob_clean(); // remove warnings/notices/whitespace
     }
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($arr);
     exit;
 }
+
+// Catch fatal errors and still return JSON
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        json_response([
+            'status' => 'error',
+            'message' => 'Server error. Please try again.',
+            // Comment out details in production if you prefer:
+            'debug' => ['type' => $e['type'], 'file' => basename($e['file']), 'line' => $e['line']]
+        ], 500);
+    }
+});
+
+session_start();
+include("../includes/config.php");
+include("../lib/Geolocation.php");
+
+// json_response already defined above
 
 if (!isset($_SESSION['admin'])) {
     json_response(["status" => "error", "message" => "Unauthorized"], 401);
