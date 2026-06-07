@@ -6,7 +6,7 @@
  * Used by the face verification JavaScript to compare webcam capture
  * against the stored profile photo.
  */
-include("../includes/config.php");
+include(__DIR__ . "/includes/config.php");
 
 header('Content-Type: application/json');
 

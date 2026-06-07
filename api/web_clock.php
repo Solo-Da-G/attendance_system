@@ -39,8 +39,8 @@ register_shutdown_function(function () {
 });
 
 session_start();
-include("../includes/config.php");
-include("../lib/Geolocation.php");
+include(__DIR__ . "/includes/config.php");
+include(__DIR__ . "/lib/Geolocation.php");
 
 // json_response already defined above
 
