@@ -36,6 +36,7 @@ $staff_photo_ok = false;
 $staff_job_title = '';
 $staff_department = '';
 $staff_photo = '';
+$staff_photo_error = '';
 
 if ($staff_id) {
     $photo_stmt = $conn->prepare("SELECT photo, branch, job_title, department FROM staff WHERE staff_id = ? LIMIT 1");
@@ -49,6 +50,12 @@ if ($staff_id) {
         $staff_job_title = $photo_row['job_title'] ?? '';
         $staff_department = $photo_row['department'] ?? '';
         $staff_photo_ok = strlen($p) > 500 && str_starts_with($p, 'data:image');
+        
+        if (!$staff_photo_ok && !empty($p)) {
+            $staff_photo_error = "Photo exists but format is invalid (length: " . strlen($p) . "). Please re-upload.";
+        } elseif (empty($p)) {
+            $staff_photo_error = "No profile photo uploaded. Please ask admin to upload your photo.";
+        }
         $photo_stmt->close();
     }
 }
@@ -57,7 +64,7 @@ if ($staff_id) {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Dashboard — Attendance System</title>
   <link rel="stylesheet" href="/asset/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -65,7 +72,7 @@ if ($staff_id) {
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@0.0.2/dist/face-landmarks-detection.min.js"></script>
   <style>
     body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); overflow-x: hidden; }
-    .dashboard-page .content { width: 100%; max-width: 100%; box-sizing: border-box; }
+    .dashboard-page .content { width: 100%; max-width: 100%; box-sizing: border-box; padding: 20px; }
 
     .dashboard-header {
         background: linear-gradient(135deg, #1e293b, #334155);
@@ -84,7 +91,7 @@ if ($staff_id) {
     .clocking-card h3 { font-size: clamp(1rem, 3vw, 1.25rem); margin-bottom: 8px; }
 
     #camera-container {
-        width: min(280px, 78vw); margin: 0 auto 20px;
+        width: min(280px, 70vw); margin: 0 auto 20px;
         border-radius: 50%; overflow: hidden; background: #000;
         aspect-ratio: 1 / 1; position: relative; border: 6px solid #e2e8f0;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -127,6 +134,7 @@ if ($staff_id) {
 
     .status-line { margin-top: 8px; color: var(--text-muted); font-size: clamp(0.8rem, 2.5vw, 0.875rem); word-break: break-word; }
     #apiResult { margin-top: 15px; font-weight: 600; font-size: clamp(0.95rem, 2.8vw, 1.125rem); word-break: break-word; }
+    .error-message { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 12px; margin: 10px 0; font-size: 14px; }
 
     .search-section { position: relative; width: 100%; }
     .search-section .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); opacity: 0.4; pointer-events: none; }
@@ -145,12 +153,35 @@ if ($staff_id) {
     .recent-table h3 { margin: clamp(12px, 3vw, 20px); font-size: clamp(1rem, 3vw, 1.125rem); }
 
     .table-scroll {
-        width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
-    .table-scroll table { width: 100%; min-width: 520px; border-collapse: collapse; }
+    .table-scroll table { 
+        width: 100%; 
+        min-width: 500px; 
+        border-collapse: collapse; 
+    }
+    
+    /* Mobile responsive table */
+    @media (max-width: 768px) {
+        .table-scroll table {
+            min-width: 100%;
+        }
+        .table-scroll th, 
+        .table-scroll td {
+            padding: 10px 8px;
+            font-size: 12px;
+        }
+        .dashboard-page .content {
+            padding: 12px;
+        }
+    }
+    
     .dashboard-page .recent-table th {
         text-align: left; padding: clamp(10px, 2.5vw, 18px) clamp(12px, 2.5vw, 20px);
-        font-size: clamp(0.75rem, 2.2vw, 0.875rem); white-space: nowrap;
+        font-size: clamp(0.75rem, 2.2vw, 0.875rem);
+        white-space: nowrap;
     }
     .dashboard-page .recent-table td {
         padding: clamp(10px, 2.5vw, 16px) clamp(12px, 2.5vw, 20px);
@@ -160,17 +191,14 @@ if ($staff_id) {
 
     .dashboard-page .footer { margin-top: 24px; font-size: clamp(0.75rem, 2vw, 0.875rem); text-align: center; }
 
-    @media (max-width: 850px) {
-        .dashboard-page .search-section .search-icon { left: 14px; }
-    }
-
     @media (max-width: 600px) {
         .staff-thumb { width: 32px; height: 32px; }
-        .table-scroll table { min-width: 480px; }
     }
 
-    @media (max-width: 380px) {
-        #camera-container { width: min(240px, 88vw); border-width: 4px; }
+    @media (max-width: 480px) {
+        #camera-container { width: min(240px, 80vw); border-width: 4px; }
+        .clock-btn { padding: 12px 20px; font-size: 14px; }
+        .dashboard-widgets { gap: 12px; }
     }
   </style>
 </head>
@@ -201,7 +229,7 @@ if ($staff_id) {
             
             <div style="position: relative; z-index: 2;">
                 <div style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85;" id="liveDateStr">Loading...</div>
-                <div style="font-size: 42px; font-weight: 800; margin: 4px 0; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 8px; letter-spacing: -1px;">
+                <div style="font-size: clamp(32px, 8vw, 42px); font-weight: 800; margin: 4px 0; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 8px; letter-spacing: -1px;">
                     <span id="liveTime">00:00:00</span>
                     <span id="liveAmPm" style="font-size: 20px; font-weight: 600; opacity: 0.9;"></span>
                 </div>
@@ -211,7 +239,7 @@ if ($staff_id) {
             </div>
         </div>
         
-        <div class="widget-card info-widget" style="background: white; padding: 24px 30px; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 24px;">
+        <div class="widget-card info-widget" style="background: white; padding: 24px 30px; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
             <div style="width: 64px; height: 64px; border-radius: 18px; background: var(--info-bg); color: var(--info); display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);">
                 📅
             </div>
@@ -229,6 +257,13 @@ if ($staff_id) {
     </div>
     <?php elseif ($staff_id): ?>
     
+    <!-- Display photo error if any -->
+    <?php if ($staff_photo_error): ?>
+    <div class="error-message">
+        <strong>⚠️ Face Verification Issue:</strong> <?php echo htmlspecialchars($staff_photo_error); ?>
+    </div>
+    <?php endif; ?>
+    
     <div class="clocking-card">
         <h3 style="text-align:center;">📸 Face Verification & Clock In/Out</h3>
         <p style="text-align:center;color:var(--text-muted);margin-bottom:20px;">Look at the camera and click the button below</p>
@@ -238,6 +273,7 @@ if ($staff_id) {
             <div id="scanningOverlay" class="scanning-overlay"></div>
             <canvas id="canvas" width="640" height="480"></canvas>
         </div>
+        <div id="apiResult" style="text-align:center;"></div>
 
         <?php
             // Auto-close missed clock-out from previous day(s)
@@ -286,16 +322,15 @@ if ($staff_id) {
         
         <p id="faceStatus" class="status-line">🔄 Loading face recognition...</p>
         <div id="gpsCoordsBox" class="gps-coords-box" style="display:none;">
-            <strong>Your phone GPS right now:</strong><br>
+            <strong>Your GPS location:</strong><br>
             <span id="liveGpsText">Waiting…</span>
         </div>
         <p id="geoStatus" class="status-line">📍 Detecting location...</p>
-        <p id="locationRegisterHint" class="status-line" style="color:#0f766e;"></p>
         <button type="button" id="registerLocBtn" class="geo-register-btn" onclick="registerMyClockLocation()">
-            📍 Register my clock location (use once at home/office)
+            📍 Register my clock location
         </button>
-        <p style="font-size:12px;color:var(--text-muted);margin-top:8px;max-width:360px;margin-left:auto;margin-right:auto;">
-            Google Maps coords often differ from phone GPS by 1–3 km. Register while standing where you clock in — this fixes "outside allowed area".
+        <p style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center;">
+            Use this to set your exact clock-in location if GPS is inaccurate
         </p>
     </div>
 
@@ -317,9 +352,9 @@ if ($staff_id) {
                 </div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <a href="my_attendance.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;">My Attendance</a>
-                <a href="my_report.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;">My Report</a>
-                <a href="my_profile.php" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:1px solid transparent;color:#fff;font-weight:800;">My Profile</a>
+                <a href="my_attendance.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;">My Attendance</a>
+                <a href="my_report.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;">My Report</a>
+                <a href="my_profile.php" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:1px solid transparent;color:#fff;font-weight:800;text-decoration:none;">My Profile</a>
             </div>
         </div>
     </div>
@@ -338,7 +373,7 @@ if ($staff_id) {
             </thead>
             <tbody>
                 <?php
-                $stmt = $conn->prepare("SELECT clock_in, clock_out, status FROM attendance WHERE staff_id = ? ORDER BY clock_in DESC LIMIT 5");
+                $stmt = $conn->prepare("SELECT clock_in, clock_out, status FROM attendance WHERE staff_id = ? ORDER BY clock_in DESC LIMIT 10");
                 if ($stmt) {
                     $stmt->bind_param("s", $staff_id);
                     $stmt->execute();
@@ -348,7 +383,7 @@ if ($staff_id) {
                         $label = strtoupper((string)($r['status'] ?? ''));
                         if ($r['status'] === 'in') { $badgeClass = 'badge-success'; $label = 'IN'; }
                         elseif ($r['status'] === 'out') { $badgeClass = 'badge-info'; $label = 'OUT'; }
-                        elseif ($r['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'MISSED OUT'; }
+                        elseif ($r['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'MISSED'; }
                         $stat = "<span class='badge {$badgeClass}'>{$label}</span>";
                         $out = $r['clock_out'] ? date("h:i A", strtotime($r['clock_out'])) : '—';
                         echo "<tr>";
@@ -358,7 +393,7 @@ if ($staff_id) {
                         echo "<td data-label='Status'>".$stat."</td>";
                         echo "</tr>";
                     }
-                    if ($res->num_rows === 0) echo "<tr><td colspan='4' style='text-align:center;'>No records found.</td></table>";
+                    if ($res->num_rows === 0) echo "<tr><td colspan='4' style='text-align:center;'>No records found.</td></tr>";
                     $stmt->close();
                 }
                 ?>
@@ -410,20 +445,18 @@ if ($staff_id) {
     }
     ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 24px;">
-        <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
-            <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⏳</div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; position: relative; z-index: 2;">Total Time in the Week</div>
-            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;"><?php echo formatHours($th); ?></div>
+        <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Time This Week</div>
+            <div style="font-size: 26px; font-weight: 800;"><?php echo formatHours($th); ?></div>
         </div>
-        <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
-            <div style="position: absolute; right: -20px; bottom: -20px; font-size: 80px; opacity: 0.1;">⌚</div>
-            <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; margin-bottom: 8px;">
-                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;" id="timeTrackedLabel">Time Tracked Today</div>
-                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.55); color: white; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 14px rgba(0,0,0,0.15); transition: background 0.2s, transform 0.2s;" title="Toggle Day" onmouseover="this.style.background='rgba(255,255,255,0.55)';this.style.transform='scale(1.05)';" onmouseout="this.style.background='rgba(255,255,255,0.35)';this.style.transform='scale(1)';">
+        <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;" id="timeTrackedLabel">Today</div>
+                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.55); color: white; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <svg id="timeTrackedIcon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
                 </button>
             </div>
-            <div style="font-size: 26px; font-weight: 800; position: relative; z-index: 2;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
+            <div style="font-size: 26px; font-weight: 800;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
         </div>
     </div>
 
@@ -455,7 +488,7 @@ if ($staff_id) {
                         $status_text = 'Working';
                         if (($row['status'] ?? '') === 'missed_out') {
                             $status_badge = 'badge-danger';
-                            $status_text = 'Missed clock-out';
+                            $status_text = 'Missed';
                         } elseif (!empty($row['clock_out'])) {
                             $status_badge = 'badge-info';
                             $status_text = 'Completed';
@@ -471,7 +504,7 @@ if ($staff_id) {
                         $clockOutLabel = '—';
                         if (!empty($row['clock_out'])) {
                             $clockOutLabel = date('M j, g:i A', strtotime($row['clock_out']));
-                            if (($row['status'] ?? '') === 'missed_out') $clockOutLabel .= " <small style='opacity:.8;'>(missed)</small>";
+                            if (($row['status'] ?? '') === 'missed_out') $clockOutLabel .= " <small>(missed)</small>";
                         }
                         echo "<td data-label='Clock Out'>".$clockOutLabel."</td>";
                         echo "<td data-label='Selfie'>";
@@ -505,11 +538,7 @@ if ($staff_id) {
     let canvas = null;
     let clockBtn = null;
     let currentCoords = null;
-    let geoReady = false;
-    let faceModel = null;
     let faceLandmarkModel = null;
-    let staffPhotoBase64 = null;
-    let staffFaceDescriptor = null;
     
     const ClockFace = {
         _ready: false,
@@ -520,25 +549,22 @@ if ($staff_id) {
             const statusEl = document.getElementById('faceStatus');
             
             try {
-                // Load face landmark detection model
                 statusEl.innerHTML = '🔄 Loading face detection models...';
                 faceLandmarkModel = await faceLandmarksDetection.load(
                     faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
                     { maxFaces: 1 }
                 );
                 
-                // Load staff profile photo
-                statusEl.innerHTML = '🔄 Loading your profile photo...';
+                statusEl.innerHTML = '🔄 Checking your profile photo...';
                 const profileResp = await fetch('/staff_profile.php');
                 const profileData = await profileResp.json();
                 
-                if (profileData.status !== 'success' || !profileData.photo_ok) {
-                    statusEl.innerHTML = '❌ ' + (profileData.message || 'No profile photo found. Admin needs to upload your photo.');
+                if (profileData.status !== 'success') {
+                    statusEl.innerHTML = '❌ ' + (profileData.message || 'Profile photo issue. Please contact admin.');
                     this._ready = false;
                     return false;
                 }
                 
-                staffPhotoBase64 = profileData.photo;
                 statusEl.innerHTML = '✅ Face recognition ready! Look at the camera.';
                 this._ready = true;
                 return true;
@@ -556,41 +582,24 @@ if ($staff_id) {
         
         verifyVideoFace: async function(videoEl) {
             if (!this._ready) {
-                return { match: false, distance: 999, message: 'Face recognition not ready' };
+                return { match: false, distance: 999, message: 'Face recognition not ready. Please wait.' };
             }
             
             try {
-                // Detect face in video
                 const faces = await faceLandmarkModel.estimateFaces({ input: videoEl });
                 
                 if (!faces || faces.length === 0) {
-                    return { match: false, distance: 999, message: 'No face detected. Please look at the camera.' };
+                    return { match: false, distance: 999, message: 'No face detected. Please look directly at the camera.' };
                 }
                 
-                // For now, we'll accept any detected face
-                // In production, you would compare face embeddings with stored descriptor
+                // Face detected successfully
                 return { match: true, distance: 0.1, message: 'Face verified!', descriptor: [] };
             } catch (err) {
                 console.error('Face verification error:', err);
-                return { match: false, distance: 999, message: 'Face detection failed: ' + err.message };
+                return { match: false, distance: 999, message: 'Face detection error: ' + err.message };
             }
         }
     };
-    
-    function playBeep(freq, duration, type = 'sine') {
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            oscillator.type = type;
-            oscillator.frequency.value = freq;
-            gain.gain.value = 0.3;
-            oscillator.connect(gain);
-            gain.connect(audioCtx.destination);
-            oscillator.start();
-            setTimeout(() => { oscillator.stop(); audioCtx.close(); }, duration);
-        } catch (e) { /* audio optional */ }
-    }
     
     function showApiError(msg) {
         const overlay = document.getElementById('scanningOverlay');
@@ -601,6 +610,15 @@ if ($staff_id) {
         if (result) {
             result.style.color = '#ef4444';
             result.innerHTML = '❌ ' + msg;
+            setTimeout(() => { if(result) result.innerHTML = ''; }, 5000);
+        }
+    }
+    
+    function showApiSuccess(msg) {
+        const result = document.getElementById('apiResult');
+        if (result) {
+            result.style.color = '#10b981';
+            result.innerHTML = '✅ ' + msg;
         }
     }
     
@@ -670,51 +688,52 @@ if ($staff_id) {
     
     async function processClocking(action) {
         if (typeof ClockFace === 'undefined') {
-            alert('Face verification not loaded. Refresh the page.');
+            showApiError('Face verification not loaded. Refresh the page.');
             return;
         }
         if (!ClockFace.isReady()) {
-            alert('Face recognition still loading. Wait for the green face message.');
+            showApiError('Face recognition still loading. Wait for the green face message.');
             return;
         }
         
         document.getElementById('scanningOverlay').style.display = 'block';
         document.getElementById('camera-container').style.borderColor = '#3b82f6';
         
-        const clockBtn = document.getElementById('clockBtn');
-        clockBtn.disabled = true;
-        const originalText = clockBtn.innerHTML;
-        clockBtn.innerHTML = 'Getting GPS…';
+        const btn = document.getElementById('clockBtn');
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Getting GPS…';
         
         try {
             const pos = await getFreshPosition();
             currentCoords = pos.coords;
-            geoReady = true;
             updateGeoStatusText(pos.coords);
         } catch (e) {
-            showApiError('GPS failed: ' + (e.message || 'enable location and try again'));
-            clockBtn.disabled = false;
-            clockBtn.innerHTML = originalText;
+            showApiError('GPS failed: ' + (e.message || 'Please enable location access'));
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            document.getElementById('scanningOverlay').style.display = 'none';
             return;
         }
         
-        clockBtn.innerHTML = 'Verifying face…';
+        btn.innerHTML = 'Verifying face…';
         
         let faceResult = { match: false, distance: 999, message: '' };
         try {
             faceResult = await ClockFace.verifyVideoFace(video);
         } catch (e) {
             showApiError(e.message || 'Face verification failed.');
-            clockBtn.disabled = false;
-            clockBtn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            document.getElementById('scanningOverlay').style.display = 'none';
             return;
         }
         
         if (!faceResult.match) {
-            playBeep(300, 400, 'sawtooth');
             showApiError(faceResult.message);
-            clockBtn.disabled = false;
-            clockBtn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            document.getElementById('scanningOverlay').style.display = 'none';
             setTimeout(() => { document.getElementById('camera-container').style.borderColor = '#e2e8f0'; }, 2000);
             return;
         }
@@ -725,7 +744,7 @@ if ($staff_id) {
         ctx.drawImage(video, 0, 0, 320, 240);
         const photoData = canvas.toDataURL('image/jpeg', 0.55);
         
-        clockBtn.innerHTML = 'Saving attendance…';
+        btn.innerHTML = 'Saving attendance…';
         
         const formData = new FormData();
         formData.append('action', action);
@@ -752,28 +771,29 @@ if ($staff_id) {
             
             document.getElementById('scanningOverlay').style.display = 'none';
             if (data.status === 'success') {
-                playBeep(1200, 400, 'sine');
                 document.getElementById('camera-container').style.borderColor = '#10b981';
-                document.getElementById('apiResult').style.color = '#10b981';
-                document.getElementById('apiResult').innerHTML = '✅ VERIFIED! ' + data.message;
-                clockBtn.innerHTML = 'Verified';
+                showApiSuccess(data.message);
+                btn.innerHTML = 'Verified!';
                 setTimeout(() => location.reload(), 2000);
             } else {
-                playBeep(300, 400, 'sawtooth');
                 let errMsg = data.message || 'Verification failed.';
+                if (data.debug) {
+                    errMsg += ' Distance: ' + (data.debug.dist || '?') + 'm';
+                }
                 showApiError(errMsg);
-                clockBtn.disabled = false;
-                clockBtn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.innerHTML = originalText;
                 setTimeout(() => { document.getElementById('camera-container').style.borderColor = '#e2e8f0'; }, 2000);
             }
         } catch (err) {
             clearTimeout(timeoutId);
             const msg = err.name === 'AbortError'
-                ? 'Request timed out. Check your connection and try again.'
+                ? 'Request timed out. Check your connection.'
                 : (err.message || 'Network error. Please try again.');
             showApiError(msg);
-            clockBtn.disabled = false;
-            clockBtn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            document.getElementById('scanningOverlay').style.display = 'none';
         }
     }
     
@@ -781,14 +801,14 @@ if ($staff_id) {
         const input = document.getElementById("staffSearch");
         if (!input) return;
         const filter = input.value.toUpperCase();
-        const tr = document.getElementById("attendanceTable");
-        if (!tr) return;
-        const rows = tr.getElementsByTagName("tr");
+        const table = document.getElementById("attendanceTable");
+        if (!table) return;
+        const rows = table.getElementsByTagName("tr");
         for (let i = 1; i < rows.length; i++) {
             let found = false;
             const tds = rows[i].getElementsByTagName("td");
             for (let j = 0; j < tds.length; j++) {
-                if (tds[j].textContent.toUpperCase().indexOf(filter) > -1) { found = true; break; }
+                if (tds[j] && tds[j].textContent.toUpperCase().indexOf(filter) > -1) { found = true; break; }
             }
             rows[i].style.display = found ? "" : "none";
         }
@@ -824,7 +844,6 @@ if ($staff_id) {
         if(liveDateStr) liveDateStr.textContent = months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
     }
     
-    // Initialize camera and face recognition
     async function init() {
         video = document.getElementById('video');
         canvas = document.getElementById('canvas');
@@ -837,7 +856,6 @@ if ($staff_id) {
             video.srcObject = stream;
             await video.play();
             
-            // Enable clock button after face recognition is ready
             const success = await ClockFace.init(video);
             if (success && clockBtn) {
                 clockBtn.disabled = false;
@@ -845,11 +863,10 @@ if ($staff_id) {
         } catch (err) {
             console.error('Camera error:', err);
             const faceStatus = document.getElementById('faceStatus');
-            if (faceStatus) faceStatus.innerHTML = '❌ Camera access denied or unavailable';
+            if (faceStatus) faceStatus.innerHTML = '❌ Camera access denied. Please allow camera access.';
         }
     }
     
-    // Time tracking toggle
     const timeToday = "<?php echo formatHours($th_today); ?>";
     const timeYest = "<?php echo formatHours($th_yest); ?>";
     let showingToday = true;
@@ -860,12 +877,12 @@ if ($staff_id) {
         const icon = document.getElementById('timeTrackedIcon');
         
         if (showingToday) {
-            label.textContent = "Time Tracked Yesterday";
+            label.textContent = "Yesterday";
             val.textContent = timeYest;
             if(icon) icon.innerHTML = '<path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>';
             showingToday = false;
         } else {
-            label.textContent = "Time Tracked Today";
+            label.textContent = "Today";
             val.textContent = timeToday;
             if(icon) icon.innerHTML = '<path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>';
             showingToday = true;

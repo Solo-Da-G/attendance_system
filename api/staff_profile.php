@@ -30,6 +30,17 @@ $photo = $row['photo'] ?? '';
 $photoLen = strlen($photo);
 $photoOk = $photoLen > 500 && str_starts_with($photo, 'data:image');
 
+// If photo is invalid, provide clear error message
+if (!$photoOk) {
+    echo json_encode([
+        'status' => 'error', 
+        'message' => 'Your profile photo is missing or invalid. Please ask admin to upload a clear photo of your face.',
+        'photo_ok' => false,
+        'photo_len' => $photoLen
+    ]);
+    exit;
+}
+
 $branches = [];
 $all = $conn->query("SELECT branch_name, latitude, longitude, radius_meters FROM branches");
 if ($all) {
@@ -43,7 +54,7 @@ echo json_encode([
     'staff_id'      => $row['staff_id'],
     'full_name'     => $row['full_name'],
     'branch'        => $row['branch'] ?? '',
-    'photo'         => $photoOk ? $photo : '',
+    'photo'         => $photo,
     'photo_ok'      => $photoOk,
     'photo_len'     => $photoLen,
     'branches'      => $branches,
@@ -52,3 +63,4 @@ echo json_encode([
     'clock_radius'  => (int)($row['clock_radius'] ?? 300),
     'location_set'  => !empty($row['clock_lat']) && !empty($row['clock_lng']),
 ]);
+?>
