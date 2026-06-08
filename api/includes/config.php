@@ -101,6 +101,50 @@ if ($conn->connect_error) {
     die("Database connection failed. Please check your environment variables.");
 }
 
+if (!function_exists('db_table_columns')) {
+    function db_table_columns(mysqli $conn, string $table): array
+    {
+        static $cache = [];
+        if (isset($cache[$table])) {
+            return $cache[$table];
+        }
+
+        $columns = [];
+        $tableSafe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+        $result = $conn->query("SHOW COLUMNS FROM `{$tableSafe}`");
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $columns[] = $row['Field'];
+            }
+        }
+
+        $cache[$table] = $columns;
+        return $columns;
+    }
+}
+
+if (!function_exists('db_has_column')) {
+    function db_has_column(mysqli $conn, string $table, string $column): bool
+    {
+        return in_array($column, db_table_columns($conn, $table), true);
+    }
+}
+
+if (!function_exists('db_has_table')) {
+    function db_has_table(mysqli $conn, string $table): bool
+    {
+        static $cache = [];
+        if (isset($cache[$table])) {
+            return $cache[$table];
+        }
+
+        $tableSafe = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+        $result = $conn->query("SHOW TABLES LIKE '{$tableSafe}'");
+        $cache[$table] = (bool)($result && $result->num_rows > 0);
+        return $cache[$table];
+    }
+}
+
 // ================================================================
 // SECURITY HEADERS (for cloud)
 // ================================================================
@@ -109,6 +153,12 @@ if (ENVIRONMENT === 'cloud') {
     header("X-Frame-Options: SAMEORIGIN");
     header("X-XSS-Protection: 1; mode=block");
     header("Referrer-Policy: strict-origin-when-cross-origin");
+}
+
+if (PHP_SAPI !== 'cli' && !headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
 }
 // ================================================================
 // VERCEL STATELESS SESSION RESTORE

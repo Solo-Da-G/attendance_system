@@ -13,8 +13,12 @@ if (empty($_SESSION['staff_id'])) {
 
 $staff_id = $_SESSION['staff_id'];
 
+$selectClockLat = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lat') ? 'clock_lat' : 'NULL AS clock_lat';
+$selectClockLng = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lng') ? 'clock_lng' : 'NULL AS clock_lng';
+$selectClockRadius = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_radius') ? 'clock_radius' : '300 AS clock_radius';
+
 $stmt = $conn->prepare(
-    "SELECT staff_id, full_name, photo, branch, clock_lat, clock_lng, clock_radius FROM staff WHERE staff_id = ? LIMIT 1"
+    "SELECT staff_id, full_name, photo, branch, {$selectClockLat}, {$selectClockLng}, {$selectClockRadius} FROM staff WHERE staff_id = ? LIMIT 1"
 );
 $stmt->bind_param("s", $staff_id);
 $stmt->execute();
@@ -42,10 +46,12 @@ if (!$photoOk) {
 }
 
 $branches = [];
-$all = $conn->query("SELECT branch_name, latitude, longitude, radius_meters FROM branches");
-if ($all) {
-    while ($b = $all->fetch_assoc()) {
-        $branches[] = $b;
+if (function_exists('db_has_table') && db_has_table($conn, 'branches')) {
+    $all = $conn->query("SELECT branch_name, latitude, longitude, radius_meters FROM branches");
+    if ($all) {
+        while ($b = $all->fetch_assoc()) {
+            $branches[] = $b;
+        }
     }
 }
 

@@ -24,6 +24,14 @@ if ($lat === null || $lng === null) {
 
 $radius = 300;
 
+if (!function_exists('db_has_column') ||
+    !db_has_column($conn, 'staff', 'clock_lat') ||
+    !db_has_column($conn, 'staff', 'clock_lng') ||
+    !db_has_column($conn, 'staff', 'clock_radius')) {
+    echo json_encode(['status' => 'error', 'message' => 'Clock location columns are missing in the database. Please run api/fix_database.php on your cloud database first.']);
+    exit;
+}
+
 $stmt = $conn->prepare(
     "UPDATE staff SET clock_lat = ?, clock_lng = ?, clock_radius = ? WHERE staff_id = ?"
 );
@@ -38,12 +46,15 @@ if (!$ok) {
 
 $branch_updated = null;
 
-if ($sync_branch) {
+if ($sync_branch && function_exists('db_has_table') && db_has_table($conn, 'branches')) {
     $stmt = $conn->prepare("SELECT branch FROM staff WHERE staff_id = ? LIMIT 1");
-    $stmt->bind_param("s", $staff_id);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+    $row = [];
+    if ($stmt) {
+        $stmt->bind_param("s", $staff_id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc() ?: [];
+        $stmt->close();
+    }
 
     $branch_name = trim($row['branch'] ?? '');
 
@@ -51,18 +62,22 @@ if ($sync_branch) {
         $upd = $conn->prepare(
             "UPDATE branches SET latitude = ?, longitude = ? WHERE LOWER(TRIM(branch_name)) = LOWER(TRIM(?))"
         );
-        $upd->bind_param("dds", $lat, $lng, $branch_name);
-        if ($upd->execute() && $upd->affected_rows > 0) {
-            $branch_updated = $branch_name;
+        if ($upd) {
+            $upd->bind_param("dds", $lat, $lng, $branch_name);
+            if ($upd->execute() && $upd->affected_rows > 0) {
+                $branch_updated = $branch_name;
+            }
+            $upd->close();
         }
-        $upd->close();
     }
 
     if ($branch_updated === null) {
         $branches = [];
         $res = $conn->query("SELECT id, branch_name, latitude, longitude FROM branches");
-        while ($b = $res->fetch_assoc()) {
-            $branches[] = $b;
+        if ($res) {
+            while ($b = $res->fetch_assoc()) {
+                $branches[] = $b;
+            }
         }
         if (!empty($branches)) {
             $nearest = null;
@@ -76,11 +91,13 @@ if ($sync_branch) {
             }
             if ($nearest) {
                 $upd = $conn->prepare("UPDATE branches SET latitude = ?, longitude = ? WHERE id = ?");
-                $upd->bind_param("ddi", $lat, $lng, $nearest['id']);
-                if ($upd->execute()) {
-                    $branch_updated = $nearest['branch_name'];
+                if ($upd) {
+                    $upd->bind_param("ddi", $lat, $lng, $nearest['id']);
+                    if ($upd->execute()) {
+                        $branch_updated = $nearest['branch_name'];
+                    }
+                    $upd->close();
                 }
-                $upd->close();
             }
         }
     }

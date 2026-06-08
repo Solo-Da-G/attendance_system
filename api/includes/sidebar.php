@@ -1,281 +1,296 @@
 <?php
-// Get current page for active state
 $current_page = basename($_SERVER['PHP_SELF']);
 $is_staff = isset($_SESSION['staff_id']) && !isset($_SESSION['admin_id']);
 $is_admin = isset($_SESSION['admin_id']);
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <style>
-    /* Mobile Navigation Styles */
     .mobile-menu-toggle {
         display: none;
         position: fixed;
-        top: 20px;
-        left: 20px;
-        z-index: 1001;
+        top: 16px;
+        left: 16px;
+        z-index: 1201;
         background: var(--primary);
         border: none;
-        color: white;
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
+        color: #fff;
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
         cursor: pointer;
-        font-size: 24px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-size: 22px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
     }
-    
-    .sidebar {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 280px;
-        height: 100vh;
-        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-        color: white;
-        overflow-y: auto;
-        transition: transform 0.3s ease;
-        z-index: 1000;
-    }
-    
-    .sidebar.closed {
-        transform: translateX(-100%);
-    }
-    
+
     .sidebar-overlay {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        z-index: 1190;
     }
-    
+
     .sidebar-overlay.active {
         display: block;
     }
-    
-    .content {
-        margin-left: 280px;
-        transition: margin-left 0.3s ease;
-        width: calc(100% - 280px);
+
+    .sidebar {
+        display: flex !important;
+        width: 280px;
+        max-width: 82vw;
+        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+        color: #fff;
+        z-index: 1200;
     }
-    
-    .content.expanded {
-        margin-left: 0;
-        width: 100%;
-    }
-    
-    @media (max-width: 768px) {
-        .mobile-menu-toggle {
-            display: block;
-        }
-        
-        .sidebar {
-            transform: translateX(-100%);
-        }
-        
-        .sidebar.open {
-            transform: translateX(0);
-        }
-        
-        .content {
-            margin-left: 0;
-            width: 100%;
-            padding-top: 70px;
-        }
-        
-        .content.expanded {
-            margin-left: 0;
-        }
-    }
-    
+
     .sidebar-logo {
         padding: 30px 24px;
         text-align: center;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        margin-bottom: 24px;
+        border-bottom: 1px solid rgba(255,255,255,0.10);
+        margin-bottom: 16px;
     }
-    
+
     .sidebar-logo img {
         width: 60px;
         height: 60px;
         border-radius: 12px;
         margin-bottom: 12px;
     }
-    
+
     .sidebar-logo h3 {
         font-size: 18px;
         margin: 0;
+        color: #fff;
     }
-    
+
     .sidebar-logo p {
         font-size: 12px;
-        opacity: 0.7;
+        opacity: 0.72;
         margin: 4px 0 0;
+        color: rgba(255,255,255,0.78);
     }
-    
+
+    .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
     .nav-item {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 24px;
-        color: rgba(255,255,255,0.8);
+        padding: 12px 18px;
+        color: rgba(255,255,255,0.82) !important;
         text-decoration: none;
-        transition: all 0.3s;
+        transition: all 0.25s ease;
         margin: 4px 12px;
         border-radius: 12px;
+        border-left: none !important;
     }
-    
-    .nav-item:hover, .nav-item.active {
-        background: rgba(79, 70, 229, 0.2);
-        color: white;
-    }
-    
+
+    .nav-item:hover,
     .nav-item.active {
-        background: var(--primary);
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        background: rgba(79, 70, 229, 0.22);
+        color: #fff !important;
     }
-    
+
+    .nav-item.active {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.28);
+    }
+
     .nav-icon {
         font-size: 20px;
         width: 28px;
+        text-align: center;
+        flex: 0 0 28px;
     }
-    
+
     .nav-text {
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
     }
-    
+
     .nav-divider {
         height: 1px;
-        background: rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.10);
         margin: 16px 24px;
     }
+
+    .nav-footer {
+        margin-top: auto;
+        padding-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .mobile-menu-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.28s ease;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding-top: 80px !important;
+        }
+
+        body.mobile-menu-open {
+            overflow: hidden;
+        }
+    }
 </style>
-</head>
-<body>
 
-<button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileMenu()"></div>
+<button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<div class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <img src="/asset/img/miss_logo.png" alt="Logo">
         <h3>Attendance System</h3>
         <p>Secure Clock-in System</p>
     </div>
-    
-    <?php if ($is_staff): ?>
-        <!-- Staff Navigation -->
-        <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-text">Dashboard</span>
-        </a>
-        <a href="my_profile.php" class="nav-item <?php echo $current_page == 'my_profile.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">👤</span>
-            <span class="nav-text">My Profile</span>
-        </a>
-        <a href="my_attendance.php" class="nav-item <?php echo $current_page == 'my_attendance.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">🕒</span>
-            <span class="nav-text">My Attendance</span>
-        </a>
-        <a href="my_report.php" class="nav-item <?php echo $current_page == 'my_report.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">My Report</span>
-        </a>
-        <a href="change_staff_password.php" class="nav-item <?php echo $current_page == 'change_staff_password.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">🔒</span>
-            <span class="nav-text">Change Password</span>
-        </a>
-        
-    <?php elseif ($is_admin): ?>
-        <!-- Admin Navigation -->
-        <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">Dashboard</span>
-        </a>
-        <a href="employees.php" class="nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">👥</span>
-            <span class="nav-text">Employees</span>
-        </a>
-        <a href="attendance.php" class="nav-item <?php echo $current_page == 'attendance.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">📋</span>
-            <span class="nav-text">Attendance</span>
-        </a>
-        <a href="reports.php" class="nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">📈</span>
-            <span class="nav-text">Reports</span>
-        </a>
-        <a href="manage_branches.php" class="nav-item <?php echo $current_page == 'manage_branches.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">📍</span>
-            <span class="nav-text">Branches</span>
-        </a>
-        <a href="device_settings.php" class="nav-item <?php echo $current_page == 'device_settings.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">📡</span>
-            <span class="nav-text">Devices</span>
-        </a>
-        <a href="user.php" class="nav-item <?php echo $current_page == 'user.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">👑</span>
-            <span class="nav-text">Users</span>
-        </a>
-        <div class="nav-divider"></div>
-        <a href="settings.php" class="nav-item <?php echo $current_page == 'settings.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-text">Settings</span>
-        </a>
-        <a href="change_password.php" class="nav-item <?php echo $current_page == 'change_password.php' ? 'active' : ''; ?>">
-            <span class="nav-icon">🔒</span>
-            <span class="nav-text">Change Password</span>
-        </a>
-    <?php endif; ?>
-    
-<div class="nav-divider"></div>
-    <a href="/api/logout.php" class="nav-item">
-        <span class="nav-icon">🚪</span>
-        <span class="nav-text">Logout</span>
-    </a>
-</div>
+
+    <nav class="sidebar-nav" aria-label="Dashboard navigation">
+        <?php if ($is_staff): ?>
+            <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="my_attendance.php" class="nav-item <?php echo $current_page == 'my_attendance.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">🕒</span>
+                <span class="nav-text">Attendance</span>
+            </a>
+            <a href="my_profile.php" class="nav-item <?php echo $current_page == 'my_profile.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Profile</span>
+            </a>
+            <a href="my_report.php" class="nav-item <?php echo $current_page == 'my_report.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Report</span>
+            </a>
+            <a href="change_staff_password.php" class="nav-item <?php echo $current_page == 'change_staff_password.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">🔒</span>
+                <span class="nav-text">Change Password</span>
+            </a>
+        <?php elseif ($is_admin): ?>
+            <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="employees.php" class="nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Employees</span>
+            </a>
+            <a href="attendance.php" class="nav-item <?php echo $current_page == 'attendance.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">📋</span>
+                <span class="nav-text">Attendance</span>
+            </a>
+            <a href="reports.php" class="nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">📈</span>
+                <span class="nav-text">Reports</span>
+            </a>
+            <a href="manage_branches.php" class="nav-item <?php echo $current_page == 'manage_branches.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">📍</span>
+                <span class="nav-text">Branches</span>
+            </a>
+            <a href="device_settings.php" class="nav-item <?php echo $current_page == 'device_settings.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">📡</span>
+                <span class="nav-text">Devices</span>
+            </a>
+            <a href="user.php" class="nav-item <?php echo $current_page == 'user.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">👑</span>
+                <span class="nav-text">Users</span>
+            </a>
+            <div class="nav-divider"></div>
+            <a href="settings.php" class="nav-item <?php echo $current_page == 'settings.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-text">Settings</span>
+            </a>
+            <a href="change_password.php" class="nav-item <?php echo $current_page == 'change_password.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">🔒</span>
+                <span class="nav-text">Change Password</span>
+            </a>
+        <?php endif; ?>
+
+        <div class="nav-footer">
+            <div class="nav-divider"></div>
+            <a href="/api/logout.php" class="nav-item" data-mobile-nav-link>
+                <span class="nav-icon">🚪</span>
+                <span class="nav-text">Logout</span>
+            </a>
+        </div>
+    </nav>
+</aside>
 
 <script>
-    function toggleMobileMenu() {
+    (function () {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
-        const content = document.querySelector('.content');
-        
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('active');
-        
-        if (sidebar.classList.contains('open')) {
-            sidebar.style.transform = 'translateX(0)';
-        } else {
-            sidebar.style.transform = 'translateX(-100%)';
+        const toggle = document.getElementById('mobileMenuToggle');
+        const navLinks = document.querySelectorAll('[data-mobile-nav-link]');
+
+        if (!sidebar || !overlay || !toggle) return;
+
+        function isMobile() {
+            return window.innerWidth <= 768;
         }
-    }
-    
-    function closeMobileMenu() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        
-        sidebar.classList.remove('open');
-        overlay.classList.remove('active');
-        sidebar.style.transform = 'translateX(-100%)';
-    }
-    
-    // Close menu when window is resized above mobile breakpoint
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 768) {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            sidebar.style.transform = '';
+
+        function openMobileMenu() {
+            if (!isMobile()) return;
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+            document.body.classList.add('mobile-menu-open');
+            toggle.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeMobileMenu() {
+            sidebar.classList.remove('open');
             overlay.classList.remove('active');
+            document.body.classList.remove('mobile-menu-open');
+            toggle.setAttribute('aria-expanded', 'false');
         }
-    });
+
+        function toggleMobileMenu() {
+            if (sidebar.classList.contains('open')) {
+                closeMobileMenu();
+            } else {
+                openMobileMenu();
+            }
+        }
+
+        toggle.addEventListener('click', toggleMobileMenu);
+        overlay.addEventListener('click', closeMobileMenu);
+
+        navLinks.forEach((link) => {
+            link.addEventListener('click', () => {
+                if (isMobile()) closeMobileMenu();
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            if (!isMobile()) {
+                closeMobileMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeMobileMenu();
+            }
+        });
+
+        window.toggleMobileMenu = toggleMobileMenu;
+        window.closeMobileMenu = closeMobileMenu;
+    })();
 </script>
-</body>
-</html>

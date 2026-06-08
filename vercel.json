@@ -1,4 +1,24 @@
 {
+  "headers": [
+    {
+      "source": "/asset/models/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/asset/img/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
+    }
+  ],
   "functions": {
     "api/*.php": {
       "runtime": "vercel-php@0.9.0"

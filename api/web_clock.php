@@ -40,8 +40,6 @@ register_shutdown_function(function () {
     }
 });
 
-session_start();
-
 // DEBUG ONLY: persist to a log file so we can read what went wrong on Vercel.
 // If FS is not allowed on Vercel, this will silently fail but won't break API.
 function dbg_log($msg) { @error_log('[web_clock] ' . $msg); }
@@ -52,6 +50,9 @@ include(__DIR__ . "/lib/Geolocation.php");
 
 // Authorize: require staff_id (admin can clock too, but front-end uses staff clocking)
 $staff_id = $_SESSION['staff_id'] ?? null;
+$face_verified = ($_POST['face_verified'] ?? '0') === '1';
+$photo = trim((string)($_POST['photo'] ?? ''));
+$gps_accuracy = isset($_POST['gps_accuracy']) ? (float)$_POST['gps_accuracy'] : null;
 
 if (!$staff_id) {
     // Some flows set role via auth_token restore; allow fallback if staff_id exists
@@ -72,6 +73,14 @@ if ($lat === null || $lng === null) {
 
 if ($action !== 'clock_in' && $action !== 'clock_out') {
     json_response(["status" => "error", "message" => "Invalid action."], 400);
+}
+
+if (!$face_verified) {
+    json_response(["status" => "error", "message" => "Face verification is required before clocking."], 400);
+}
+
+if ($photo !== '' && !str_starts_with($photo, 'data:image/')) {
+    json_response(["status" => "error", "message" => "Invalid selfie data received."], 400);
 }
 
 // ---------------------------------------------------------------
@@ -105,30 +114,78 @@ try {
 // ---------------------------------------------------------------
 // GEOFENCE VALIDATION
 // ---------------------------------------------------------------
-// Get staff's branch or the default branch
-$stmt = $conn->prepare("SELECT b.latitude, b.longitude, b.radius_meters FROM branches b 
-                        JOIN staff s ON (s.branch = b.branch_name OR s.branch_id = b.id)
-                        WHERE s.staff_id = ? LIMIT 1");
-$stmt->bind_param("s", $staff_id);
-$stmt->execute();
-$branch = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+// Prefer staff's registered clocking spot; fallback to branch geofence
+$staffHasClockLat = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lat');
+$staffHasClockLng = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lng');
+$staffHasClockRadius = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_radius');
+$staffHasBranchId = function_exists('db_has_column') && db_has_column($conn, 'staff', 'branch_id');
+$hasBranchesTable = function_exists('db_has_table') && db_has_table($conn, 'branches');
 
-if (!$branch) {
-    // Fallback: If no branch assigned, check if there are ANY branches
-    $res = $conn->query("SELECT latitude, longitude, radius_meters FROM branches LIMIT 1");
-    $branch = $res->fetch_assoc();
+$selectClockLat = $staffHasClockLat ? 's.clock_lat' : 'NULL AS clock_lat';
+$selectClockLng = $staffHasClockLng ? 's.clock_lng' : 'NULL AS clock_lng';
+$selectClockRadius = $staffHasClockRadius ? 's.clock_radius' : 'NULL AS clock_radius';
+$branchJoin = $hasBranchesTable
+    ? ($staffHasBranchId
+        ? "LEFT JOIN branches b ON (s.branch = b.branch_name OR s.branch_id = b.id)"
+        : "LEFT JOIN branches b ON (s.branch = b.branch_name)")
+    : "";
+$selectBranchCols = $hasBranchesTable
+    ? "b.latitude, b.longitude, b.radius_meters"
+    : "NULL AS latitude, NULL AS longitude, NULL AS radius_meters";
+
+$stmt = $conn->prepare("SELECT 
+                            {$selectClockLat},
+                            {$selectClockLng},
+                            {$selectClockRadius},
+                            {$selectBranchCols}
+                        FROM staff s
+                        {$branchJoin}
+                        WHERE s.staff_id = ? LIMIT 1");
+$locationRow = null;
+if ($stmt) {
+    $stmt->bind_param("s", $staff_id);
+    $stmt->execute();
+    $locationRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
 }
 
-if ($branch) {
-    $is_near = Geolocation::isWithinRadius($lat, $lng, $branch['latitude'], $branch['longitude'], $branch['radius_meters']);
+if (!$locationRow && $hasBranchesTable) {
+    // Fallback: If no branch assigned, check if there are ANY branches
+    $res = $conn->query("SELECT latitude, longitude, radius_meters FROM branches LIMIT 1");
+    $locationRow = $res ? $res->fetch_assoc() : null;
+}
+
+if ($locationRow) {
+    $targetLat = null;
+    $targetLng = null;
+    $targetRadius = null;
+
+    if ($locationRow['clock_lat'] !== null && $locationRow['clock_lng'] !== null) {
+        $targetLat = (float)$locationRow['clock_lat'];
+        $targetLng = (float)$locationRow['clock_lng'];
+        $targetRadius = (int)($locationRow['clock_radius'] ?? 300);
+    } elseif ($locationRow['latitude'] !== null && $locationRow['longitude'] !== null) {
+        $targetLat = (float)$locationRow['latitude'];
+        $targetLng = (float)$locationRow['longitude'];
+        $targetRadius = (int)($locationRow['radius_meters'] ?? 200);
+    }
+
+    if ($targetLat !== null && $targetLng !== null && $targetRadius !== null) {
+        $distance = Geolocation::getDistance($lat, $lng, $targetLat, $targetLng);
+        $is_near = Geolocation::isWithinRadius($lat, $lng, $targetLat, $targetLng, $targetRadius);
+    } else {
+        $is_near = true;
+        $distance = 0;
+    }
+
     if (!$is_near) {
         json_response([
             "status" => "error", 
             "message" => "You are too far from the office to clock in/out.",
             "debug" => [
-                "dist" => round(Geolocation::getDistance($lat, $lng, $branch['latitude'], $branch['longitude'])),
-                "limit" => $branch['radius_meters']
+                "dist" => round($distance),
+                "limit" => $targetRadius,
+                "gps_accuracy" => $gps_accuracy
             ]
         ], 400);
     }
@@ -153,8 +210,45 @@ if ($action === 'clock_in') {
         }
     }
 
-    $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, lat_in, lng_in, is_geofenced) VALUES (?, ?, 'in', ?, ?, 1)");
-    $stmt->bind_param("ssdd", $staff_id, $now, $lat, $lng);
+    $attendanceColumns = function_exists('db_table_columns') ? db_table_columns($conn, 'attendance') : [];
+    $insertColumns = ['staff_id', 'clock_in', 'status'];
+    $insertValues = ['?', '?', "'in'"];
+    $insertTypes = 'ss';
+    $insertParams = [$staff_id, $now];
+
+    if (in_array('source', $attendanceColumns, true)) {
+        $insertColumns[] = 'source';
+        $insertValues[] = "'mobile'";
+    }
+    if (in_array('photo_in', $attendanceColumns, true)) {
+        $insertColumns[] = 'photo_in';
+        $insertValues[] = '?';
+        $insertTypes .= 's';
+        $insertParams[] = $photo;
+    }
+    if (in_array('lat_in', $attendanceColumns, true)) {
+        $insertColumns[] = 'lat_in';
+        $insertValues[] = '?';
+        $insertTypes .= 'd';
+        $insertParams[] = $lat;
+    }
+    if (in_array('lng_in', $attendanceColumns, true)) {
+        $insertColumns[] = 'lng_in';
+        $insertValues[] = '?';
+        $insertTypes .= 'd';
+        $insertParams[] = $lng;
+    }
+    if (in_array('is_geofenced', $attendanceColumns, true)) {
+        $insertColumns[] = 'is_geofenced';
+        $insertValues[] = '1';
+    }
+
+    $sql = "INSERT INTO attendance (" . implode(', ', $insertColumns) . ") VALUES (" . implode(', ', $insertValues) . ")";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        json_response(["status" => "error", "message" => "Database schema issue. Please run api/fix_database.php on your cloud database."], 500);
+    }
+    $stmt->bind_param($insertTypes, ...$insertParams);
     if ($stmt->execute()) {
         json_response(["status" => "success", "message" => "Clocked in successfully!"]);
     } else {
@@ -174,8 +268,37 @@ if ($action === 'clock_in') {
         $clock_in_time = strtotime($record['clock_in']);
         $total_hours = round((time() - $clock_in_time) / 3600, 2);
 
-        $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, lat_out = ?, lng_out = ? WHERE id = ?");
-        $stmt->bind_param("sdddi", $now, $total_hours, $lat, $lng, $record['id']);
+        $attendanceColumns = function_exists('db_table_columns') ? db_table_columns($conn, 'attendance') : [];
+        $updateParts = ['clock_out = ?', "status = 'out'", 'total_hours = ?'];
+        $updateTypes = 'sd';
+        $updateParams = [$now, $total_hours];
+
+        if (in_array('source', $attendanceColumns, true)) {
+            $updateParts[] = "source = 'mobile'";
+        }
+        if (in_array('photo_out', $attendanceColumns, true)) {
+            $updateParts[] = 'photo_out = ?';
+            $updateTypes .= 's';
+            $updateParams[] = $photo;
+        }
+        if (in_array('lat_out', $attendanceColumns, true)) {
+            $updateParts[] = 'lat_out = ?';
+            $updateTypes .= 'd';
+            $updateParams[] = $lat;
+        }
+        if (in_array('lng_out', $attendanceColumns, true)) {
+            $updateParts[] = 'lng_out = ?';
+            $updateTypes .= 'd';
+            $updateParams[] = $lng;
+        }
+
+        $updateTypes .= 'i';
+        $updateParams[] = (int)$record['id'];
+        $stmt = $conn->prepare("UPDATE attendance SET " . implode(', ', $updateParts) . " WHERE id = ?");
+        if (!$stmt) {
+            json_response(["status" => "error", "message" => "Database schema issue. Please run api/fix_database.php on your cloud database."], 500);
+        }
+        $stmt->bind_param($updateTypes, ...$updateParams);
         if ($stmt->execute()) {
             json_response(["status" => "success", "message" => "Clocked out successfully! Total: $total_hours hours"]);
         } else {
