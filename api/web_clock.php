@@ -10,6 +10,8 @@
 // So we buffer ALL output from the very beginning and always emit JSON (even on fatal errors).
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
+// TEMP: helps identify Vercel 500 reasons via JSON
+
 ini_set('log_errors', 1);
 @ob_start();
 
@@ -39,6 +41,10 @@ register_shutdown_function(function () {
 });
 
 session_start();
+
+// DEBUG ONLY: persist to a log file so we can read what went wrong on Vercel.
+// If FS is not allowed on Vercel, this will silently fail but won't break API.
+function dbg_log($msg) { @error_log('[web_clock] ' . $msg); }
 include(__DIR__ . "/includes/config.php");
 include(__DIR__ . "/lib/Geolocation.php");
 
@@ -49,7 +55,8 @@ $staff_id = $_SESSION['staff_id'] ?? null;
 
 if (!$staff_id) {
     // Some flows set role via auth_token restore; allow fallback if staff_id exists
-    json_response(["status" => "error", "message" => "Unauthorized: staff session missing."], 401);
+    dbg_log('staff_id missing. cookies auth_token=' . (isset($_COOKIE['auth_token']) ? 'yes' : 'no'));
+json_response(["status" => "error", "message" => "Unauthorized: staff session missing.", "debug" => ["hasCookie" => isset($_COOKIE['auth_token']), "keys" => array_keys($_SESSION), "postKeys" => array_keys($_POST) ]], 401);
 }
 $lat      = isset($_POST['lat']) ? (float)$_POST['lat'] : null;
 $lng      = isset($_POST['lng']) ? (float)$_POST['lng'] : null;

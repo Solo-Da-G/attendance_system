@@ -686,7 +686,8 @@ statusEl.innerHTML = '🔄 Checking your profile photo...';
         }
     }
     
-    async function processClocking(action) {
+async function processClocking(action) {
+// console.log('processClocking start', action);
         if (typeof ClockFace === 'undefined') {
             showApiError('Face verification not loaded. Refresh the page.');
             return;
