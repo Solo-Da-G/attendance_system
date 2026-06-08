@@ -555,8 +555,8 @@ if ($staff_id) {
                     { maxFaces: 1 }
                 );
                 
-                statusEl.innerHTML = '🔄 Checking your profile photo...';
-                const profileResp = await fetch('/staff_profile.php');
+statusEl.innerHTML = '🔄 Checking your profile photo...';
+                const profileResp = await fetch('/api/staff_profile.php');
                 const profileData = await profileResp.json();
                 
                 if (profileData.status !== 'success') {
@@ -895,5 +895,4 @@ if ($staff_id) {
 </script>
 </body>
 </html>
-<?php
-?>
+
