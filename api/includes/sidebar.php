@@ -42,38 +42,12 @@ $is_admin = isset($_SESSION['admin_id']);
         z-index: 1200;
     }
 
-    .sidebar-logo {
-        padding: 30px 24px;
-        text-align: center;
-        border-bottom: 1px solid rgba(255,255,255,0.10);
-        margin-bottom: 16px;
-    }
-
-    .sidebar-logo img {
-        width: 60px;
-        height: 60px;
-        border-radius: 12px;
-        margin-bottom: 12px;
-    }
-
-    .sidebar-logo h3 {
-        font-size: 18px;
-        margin: 0;
-        color: #fff;
-    }
-
-    .sidebar-logo p {
-        font-size: 12px;
-        opacity: 0.72;
-        margin: 4px 0 0;
-        color: rgba(255,255,255,0.78);
-    }
-
     .sidebar-nav {
         display: flex;
         flex-direction: column;
         flex: 1;
         min-height: 0;
+        padding-top: 20px;
     }
 
     .nav-item {
@@ -155,12 +129,6 @@ $is_admin = isset($_SESSION['admin_id']);
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-        <img src="/asset/img/miss_logo.png" alt="Logo">
-        <h3>Attendance System</h3>
-        <p>Secure Clock-in System</p>
-    </div>
-
     <nav class="sidebar-nav" aria-label="Dashboard navigation">
         <?php if ($is_staff): ?>
             <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>" data-mobile-nav-link>
@@ -211,6 +179,10 @@ $is_admin = isset($_SESSION['admin_id']);
             <a href="user.php" class="nav-item <?php echo $current_page == 'user.php' ? 'active' : ''; ?>" data-mobile-nav-link>
                 <span class="nav-icon">👑</span>
                 <span class="nav-text">Users</span>
+            </a>
+            <a href="recycle_bin.php" class="nav-item <?php echo $current_page == 'recycle_bin.php' ? 'active' : ''; ?>" data-mobile-nav-link>
+                <span class="nav-icon">🗑️</span>
+                <span class="nav-text">Recycle Bin</span>
             </a>
             <div class="nav-divider"></div>
             <a href="settings.php" class="nav-item <?php echo $current_page == 'settings.php' ? 'active' : ''; ?>" data-mobile-nav-link>

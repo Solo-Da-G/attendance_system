@@ -6,12 +6,12 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'super_admin'], true)) {
     die("
     <div style='display:flex; height:100vh; align-items:center; justify-content:center; background:#0f172a; color:white; font-family:sans-serif;'>
         <div style='text-align:center;'>
             <h1 style='color:#ef4444; font-size:48px; margin-bottom:10px;'>Access Denied</h1>
-            <p style='color:#94a3b8; font-size:18px;'>Only Super Admins can access the Recycle Bin.</p>
+            <p style='color:#94a3b8; font-size:18px;'>Only Admin and Super Admin can access the Recycle Bin.</p>
             <a href='dashboard.php' style='display:inline-block; margin-top:20px; padding:10px 20px; background:#3b82f6; color:white; text-decoration:none; border-radius:8px;'>Return to Dashboard</a>
         </div>
     </div>
@@ -19,40 +19,102 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
 }
 
 $message = "";
+$is_super_admin = ($_SESSION['role'] ?? '') === 'super_admin';
 
-// Handle Restore
-if (isset($_GET['restore_type']) && isset($_GET['id'])) {
+if (function_exists('db_has_column') && db_has_column($conn, 'staff', 'deleted_at')) {
+    $conn->query("DELETE FROM `staff` WHERE deleted_at IS NOT NULL AND deleted_at < (NOW() - INTERVAL 30 DAY)");
+}
+if ($is_super_admin && function_exists('db_has_column') && db_has_column($conn, 'admin', 'deleted_at')) {
+    $conn->query("DELETE FROM `admin` WHERE deleted_at IS NOT NULL AND deleted_at < (NOW() - INTERVAL 30 DAY)");
+}
+
+if (isset($_GET['restore_type'], $_GET['id'])) {
     $type = $_GET['restore_type'];
     $id = (int)$_GET['id'];
-    
-    if ($type === 'admin') {
-        $conn->query("UPDATE `admin` SET deleted_at = NULL WHERE id = $id");
-        $message = "<div class='alert success'>âœ… Admin restored successfully.</div>";
-    } elseif ($type === 'staff') {
-        $conn->query("UPDATE `staff` SET deleted_at = NULL WHERE id = $id");
-        $message = "<div class='alert success'>âœ… Staff member restored successfully.</div>";
+
+    if ($type === 'staff') {
+        $stmt = $conn->prepare("UPDATE `staff` SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL");
+        if ($stmt) {
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->close();
+            $message = "<div class='alert success'>Staff member restored successfully.</div>";
+        }
+    } elseif ($type === 'admin') {
+        if (!$is_super_admin) {
+            $message = "<div class='alert error'>Only Super Admin can restore deleted admin users.</div>";
+        } else {
+            $role_stmt = $conn->prepare("SELECT role FROM `admin` WHERE id = ? LIMIT 1");
+            $target_role = null;
+            if ($role_stmt) {
+                $role_stmt->bind_param("i", $id);
+                $role_stmt->execute();
+                $target_role = $role_stmt->get_result()->fetch_assoc()['role'] ?? null;
+                $role_stmt->close();
+            }
+            if ($target_role === 'super_admin' && (int)$_SESSION['admin_id'] !== $id) {
+                $message = "<div class='alert error'>Super Admin accounts can only be managed carefully. Restore this one directly in the database if needed.</div>";
+            } else {
+                $stmt = $conn->prepare("UPDATE `admin` SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL");
+                if ($stmt) {
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $stmt->close();
+                    $message = "<div class='alert success'>Admin user restored successfully.</div>";
+                }
+            }
+        }
     }
 }
 
-// Handle Permanent Delete
-if (isset($_GET['perm_delete_type']) && isset($_GET['id'])) {
+if (isset($_GET['perm_delete_type'], $_GET['id'])) {
     $type = $_GET['perm_delete_type'];
     $id = (int)$_GET['id'];
-    
-    if ($type === 'admin') {
-        $conn->query("DELETE FROM `admin` WHERE id = $id");
-        $message = "<div class='alert error'>ðŸ—‘ï¸ Admin permanently deleted.</div>";
-    } elseif ($type === 'staff') {
-        $conn->query("DELETE FROM `staff` WHERE id = $id");
-        $message = "<div class='alert error'>ðŸ—‘ï¸ Staff member permanently deleted.</div>";
+
+    if ($type === 'staff') {
+        $stmt = $conn->prepare("DELETE FROM `staff` WHERE id = ? AND deleted_at IS NOT NULL");
+        if ($stmt) {
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->close();
+            $message = "<div class='alert error'>Staff member permanently deleted.</div>";
+        }
+    } elseif ($type === 'admin') {
+        if (!$is_super_admin) {
+            $message = "<div class='alert error'>Only Super Admin can permanently delete admin users.</div>";
+        } elseif ((int)$_SESSION['admin_id'] === $id) {
+            $message = "<div class='alert error'>You cannot permanently delete your own account.</div>";
+        } else {
+            $role_stmt = $conn->prepare("SELECT role FROM `admin` WHERE id = ? LIMIT 1");
+            $target_role = null;
+            if ($role_stmt) {
+                $role_stmt->bind_param("i", $id);
+                $role_stmt->execute();
+                $target_role = $role_stmt->get_result()->fetch_assoc()['role'] ?? null;
+                $role_stmt->close();
+            }
+            if ($target_role === 'super_admin') {
+                $message = "<div class='alert error'>Super Admin accounts cannot be permanently deleted from this page.</div>";
+            } else {
+                $stmt = $conn->prepare("DELETE FROM `admin` WHERE id = ? AND deleted_at IS NOT NULL");
+                if ($stmt) {
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $stmt->close();
+                    $message = "<div class='alert error'>Admin user permanently deleted.</div>";
+                }
+            }
+        }
     }
 }
 
-$deleted_admins = $conn->query("SELECT id, username, email, deleted_at FROM `admin` WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC");
+$deleted_admins = null;
+if ($is_super_admin) {
+    $deleted_admins = $conn->query("SELECT id, username, email, role, deleted_at FROM `admin` WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC");
+}
 $deleted_staff = $conn->query("SELECT id, staff_id, full_name, branch, deleted_at FROM `staff` WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC");
 
 $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_staff ? $deleted_staff->num_rows : 0);
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -136,7 +198,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
     
     <div class="rb-header">
         <div>
-            <h2>ðŸ—‘ï¸ Recycle Bin <span class="badge-count"><?php echo $total_items; ?> Items</span></h2>
+            <h2>🗑️ Recycle Bin <span class="badge-count"><?php echo $total_items; ?> Items</span></h2>
             <p>Deleted items are kept here for 30 days before being permanently removed.</p>
         </div>
     </div>
@@ -144,7 +206,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
     <?php if ($message) echo $message; ?>
 
     <div class="glass-card">
-        <h3>ðŸ‘¥ Deleted Staff</h3>
+        <h3>👥 Deleted Staff</h3>
         <?php if ($deleted_staff && $deleted_staff->num_rows > 0): ?>
         <div style="overflow-x:auto;">
             <table>
@@ -167,11 +229,11 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
                     <tr>
                         <td><strong><?php echo htmlspecialchars($r['staff_id']); ?></strong></td>
                         <td><?php echo htmlspecialchars($r['full_name']); ?></td>
-                        <td><?php echo htmlspecialchars($r['branch'] ?: 'â€”'); ?></td>
+                        <td><?php echo htmlspecialchars($r['branch'] ?: '—'); ?></td>
                         <td><?php echo date('M d, Y h:i A', $del_time); ?></td>
                         <td><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
                         <td style="display:flex; gap:8px;">
-                            <a href="?restore_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this staff member?');">â†º Restore</a>
+                            <a href="?restore_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this staff member?');">↺ Restore</a>
                             <a href="?perm_delete_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-delete" onclick="return confirm('Permanently delete? This cannot be undone.');">Delete</a>
                         </td>
                     </tr>
@@ -188,14 +250,15 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
     </div>
 
     <div class="glass-card">
-        <h3>ðŸ‘‘ Deleted Admins</h3>
-        <?php if ($deleted_admins && $deleted_admins->num_rows > 0): ?>
+        <h3>👑 Deleted Admins</h3>
+        <?php if ($is_super_admin && $deleted_admins && $deleted_admins->num_rows > 0): ?>
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
                         <th>Username</th>
                         <th>Email</th>
+                        <th>Role</th>
                         <th>Deleted On</th>
                         <th>Days Left</th>
                         <th>Actions</th>
@@ -209,11 +272,12 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
                     ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($r['username']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($r['email'] ?: 'â€”'); ?></td>
+                        <td><?php echo htmlspecialchars($r['email'] ?: '—'); ?></td>
+                        <td><?php echo htmlspecialchars($r['role'] ?: 'admin'); ?></td>
                         <td><?php echo date('M d, Y h:i A', $del_time); ?></td>
                         <td><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
                         <td style="display:flex; gap:8px;">
-                            <a href="?restore_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this admin?');">â†º Restore</a>
+                            <a href="?restore_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this admin?');">↺ Restore</a>
                             <a href="?perm_delete_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-delete" onclick="return confirm('Permanently delete? This cannot be undone.');">Delete</a>
                         </td>
                     </tr>
@@ -221,10 +285,15 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
                 </tbody>
             </table>
         </div>
-        <?php else: ?>
+        <?php elseif ($is_super_admin): ?>
         <div class="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             <p>No deleted admin users.</p>
+        </div>
+        <?php else: ?>
+        <div class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"></path></svg>
+            <p>Admin user recycle bin is visible to Super Admin only.</p>
         </div>
         <?php endif; ?>
     </div>

@@ -41,6 +41,23 @@ $style_version = @filemtime(dirname(__DIR__) . "/asset/css/style.css") ?: time()
 $face_api_version = @filemtime(dirname(__DIR__) . "/asset/js/face-api.min.js") ?: time();
 $clock_face_version = @filemtime(dirname(__DIR__) . "/asset/js/clock-face.js") ?: time();
 $idle_logout_version = @filemtime(dirname(__DIR__) . "/asset/js/idle-logout.js") ?: time();
+$th = 0;
+$th_today = 0;
+$th_yest = 0;
+
+if (!function_exists('formatHours')) {
+    function formatHours($decimal) {
+        if (!$decimal) return "0 hrs 0 min";
+        $h = floor($decimal);
+        $m = floor(($decimal - $h) * 60);
+        $s = round((($decimal - $h) * 60 - $m) * 60);
+        $str = "";
+        if ($h > 0) $str .= "{$h}hrs ";
+        $str .= "{$m}min";
+        if ($s > 0) $str .= " {$s}sec";
+        return trim($str);
+    }
+}
 
 if ($staff_id) {
     $photo_stmt = $conn->prepare("SELECT photo, branch, job_title, department FROM staff WHERE staff_id = ? LIMIT 1");
@@ -405,9 +422,6 @@ if ($staff_id) {
     </div>
     
     <?php
-    $th = 0;
-    $th_today = 0;
-    $th_yest = 0;
     $stmt_th = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ? AND YEARWEEK(clock_in, 1) = YEARWEEK(CURDATE(), 1) AND WEEKDAY(clock_in) <= 4");
     if ($stmt_th) {
         $stmt_th->bind_param("s", $staff_id);
@@ -430,20 +444,6 @@ if ($staff_id) {
         $stmt_yest->execute();
         $th_yest = $stmt_yest->get_result()->fetch_assoc()['th'] ?? 0;
         $stmt_yest->close();
-    }
-    
-    if (!function_exists('formatHours')) {
-        function formatHours($decimal) {
-            if (!$decimal) return "0 hrs 0 min";
-            $h = floor($decimal);
-            $m = floor(($decimal - $h) * 60);
-            $s = round((($decimal - $h) * 60 - $m) * 60);
-            $str = "";
-            if ($h > 0) $str .= "{$h}hrs ";
-            $str .= "{$m}min";
-            if ($s > 0) $str .= " {$s}sec";
-            return trim($str);
-        }
     }
     ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 24px;">
@@ -923,7 +923,9 @@ if ($staff_id) {
     
     setInterval(updateClock, 1000);
     updateClock();
+    <?php if ($staff_id): ?>
     init();
+    <?php endif; ?>
 </script>
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>
 </body>
