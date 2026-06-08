@@ -44,11 +44,13 @@ include(__DIR__ . "/lib/Geolocation.php");
 
 // json_response already defined above
 
-if (!isset($_SESSION['admin'])) {
-    json_response(["status" => "error", "message" => "Unauthorized"], 401);
-}
+// Authorize: require staff_id (admin can clock too, but front-end uses staff clocking)
+$staff_id = $_SESSION['staff_id'] ?? null;
 
-$staff_id = $_SESSION['staff_id'] ?? null; // We need to ensure staff_id is in session
+if (!$staff_id) {
+    // Some flows set role via auth_token restore; allow fallback if staff_id exists
+    json_response(["status" => "error", "message" => "Unauthorized: staff session missing."], 401);
+}
 $lat      = isset($_POST['lat']) ? (float)$_POST['lat'] : null;
 $lng      = isset($_POST['lng']) ? (float)$_POST['lng'] : null;
 $action   = $_POST['action'] ?? ''; // 'clock_in' or 'clock_out'

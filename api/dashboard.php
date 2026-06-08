@@ -893,6 +893,9 @@ statusEl.innerHTML = '🔄 Checking your profile photo...';
     updateClock();
     init();
 </script>
+<script src="/asset/js/idle-logout.js" defer></script>
 </body>
 </html>
+
+
 

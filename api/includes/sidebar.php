@@ -235,8 +235,8 @@ $is_admin = isset($_SESSION['admin_id']);
         </a>
     <?php endif; ?>
     
-    <div class="nav-divider"></div>
-    <a href="logout.php" class="nav-item">
+<div class="nav-divider"></div>
+    <a href="/api/logout.php" class="nav-item">
         <span class="nav-icon">🚪</span>
         <span class="nav-text">Logout</span>
     </a>
