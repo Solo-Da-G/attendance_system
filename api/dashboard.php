@@ -218,6 +218,14 @@ if ($staff_id) {
         #camera-container { width: min(240px, 80vw); border-width: 4px; }
         .clock-btn { padding: 12px 20px; font-size: 14px; }
         .dashboard-widgets { gap: 12px; }
+        .dashboard-links-container {
+            flex-direction: column !important;
+            gap: 8px !important;
+        }
+        .dashboard-logout-link {
+            order: -1; /* Move logout to the top of the quick links list on small phones */
+            margin-bottom: 4px;
+        }
     }
   </style>
 </head>
@@ -318,21 +326,28 @@ if ($staff_id) {
                 $missed_stmt->close();
             }
 
-            $is_clocked_in = false;
-            $stmt = $conn->prepare("SELECT id FROM `attendance` WHERE staff_id = ? AND clock_out IS NULL ORDER BY clock_in DESC LIMIT 1");
+            $has_clocked_in_today = false;
+            $has_clocked_out_today = false;
+            $stmt = $conn->prepare("SELECT id, clock_out FROM `attendance` WHERE staff_id = ? AND DATE(clock_in) = CURDATE() ORDER BY id DESC LIMIT 1");
             if ($stmt) {
                 $stmt->bind_param("s", $staff_id);
                 $stmt->execute();
                 $res = $stmt->get_result();
                 if ($res && $res->num_rows > 0) {
-                    $is_clocked_in = true;
+                    $row = $res->fetch_assoc();
+                    $has_clocked_in_today = true;
+                    if ($row['clock_out'] !== null) {
+                        $has_clocked_out_today = true;
+                    }
                 }
                 $stmt->close();
             }
         ?>
         
         <div id="clockControls">
-            <?php if (!$is_clocked_in): ?>
+            <?php if ($has_clocked_out_today): ?>
+                <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true" style="background:#64748b;box-shadow:none;">Already Clocked Out Today</button>
+            <?php elseif (!$has_clocked_in_today): ?>
                 <button id="clockBtn" class="clock-btn" disabled onclick="processClocking('clock_in')">Verify & Clock In</button>
             <?php else: ?>
                 <button id="clockBtn" class="clock-btn out" disabled onclick="processClocking('clock_out')">Verify & Clock Out</button>
@@ -370,10 +385,11 @@ if ($staff_id) {
                     </div>
                 </div>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <a href="my_attendance.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;">My Attendance</a>
-                <a href="my_report.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;">My Report</a>
-                <a href="my_profile.php" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:1px solid transparent;color:#fff;font-weight:800;text-decoration:none;">My Profile</a>
+            <div class="dashboard-links-container" style="display:flex;gap:10px;flex-wrap:wrap;width:100%;">
+                <a href="my_attendance.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Attendance</a>
+                <a href="my_report.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Report</a>
+                <a href="my_profile.php" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:1px solid transparent;color:#fff;font-weight:800;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Profile</a>
+                <a href="logout.php" class="dashboard-logout-link" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,#ef4444,#dc2626);border:1px solid transparent;color:#fff;font-weight:800;text-decoration:none;flex:1;min-width:120px;text-align:center;">Logout</a>
             </div>
         </div>
     </div>
@@ -402,7 +418,7 @@ if ($staff_id) {
                         $label = strtoupper((string)($r['status'] ?? ''));
                         if ($r['status'] === 'in') { $badgeClass = 'badge-success'; $label = 'IN'; }
                         elseif ($r['status'] === 'out') { $badgeClass = 'badge-info'; $label = 'OUT'; }
-                        elseif ($r['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'MISSED'; }
+                        elseif ($r['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'missed(clockout)'; }
                         $stat = "<span class='badge {$badgeClass}'>{$label}</span>";
                         $out = $r['clock_out'] ? date("h:i A", strtotime($r['clock_out'])) : '—';
                         echo "<tr>";
@@ -490,7 +506,7 @@ if ($staff_id) {
                         $status_text = 'Working';
                         if (($row['status'] ?? '') === 'missed_out') {
                             $status_badge = 'badge-danger';
-                            $status_text = 'Missed';
+                            $status_text = 'missed(clockout)';
                         } elseif (!empty($row['clock_out'])) {
                             $status_badge = 'badge-info';
                             $status_text = 'Completed';
@@ -506,7 +522,7 @@ if ($staff_id) {
                         $clockOutLabel = '—';
                         if (!empty($row['clock_out'])) {
                             $clockOutLabel = date('M j, g:i A', strtotime($row['clock_out']));
-                            if (($row['status'] ?? '') === 'missed_out') $clockOutLabel .= " <small>(missed)</small>";
+                            if (($row['status'] ?? '') === 'missed_out') $clockOutLabel .= " <small>(missed clockout)</small>";
                         }
                         echo "<td data-label='Clock Out'>".$clockOutLabel."</td>";
                         echo "<td data-label='Selfie'>";
@@ -886,7 +902,7 @@ if ($staff_id) {
 
             warmupLocation();
             const success = await prepareFaceRecognition();
-            if (success && clockBtn) {
+            if (success && clockBtn && !clockBtn.hasAttribute('data-prevent-enable')) {
                 clockBtn.disabled = false;
             }
         } catch (err) {

@@ -50,20 +50,22 @@ if ($stmtMiss) {
 
 // Check if already clocked in today
 $stmt = $conn->prepare("SELECT id, clock_in, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
+// Check if already clocked in today
+$stmt = $conn->prepare("SELECT id, clock_in, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
 $stmt->bind_param("ss", $staff_id, $today);
 $stmt->execute();
 $check = $stmt->get_result();
 $record = $check->fetch_assoc();
 $stmt->close();
 
-if (!$record || $record['clock_out'] !== null) {
+if (!$record) {
     // Clock in
     $stmt2 = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status) VALUES (?, ?, 'in')");
     $stmt2->bind_param("ss", $staff_id, $current_time);
     $stmt2->execute();
     $stmt2->close();
     echo json_encode(["status" => "success", "message" => "Clock-in recorded at $current_time"]);
-} else {
+} elseif ($record['clock_out'] === null) {
     // Clock out
     $clock_in_time = strtotime($record['clock_in']);
     $clock_out_time = strtotime($current_time);
@@ -75,5 +77,8 @@ if (!$record || $record['clock_out'] !== null) {
     $stmt3->execute();
     $stmt3->close();
     echo json_encode(["status" => "success", "message" => "Clock-out recorded at $current_time. Total hours: $total_hours"]);
+} else {
+    // Already clocked out today
+    echo json_encode(["status" => "error", "message" => "Already clocked in and out today. Cannot clock in again until tomorrow."]);
 }
 ?>

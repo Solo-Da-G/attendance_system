@@ -128,7 +128,7 @@ if ($stmtStat) {
                     <td>{$row['clock_in']}</td>
                     <td>" . ($row['clock_out'] ?? '—') . "</td>
                     <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
-                    <td class='status {$statusClass}'>" . ($row['status'] ?? 'In') . "</td>
+                    <td class='status {$statusClass}'>" . (($row['status'] ?? 'In') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'In')) . "</td>
                     <td>" . formatHours($hours) . "</td>
                   </tr>";
             $totalRecords++;

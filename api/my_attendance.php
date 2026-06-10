@@ -74,7 +74,7 @@ if ($from !== '' && $to !== '') {
           <td><?php echo htmlspecialchars($date); ?></td>
           <td><?php echo htmlspecialchars($timeIn); ?></td>
           <td><?php echo htmlspecialchars($timeOut); ?></td>
-          <td class="status <?php echo htmlspecialchars($statusClass); ?>"><?php echo htmlspecialchars($row['status'] ?? 'in'); ?></td>
+          <td class="status <?php echo htmlspecialchars($statusClass); ?>"><?php echo ($row['status'] === 'missed_out' ? 'missed(clockout)' : htmlspecialchars($row['status'] ?? 'in')); ?></td>
           <td><?php echo htmlspecialchars(number_format($hrs, 2)); ?> hrs</td>
         </tr>
       <?php endforeach; ?>

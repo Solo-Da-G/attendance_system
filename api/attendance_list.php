@@ -25,11 +25,12 @@ if (!isset($_SESSION['admin_id'])) {
     if ($res && $res->num_rows > 0) {
       while ($row = $res->fetch_assoc()) {
         $statusClass = strtolower($row['status']);
+        $displayStatus = $row['status'] === 'missed_out' ? 'missed(clockout)' : $row['status'];
         echo "<tr>
                 <td>{$row['staff_id']}</td>
                 <td>{$row['clock_in']}</td>
                 <td>" . ($row['clock_out'] ?? '—') . "</td>
-                <td class='status {$statusClass}'>{$row['status']}</td>
+                <td class='status {$statusClass}'>{$displayStatus}</td>
               </tr>";
       }
     } else {

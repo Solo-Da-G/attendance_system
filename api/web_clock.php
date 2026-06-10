@@ -198,15 +198,15 @@ $now  = date("Y-m-d H:i:s");
 $date = date("Y-m-d");
 
 if ($action === 'clock_in') {
-    // Prevent double clock-in: if there's an open record already (today), require clock-out.
-    $chk = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
+    // Prevent double clock-in: once you clock in, you can't clock in again till 12am the next day.
+    $chk = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
     if ($chk) {
         $chk->bind_param("ss", $staff_id, $date);
         $chk->execute();
-        $open = $chk->get_result()->fetch_assoc();
+        $exists = $chk->get_result()->fetch_assoc();
         $chk->close();
-        if ($open) {
-            json_response(["status" => "error", "message" => "You are already clocked in today. Please clock out first."], 400);
+        if ($exists) {
+            json_response(["status" => "error", "message" => "You have already clocked in today. You cannot clock in again until tomorrow."], 400);
         }
     }
 

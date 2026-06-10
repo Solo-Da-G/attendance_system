@@ -49,11 +49,12 @@ function formatHours($decimal) {
     if ($res->num_rows > 0) {
       while ($row = $res->fetch_assoc()) {
         $hours = floatval($row['total_hours']);
+        $displayStatus = $row['status'] === 'missed_out' ? 'missed(clockout)' : $row['status'];
         echo "<tr>
           <td>{$row['staff_id']}</td>
           <td>{$row['clock_in']}</td>
           <td>" . ($row['clock_out'] ?? '—') . "</td>
-          <td class='status " . strtolower($row['status']) . "'>{$row['status']}</td>
+          <td class='status " . strtolower($row['status']) . "'>{$displayStatus}</td>
           <td>" . formatHours($hours) . "</td>
         </tr>";
       }
