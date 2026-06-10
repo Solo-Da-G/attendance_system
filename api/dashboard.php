@@ -222,14 +222,51 @@ if ($staff_id) {
             flex-direction: column !important;
             gap: 8px !important;
         }
-        .dashboard-logout-link {
-            order: -1; /* Move logout to the top of the quick links list on small phones */
-            margin-bottom: 4px;
-        }
+    }
+
+    /* Floating top notification banner */
+    .top-notification {
+        position: fixed;
+        top: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99999;
+        padding: 16px 24px;
+        border-radius: 16px;
+        font-weight: 700;
+        font-size: 15px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 90%;
+        width: 480px;
+        box-sizing: border-box;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .top-notification.show {
+        top: 24px;
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .top-notification.success {
+        background: #f0fdf4;
+        color: #166534;
+        border: 2px solid #22c55e;
+        box-shadow: 0 10px 25px rgba(34, 197, 94, 0.2);
+    }
+    .top-notification.error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 2px solid #ef4444;
+        box-shadow: 0 10px 25px rgba(239, 68, 68, 0.2);
     }
   </style>
 </head>
 <body class="app-page dashboard-page">
+  <div id="topNotification" class="top-notification"></div>
 
   <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
@@ -389,7 +426,6 @@ if ($staff_id) {
                 <a href="my_attendance.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Attendance</a>
                 <a href="my_report.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Report</a>
                 <a href="my_profile.php" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:1px solid transparent;color:#fff;font-weight:800;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Profile</a>
-                <a href="logout.php" class="dashboard-logout-link" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,#ef4444,#dc2626);border:1px solid transparent;color:#fff;font-weight:800;text-decoration:none;flex:1;min-width:120px;text-align:center;">Logout</a>
             </div>
         </div>
     </div>
@@ -561,6 +597,27 @@ if ($staff_id) {
     let currentCoords = null;
     let locationWarmupPromise = null;
 
+    let notificationTimeout = null;
+    function showTopNotification(msg, isSuccess = false) {
+        const notification = document.getElementById('topNotification');
+        if (!notification) return;
+
+        if (notificationTimeout) {
+            clearTimeout(notificationTimeout);
+        }
+        notification.classList.remove('show', 'success', 'error');
+
+        notification.classList.add(isSuccess ? 'success' : 'error');
+        notification.innerHTML = (isSuccess ? '<span>✅</span> ' : '<span>⚠️</span> ') + msg;
+        
+        void notification.offsetWidth; // Force reflow
+        notification.classList.add('show');
+
+        notificationTimeout = setTimeout(() => {
+            notification.classList.remove('show');
+        }, 5000);
+    }
+
     function showApiError(msg) {
         const overlay = document.getElementById('scanningOverlay');
         const cam = document.getElementById('camera-container');
@@ -574,6 +631,7 @@ if ($staff_id) {
                 if (result && result.textContent.startsWith('❌')) result.innerHTML = '';
             }, 5000);
         }
+        showTopNotification(msg, false);
     }
 
     function showApiSuccess(msg) {
@@ -582,6 +640,7 @@ if ($staff_id) {
             result.style.color = '#10b981';
             result.innerHTML = '✅ ' + msg;
         }
+        showTopNotification(msg, true);
     }
 
     function getPosition(options) {
