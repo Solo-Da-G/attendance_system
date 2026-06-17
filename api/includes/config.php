@@ -74,7 +74,7 @@ if (getenv('DB_HOST')) {
 define('CLOUD_URL', 'https://attendance.yourcompany.com');
 
 // API secret key for secure communication between local sync and cloud
-define('API_SECRET', 'CHANGE_THIS_TO_A_RANDOM_STRING_123');
+define('API_SECRET', getenv('API_SECRET') ?: 'CHANGE_THIS_TO_A_RANDOM_STRING_123');
 
 // Timezone
 date_default_timezone_set("Africa/Lagos");
@@ -93,13 +93,6 @@ if ($conn->connect_error) {
 }
 
 $conn->set_charset("utf8mb4");
-
-
-// Add after connection
-if ($conn->connect_error) {
-    error_log("DB Connection Failed: " . $conn->connect_error);
-    die("Database connection failed. Please check your environment variables.");
-}
 
 if (!function_exists('db_table_columns')) {
     function db_table_columns(mysqli $conn, string $table): array
