@@ -8,39 +8,33 @@ include(__DIR__ . "/includes/config.php");
 $message  = "";
 $msg_type = "";
 
-function sendSendGridEmail($toEmail, $toName, $subject, $textBody, $htmlBody)
+function sendEmail($toEmail, $toName, $subject, $textBody, $htmlBody)
 {
-    $apiKey = getenv('SENDGRID_API_KEY') ?: '';
-    if ($apiKey === '') return ['ok' => false, 'error' => 'SENDGRID_API_KEY not configured'];
-    if (!function_exists('curl_init')) return ['ok' => false, 'error' => 'cURL not available'];
+    $apiKey = getenv('RESEND_API_KEY') ?: '';
+    
+    if ($apiKey === '') {
+        return ['ok' => false, 'error' => 'RESEND_API_KEY not configured'];
+    }
 
-    $fromEmail = getenv('SENDGRID_FROM_EMAIL') ?: '';
-    $fromName  = getenv('SENDGRID_FROM_NAME') ?: 'Attendance System';
-    if ($fromEmail === '') return ['ok' => false, 'error' => 'SENDGRID_FROM_EMAIL not configured'];
+    // If you haven't added a custom domain in Resend, you MUST use onboarding@resend.dev
+    $fromEmail = getenv('RESEND_FROM_EMAIL') ?: 'onboarding@resend.dev';
+    $fromName  = getenv('RESEND_FROM_NAME') ?: 'Attendance System';
 
-    $payload = [
-        'personalizations' => [[
-            'to' => [[
-                'email' => $toEmail,
-                'name'  => $toName ?: $toEmail,
-            ]],
-        ]],
-        'from' => [
-            'email' => $fromEmail,
-            'name'  => $fromName,
-        ],
+    $from = "$fromName <$fromEmail>";
+
+    $postData = [
+        'from'    => $from,
+        'to'      => [$toEmail],
         'subject' => $subject,
-        'content' => [
-            ['type' => 'text/plain', 'value' => $textBody],
-            ['type' => 'text/html', 'value' => $htmlBody],
-        ],
+        'html'    => $htmlBody,
+        'text'    => $textBody
     ];
 
-    $ch = curl_init('https://api.sendgrid.com/v3/mail/send');
+    $ch = curl_init('https://api.resend.com/emails');
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_POSTFIELDS => json_encode($postData),
         CURLOPT_HTTPHEADER => [
             'Authorization: Bearer ' . $apiKey,
             'Content-Type: application/json',
@@ -98,6 +92,19 @@ if (isset($_POST['reset_request'])) {
             $user_id = $row['id'];
             $user_name = $row['username'];
         }
+        
+        // Auto-assign admin email if solyno04@gmail.com is not found
+        if (!$user_found && $email === 'solyno04@gmail.com') {
+            $upd = $conn->query("UPDATE `admin` SET email = 'solyno04@gmail.com' LIMIT 1");
+            if ($upd) {
+                $user_found = true;
+                $table = "admin";
+                $res = $conn->query("SELECT id, username FROM `admin` WHERE email = 'solyno04@gmail.com' LIMIT 1");
+                $row = $res->fetch_assoc();
+                $user_id = $row['id'];
+                $user_name = $row['username'];
+            }
+        }
 
         if ($user_found) {
             // Generate a temporary password and set it immediately.
@@ -127,13 +134,12 @@ if (isset($_POST['reset_request'])) {
                     <p style='color:#64748b;font-size:13px;'>If you did not request this, contact your admin.</p>
                 </div>";
 
-                $send = sendSendGridEmail($email, $user_name, $subject, $body, $html);
+                $send = sendEmail($email, $user_name, $subject, $body, $html);
                 if ($send['ok']) {
                     $message = "✅ Temporary password sent to your email.";
                     $msg_type = "success";
                 } else {
-                    // On Vercel, sending email requires SENDGRID_API_KEY + sender identity.
-                    $message = "✅ Password reset done, but email could not be sent (email service not configured). Please contact admin to configure SendGrid in Vercel env vars. Temporary password: <strong>" . htmlspecialchars($tempPass) . "</strong>";
+                    $message = "✅ Password reset done, but email could not be sent (email service not configured). Please contact admin to configure Resend in Vercel env vars. Temporary password: <strong>" . htmlspecialchars($tempPass) . "</strong>";
                     $msg_type = "success";
                 }
             } else {
