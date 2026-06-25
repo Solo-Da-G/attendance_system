@@ -10,14 +10,14 @@ $msg_type = "";
 
 function sendEmail($toEmail, $toName, $subject, $textBody, $htmlBody)
 {
-    $apiKey = getenv('BREVO_API_KEY') ?: '';
+    $apiKey = getenv('BREVO_API_KEY') ?: $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? '';
     
     if ($apiKey === '') {
         return ['ok' => false, 'error' => 'BREVO_API_KEY not configured'];
     }
 
-    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: 'no-reply@attendance.system';
-    $fromName  = getenv('BREVO_FROM_NAME') ?: 'Attendance System';
+    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: $_ENV['BREVO_FROM_EMAIL'] ?? $_SERVER['BREVO_FROM_EMAIL'] ?? 'no-reply@attendance.system';
+    $fromName  = getenv('BREVO_FROM_NAME') ?: $_ENV['BREVO_FROM_NAME'] ?? $_SERVER['BREVO_FROM_NAME'] ?? 'Attendance System';
 
     $postData = [
         'sender'      => ['name' => $fromName, 'email' => $fromEmail],
