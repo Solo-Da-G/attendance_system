@@ -10,34 +10,32 @@ $msg_type = "";
 
 function sendEmail($toEmail, $toName, $subject, $textBody, $htmlBody)
 {
-    $apiKey = getenv('RESEND_API_KEY') ?: '';
+    $apiKey = getenv('BREVO_API_KEY') ?: '';
     
     if ($apiKey === '') {
-        return ['ok' => false, 'error' => 'RESEND_API_KEY not configured'];
+        return ['ok' => false, 'error' => 'BREVO_API_KEY not configured'];
     }
 
-    // If you haven't added a custom domain in Resend, you MUST use onboarding@resend.dev
-    $fromEmail = getenv('RESEND_FROM_EMAIL') ?: 'onboarding@resend.dev';
-    $fromName  = getenv('RESEND_FROM_NAME') ?: 'Attendance System';
-
-    $from = "$fromName <$fromEmail>";
+    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: 'no-reply@attendance.system';
+    $fromName  = getenv('BREVO_FROM_NAME') ?: 'Attendance System';
 
     $postData = [
-        'from'    => $from,
-        'to'      => [$toEmail],
-        'subject' => $subject,
-        'html'    => $htmlBody,
-        'text'    => $textBody
+        'sender'      => ['name' => $fromName, 'email' => $fromEmail],
+        'to'          => [['email' => $toEmail, 'name' => $toName ?: $toEmail]],
+        'subject'     => $subject,
+        'htmlContent' => $htmlBody,
+        'textContent' => $textBody
     ];
 
-    $ch = curl_init('https://api.resend.com/emails');
+    $ch = curl_init('https://api.brevo.com/v3/smtp/email');
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POSTFIELDS => json_encode($postData),
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . $apiKey,
-            'Content-Type: application/json',
+            'api-key: ' . $apiKey,
+            'accept: application/json',
+            'content-type: application/json',
         ],
         CURLOPT_TIMEOUT => 20,
         CURLOPT_CONNECTTIMEOUT => 10,
@@ -139,7 +137,7 @@ if (isset($_POST['reset_request'])) {
                     $message = "✅ Temporary password sent to your email.";
                     $msg_type = "success";
                 } else {
-                    $message = "✅ Password reset done, but email could not be sent (email service not configured). Please contact admin to configure Resend in Vercel env vars. Temporary password: <strong>" . htmlspecialchars($tempPass) . "</strong>";
+                    $message = "✅ Password reset done, but email could not be sent (email service not configured). Please contact admin to configure Brevo in Vercel env vars. Temporary password: <strong>" . htmlspecialchars($tempPass) . "</strong>";
                     $msg_type = "success";
                 }
             } else {
