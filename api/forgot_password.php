@@ -44,7 +44,6 @@ function sendEmail($toEmail, $toName, $subject, $textBody, $htmlBody)
     $resp = curl_exec($ch);
     $err = curl_error($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($err) return ['ok' => false, 'error' => $err];
     if ($code >= 200 && $code < 300) return ['ok' => true];
