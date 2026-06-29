@@ -197,13 +197,40 @@ $is_admin = isset($_SESSION['admin_id']);
 
         <div class="nav-footer">
             <div class="nav-divider"></div>
-            <a href="/api/logout.php" class="nav-item" data-mobile-nav-link>
+            <a href="#" class="nav-item" id="darkModeToggle">
+                <span class="nav-icon">🌙</span>
+                <span class="nav-text">Dark Mode</span>
+            </a>
+            <a href="/api/logout.php" class="nav-item" data-mobile-nav-link style="background: rgba(220, 38, 38, 0.1); color: #ef4444 !important; margin-top: 10px;">
                 <span class="nav-icon">🚪</span>
                 <span class="nav-text">Logout</span>
             </a>
         </div>
     </nav>
 </aside>
+
+<style>
+/* Dark Mode Variables */
+body.dark-mode {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface-alt: #334155;
+    --border: #334155;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --shadow: 0 4px 14px rgba(0,0,0,.3);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.2);
+}
+body.dark-mode .dashboard-header { background: linear-gradient(135deg, #020617, #0f172a); }
+body.dark-mode .clocking-card, 
+body.dark-mode .recent-table, 
+body.dark-mode .widget-card,
+body.dark-mode .settings-box { background: var(--surface); border-color: var(--border); }
+body.dark-mode input, body.dark-mode select { background: var(--surface-alt); color: white; border-color: var(--border); }
+body.dark-mode table { background: var(--surface); border-color: var(--border); }
+body.dark-mode th { background: #334155; color: #e2e8f0; }
+body.dark-mode td { border-bottom-color: var(--border); color: #cbd5e1; }
+</style>
 
 <script>
     (function () {
@@ -264,5 +291,30 @@ $is_admin = isset($_SESSION['admin_id']);
 
         window.toggleMobileMenu = toggleMobileMenu;
         window.closeMobileMenu = closeMobileMenu;
+        
+        // Dark Mode Logic
+        const darkModeBtn = document.getElementById('darkModeToggle');
+        if (darkModeBtn) {
+            // Check local storage
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+                darkModeBtn.querySelector('.nav-icon').textContent = '☀️';
+                darkModeBtn.querySelector('.nav-text').textContent = 'Light Mode';
+            }
+            
+            darkModeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.body.classList.toggle('dark-mode');
+                if (document.body.classList.contains('dark-mode')) {
+                    localStorage.setItem('theme', 'dark');
+                    darkModeBtn.querySelector('.nav-icon').textContent = '☀️';
+                    darkModeBtn.querySelector('.nav-text').textContent = 'Light Mode';
+                } else {
+                    localStorage.setItem('theme', 'light');
+                    darkModeBtn.querySelector('.nav-icon').textContent = '🌙';
+                    darkModeBtn.querySelector('.nav-text').textContent = 'Dark Mode';
+                }
+            });
+        }
     })();
 </script>

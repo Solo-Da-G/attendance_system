@@ -112,6 +112,15 @@ $stmt->close();
                     <option value="180_days" <?php echo ($admin['auto_backup_freq'] === '180_days') ? 'selected' : ''; ?>>Every 6 Months</option>
                     <option value="365_days" <?php echo ($admin['auto_backup_freq'] === '365_days') ? 'selected' : ''; ?>>Every 1 Year</option>
                 </select>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);">
+                        <span>💾</span> Manual Download (.sql)
+                    </a>
+                    <a href="backup.php?action=email" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);" onclick="return confirm('Send the database backup to your email now?');">
+                        <span>✉️</span> Email Backup Now
+                    </a>
+                </div>
             </div>
 
             <button type="submit" name="update_settings" style="margin-top:25px; width:100%;">Save Settings</button>
