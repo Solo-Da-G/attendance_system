@@ -545,6 +545,16 @@ if ($staff_id) {
     }
     
     $absent_today = max(0, $total_staff - $present_today);
+
+    // 7-Day Attendance Trend for Chart.js
+    $chart_labels = [];
+    $chart_data = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $d = date("Y-m-d", strtotime("-$i days"));
+        $chart_labels[] = date("D", strtotime($d));
+        $res_chart = $conn->query("SELECT COUNT(DISTINCT staff_id) as c FROM attendance WHERE DATE(clock_in) = '$d'");
+        $chart_data[] = $res_chart ? $res_chart->fetch_assoc()['c'] : 0;
+    }
     ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
         <div class="widget-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(59,130,246,0.3);">
@@ -559,6 +569,12 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Absent Today</div>
             <div style="font-size: 26px; font-weight: 800;"><?php echo $absent_today; ?></div>
         </div>
+    </div>
+    
+    <!-- Chart.js Visualization -->
+    <div style="background: white; border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);">
+        <h3 style="margin-bottom: 15px; font-size: 16px; color: var(--text);">📊 7-Day Attendance Trend</h3>
+        <canvas id="attendanceChart" height="80"></canvas>
     </div>
     
     <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px;">
@@ -647,6 +663,42 @@ if ($staff_id) {
 <?php if ($staff_id): ?>
 <script src="/asset/js/face-api.min.js?v=<?php echo $face_api_version; ?>"></script>
 <script src="/asset/js/clock-face.js?v=<?php echo $clock_face_version; ?>"></script>
+<?php endif; ?>
+<?php if ($is_admin): ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('attendanceChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: <?php echo json_stringify($chart_labels); ?>,
+                    datasets: [{
+                        label: 'Staff Present',
+                        data: <?php echo json_stringify($chart_data); ?>,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#4f46e5',
+                        pointBorderColor: '#fff',
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    });
+</script>
 <?php endif; ?>
 <script>
     let video = null;

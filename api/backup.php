@@ -35,6 +35,9 @@ if ($action === 'auto') {
         '7_days' => 7 * 24 * 3600,
         '14_days' => 14 * 24 * 3600,
         '30_days' => 30 * 24 * 3600,
+        '90_days' => 90 * 24 * 3600,
+        '180_days' => 180 * 24 * 3600,
+        '365_days' => 365 * 24 * 3600,
     ];
     
     $required_interval = $intervals[$freq] ?? null;

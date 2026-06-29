@@ -108,6 +108,9 @@ $stmt->close();
                     <option value="7_days" <?php echo ($admin['auto_backup_freq'] === '7_days') ? 'selected' : ''; ?>>Every 7 Days</option>
                     <option value="14_days" <?php echo ($admin['auto_backup_freq'] === '14_days') ? 'selected' : ''; ?>>Every 14 Days</option>
                     <option value="30_days" <?php echo ($admin['auto_backup_freq'] === '30_days') ? 'selected' : ''; ?>>Every 30 Days</option>
+                    <option value="90_days" <?php echo ($admin['auto_backup_freq'] === '90_days') ? 'selected' : ''; ?>>Every 3 Months</option>
+                    <option value="180_days" <?php echo ($admin['auto_backup_freq'] === '180_days') ? 'selected' : ''; ?>>Every 6 Months</option>
+                    <option value="365_days" <?php echo ($admin['auto_backup_freq'] === '365_days') ? 'selected' : ''; ?>>Every 1 Year</option>
                 </select>
             </div>
 
@@ -116,6 +119,43 @@ $stmt->close();
 
         <div class="back-link" style="margin-top:20px; text-align:center;">
             <a href="dashboard.php" style="color:var(--primary); text-decoration:none; font-weight:500;">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- DBeaver Guide Section -->
+    <div class="settings-box" style="max-width:800px; margin: 40px auto; background:var(--surface); padding:30px; border-radius:var(--radius-lg); box-shadow:var(--shadow);">
+        <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 20px; color: var(--text); display: flex; align-items: center; gap: 10px;">📖 Database Restore Guide (DBeaver)</h3>
+        <p style="margin-bottom:30px; color:var(--text-muted); font-size:14px;">Follow these steps to safely restore a <code>.sql</code> backup to your Aiven cloud database using DBeaver. (Do not upload large SQL files via PHP).</p>
+        
+        <div style="list-style: none; padding: 0;">
+            <div style="display: flex; gap: 20px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border);">
+                <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">1</div>
+                <div>
+                    <h4 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px;">Download DBeaver</h4>
+                    <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">Go to <a href="https://dbeaver.io/download/" target="_blank" style="color:var(--primary);">dbeaver.io</a> and install the free Community Edition for Windows.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border);">
+                <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">2</div>
+                <div>
+                    <h4 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px;">Get Aiven Credentials</h4>
+                    <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">Log in to your Aiven Console. In your database Overview page, copy your <strong>Host</strong>, <strong>Port</strong>, <strong>User</strong> (avnadmin), and <strong>Password</strong>.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border);">
+                <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">3</div>
+                <div>
+                    <h4 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px;">Connect DBeaver to Aiven</h4>
+                    <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">Open DBeaver, create a New Database Connection (MySQL or PostgreSQL). Paste your Aiven details. Go to the <strong>SSL</strong> tab and check <strong>Require SSL</strong>. Click Test Connection, then Finish.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; margin-bottom: 10px;">
+                <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">4</div>
+                <div>
+                    <h4 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px;">Execute the Backup Script</h4>
+                    <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">In DBeaver, expand your connection and right-click your database. Select <strong>Tools &rarr; Execute script</strong>. Choose your downloaded <code>.sql</code> backup file and click Start to restore your database!</p>
+                </div>
+            </div>
         </div>
     </div>
 
