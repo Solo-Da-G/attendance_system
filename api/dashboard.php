@@ -319,8 +319,9 @@ if ($staff_id) {
         <strong>Admin account:</strong> Face clock-in only works for <strong>staff</strong> logins.
         Log out and sign in with your <strong>Staff ID</strong> and password (not your admin username).
     </div>
-    <?php elseif ($staff_id): ?>
-    
+    <?php endif; ?>
+
+    <?php if ($staff_id): ?>
     <!-- Display photo error if any -->
     <?php if ($staff_photo_error): ?>
     <div class="error-message">
