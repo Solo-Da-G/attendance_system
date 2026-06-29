@@ -24,20 +24,22 @@ if (isset($_POST['update_settings'])) {
         $error = "Username cannot be empty";
     } else {
 
+        $auto_backup = $_POST['auto_backup_freq'] ?? 'never';
+
         if (!empty($password)) {
             // Hash new password
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
             $stmt = $conn->prepare(
-                "UPDATE admin SET username = ?, password = ? WHERE id = ?"
+                "UPDATE admin SET username = ?, password = ?, auto_backup_freq = ? WHERE id = ?"
             );
-            $stmt->bind_param("ssi", $username, $hashedPassword, $admin_id);
+            $stmt->bind_param("sssi", $username, $hashedPassword, $auto_backup, $admin_id);
         } else {
-            // Update username only
+            // Update username and backup freq
             $stmt = $conn->prepare(
-                "UPDATE admin SET username = ? WHERE id = ?"
+                "UPDATE admin SET username = ?, auto_backup_freq = ? WHERE id = ?"
             );
-            $stmt->bind_param("si", $username, $admin_id);
+            $stmt->bind_param("ssi", $username, $auto_backup, $admin_id);
         }
 
         if ($stmt->execute()) {
@@ -53,11 +55,15 @@ if (isset($_POST['update_settings'])) {
 
 /* FETCH CURRENT ADMIN */
 $admin_id = $_SESSION['admin_id'];
-$stmt = $conn->prepare("SELECT username FROM `admin` WHERE id = ?");
+$stmt = $conn->prepare("SELECT username, auto_backup_freq FROM `admin` WHERE id = ?");
 $stmt->bind_param("i", $admin_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $admin = $result->fetch_assoc();
+if (!isset($admin['auto_backup_freq'])) {
+    // Failsafe if column isn't created yet
+    $admin['auto_backup_freq'] = 'never';
+}
 $stmt->close();
 ?>
 
@@ -93,7 +99,19 @@ $stmt->close();
             <label style="margin-top:15px; display:block;">New Password (leave blank to keep current)</label>
             <input type="password" name="password" placeholder="Enter new password">
 
-            <button type="submit" name="update_settings" style="margin-top:20px; width:100%;">Update Settings</button>
+            <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); padding: 15px; border-radius: 12px; margin-top: 25px;">
+                <h4 style="margin: 0 0 10px; color: #6d28d9;">🔄 Automated Database Backups</h4>
+                <p style="font-size: 13px; color: #4b5563; margin: 0 0 10px; line-height: 1.4;">Select how often the system should automatically email a database backup (.sql file) to the admin email address.</p>
+                <select name="auto_backup_freq" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 15px; background: white;">
+                    <option value="never" <?php echo ($admin['auto_backup_freq'] === 'never') ? 'selected' : ''; ?>>Never (Manual only)</option>
+                    <option value="24_hours" <?php echo ($admin['auto_backup_freq'] === '24_hours') ? 'selected' : ''; ?>>Every 24 Hours</option>
+                    <option value="7_days" <?php echo ($admin['auto_backup_freq'] === '7_days') ? 'selected' : ''; ?>>Every 7 Days</option>
+                    <option value="14_days" <?php echo ($admin['auto_backup_freq'] === '14_days') ? 'selected' : ''; ?>>Every 14 Days</option>
+                    <option value="30_days" <?php echo ($admin['auto_backup_freq'] === '30_days') ? 'selected' : ''; ?>>Every 30 Days</option>
+                </select>
+            </div>
+
+            <button type="submit" name="update_settings" style="margin-top:25px; width:100%;">Save Settings</button>
         </form>
 
         <div class="back-link" style="margin-top:20px; text-align:center;">

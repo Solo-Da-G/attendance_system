@@ -497,6 +497,15 @@ if ($staff_id) {
         $th_yest = $stmt_yest->get_result()->fetch_assoc()['th'] ?? 0;
         $stmt_yest->close();
     }
+    
+    $stmt_days = $conn->prepare("SELECT COUNT(DISTINCT DATE(clock_in)) as days FROM attendance WHERE staff_id = ? AND MONTH(clock_in) = MONTH(CURDATE()) AND YEAR(clock_in) = YEAR(CURDATE())");
+    $days_present = 0;
+    if ($stmt_days) {
+        $stmt_days->bind_param("s", $staff_id);
+        $stmt_days->execute();
+        $days_present = $stmt_days->get_result()->fetch_assoc()['days'] ?? 0;
+        $stmt_days->close();
+    }
     ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 24px;">
         <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">
@@ -512,9 +521,58 @@ if ($staff_id) {
             </div>
             <div style="font-size: 26px; font-weight: 800;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
         </div>
+        <div class="widget-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(139,92,246,0.3);">
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Days Present (This Month)</div>
+            <div style="font-size: 26px; font-weight: 800;"><?php echo $days_present; ?></div>
+        </div>
     </div>
 
     <?php elseif ($is_admin): ?>
+    <?php
+    // Admin Summary Stats
+    $total_staff = 0;
+    $present_today = 0;
+    $absent_today = 0;
+
+    $res_staff = $conn->query("SELECT COUNT(*) as c FROM staff");
+    if ($res_staff) {
+        $total_staff = $res_staff->fetch_assoc()['c'];
+    }
+    
+    $res_present = $conn->query("SELECT COUNT(DISTINCT staff_id) as c FROM attendance WHERE DATE(clock_in) = CURDATE()");
+    if ($res_present) {
+        $present_today = $res_present->fetch_assoc()['c'];
+    }
+    
+    $absent_today = max(0, $total_staff - $present_today);
+    ?>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
+        <div class="widget-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(59,130,246,0.3);">
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Staff</div>
+            <div style="font-size: 26px; font-weight: 800;"><?php echo $total_staff; ?></div>
+        </div>
+        <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Present Today</div>
+            <div style="font-size: 26px; font-weight: 800;"><?php echo $present_today; ?></div>
+        </div>
+        <div class="widget-card" style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(244,63,94,0.3);">
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Absent Today</div>
+            <div style="font-size: 26px; font-weight: 800;"><?php echo $absent_today; ?></div>
+        </div>
+    </div>
+    
+    <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+        <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+            <span>💾</span> Download Backup
+        </a>
+        <a href="backup.php?action=email" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;" onclick="return confirm('Send the database backup to your email now?');">
+            <span>✉️</span> Email Backup Now
+        </a>
+    </div>
+
+    <!-- Hidden iframe to trigger auto backups seamlessly in the background if needed -->
+    <iframe src="backup.php?action=auto" style="display:none;" title="Auto Backup Trigger"></iframe>
+
     <div class="search-section">
         <span class="search-icon">🔍</span>
         <input type="text" id="staffSearch" class="search-input" placeholder="Search staff records..." onkeyup="filterTable()">
