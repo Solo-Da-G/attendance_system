@@ -155,13 +155,174 @@ if ($staff_id) {
     #apiResult { margin-top: 15px; font-weight: 600; font-size: clamp(0.95rem, 2.8vw, 1.125rem); word-break: break-word; }
     .error-message { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 12px; margin: 10px 0; font-size: 14px; }
 
+    /* ── Enhanced Search Box ── */
     .search-section { position: relative; width: 100%; }
-    .search-section .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); opacity: 0.4; pointer-events: none; }
+    .search-section .search-icon {
+        position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+        font-size: 20px; pointer-events: none; z-index: 2;
+    }
     .search-input {
-        width: 100%; padding: 14px 20px 14px 44px; box-sizing: border-box;
-        background: white; border: 1px solid var(--border);
-        border-radius: 16px; font-size: 16px; margin-bottom: 24px;
-        box-shadow: var(--shadow-sm);
+        width: 100%; padding: 16px 20px 16px 52px; box-sizing: border-box;
+        background: white;
+        border: 2.5px solid #4f46e5;
+        border-radius: 18px; font-size: 16px; font-weight: 600;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(79,70,229,0.18), 0 1px 4px rgba(0,0,0,0.07);
+        transition: border-color 0.2s, box-shadow 0.2s;
+        outline: none;
+        color: #1e293b;
+    }
+    .search-input::placeholder { color: #94a3b8; font-weight: 500; }
+    .search-input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 4px rgba(99,102,241,0.18), 0 4px 20px rgba(79,70,229,0.18);
+    }
+    .search-hint {
+        font-size: 12px; color: #6366f1; font-weight: 600; margin: -18px 0 18px 6px;
+        opacity: 0.85;
+    }
+
+    /* ── Branch Scorecard ── */
+    .scorecard-section { margin-bottom: 32px; }
+    .scorecard-title {
+        font-size: 18px; font-weight: 800; color: var(--text);
+        margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .scorecard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        max-height: 520px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+    .scorecard-grid::-webkit-scrollbar { width: 6px; }
+    .scorecard-grid::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 99px; }
+    .branch-score-card {
+        background: white;
+        border: 1px solid #e0e7ff;
+        border-radius: 18px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 16px rgba(79,70,229,0.08);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .branch-score-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 28px rgba(79,70,229,0.16);
+    }
+    .branch-score-card::before {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        border-radius: 18px 18px 0 0;
+    }
+    .branch-score-card.no-branch::before {
+        background: linear-gradient(90deg, #94a3b8, #64748b);
+    }
+    .branch-score-name {
+        font-weight: 800; font-size: 14px; color: #1e293b;
+        margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .branch-score-stats {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .branch-stat {
+        background: #f8fafc; border-radius: 10px; padding: 10px 12px;
+        text-align: center;
+    }
+    .branch-stat-label {
+        font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.8px; color: #64748b; margin-bottom: 4px;
+    }
+    .branch-stat-value {
+        font-size: 22px; font-weight: 800; color: #1e293b;
+    }
+    .branch-stat-value.in-val  { color: #10b981; }
+    .branch-stat-value.out-val { color: #3b82f6; }
+    .branch-stat-value.wk-val  { color: #8b5cf6; }
+    .branch-stat-sub {
+        font-size: 10px; color: #94a3b8; font-weight: 600;
+        margin-top: 2px;
+    }
+
+    /* ── Broadcast Panel ── */
+    .broadcast-panel {
+        background: linear-gradient(135deg, #fdf4ff 0%, #ede9fe 100%);
+        border: 1.5px solid #c4b5fd;
+        border-radius: 24px;
+        padding: 24px 28px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 24px rgba(139,92,246,0.1);
+    }
+    .broadcast-panel h3 {
+        font-size: 17px; font-weight: 800; color: #5b21b6;
+        margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .broadcast-row {
+        display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+    }
+    .broadcast-target {
+        flex: 0 0 220px; min-width: 160px;
+        padding: 12px 16px; border: 1.5px solid #c4b5fd;
+        border-radius: 12px; font-size: 14px; font-weight: 600;
+        background: white; color: #5b21b6;
+        outline: none; cursor: pointer;
+    }
+    .broadcast-msg {
+        flex: 1; min-width: 200px;
+        padding: 12px 16px; border: 1.5px solid #c4b5fd;
+        border-radius: 12px; font-size: 14px; font-weight: 600;
+        background: white; outline: none;
+        resize: none;
+    }
+    .broadcast-msg:focus, .broadcast-target:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+    }
+    .broadcast-send-btn {
+        padding: 12px 24px; border: none; border-radius: 12px;
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        color: white; font-weight: 800; font-size: 14px;
+        cursor: pointer; white-space: nowrap;
+        box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .broadcast-send-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(124,58,237,0.4);
+    }
+    .broadcast-send-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .broadcast-status { font-size: 13px; font-weight: 600; margin-top: 10px; min-height: 20px; }
+
+    /* ── Admin Notification Toast ── */
+    .admin-notif-toast {
+        position: fixed; bottom: 28px; right: 28px; z-index: 99998;
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        color: white; border-radius: 18px;
+        padding: 18px 22px; max-width: 380px;
+        box-shadow: 0 16px 40px rgba(79,70,229,0.35);
+        display: flex; flex-direction: column; gap: 6px;
+        transform: translateX(120%); opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        pointer-events: none;
+    }
+    .admin-notif-toast.show {
+        transform: translateX(0); opacity: 1; pointer-events: auto;
+    }
+    .admin-notif-toast-header {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 1px; opacity: 0.8;
+    }
+    .admin-notif-toast-msg { font-size: 15px; font-weight: 700; line-height: 1.4; }
+    .admin-notif-toast-meta { font-size: 11px; opacity: 0.75; }
+    .admin-notif-close {
+        position: absolute; top: 10px; right: 14px;
+        background: rgba(255,255,255,0.2); border: none;
+        color: white; border-radius: 50%; width: 26px; height: 26px;
+        cursor: pointer; font-size: 14px; display: flex;
+        align-items: center; justify-content: center;
     }
 
     .recent-table {
@@ -539,12 +700,12 @@ if ($staff_id) {
     if ($res_staff) {
         $total_staff = $res_staff->fetch_assoc()['c'];
     }
-    
+
     $res_present = $conn->query("SELECT COUNT(DISTINCT staff_id) as c FROM attendance WHERE DATE(clock_in) = CURDATE()");
     if ($res_present) {
         $present_today = $res_present->fetch_assoc()['c'];
     }
-    
+
     $absent_today = max(0, $total_staff - $present_today);
 
     // 7-Day Attendance Trend for Chart.js
@@ -555,6 +716,65 @@ if ($staff_id) {
         $chart_labels[] = date("D", strtotime($d));
         $res_chart = $conn->query("SELECT COUNT(DISTINCT staff_id) as c FROM attendance WHERE DATE(clock_in) = '$d'");
         $chart_data[] = $res_chart ? $res_chart->fetch_assoc()['c'] : 0;
+    }
+
+    // ── Branch Scorecard Data ───────────────────────────────────────
+    // Get all unique branches from branches table + staff with no branch
+    $branch_scores = [];
+
+    // Daily clock-in and clock-out per branch (staff.branch used)
+    $score_daily_sql = "
+        SELECT
+            COALESCE(NULLIF(TRIM(s.branch),''), '__NO_BRANCH__') AS branch_key,
+            COUNT(DISTINCT CASE WHEN DATE(a.clock_in) = CURDATE() THEN a.staff_id END) AS daily_in,
+            COUNT(DISTINCT CASE WHEN DATE(a.clock_in) = CURDATE() AND a.clock_out IS NOT NULL AND a.status != 'missed_out' THEN a.staff_id END) AS daily_out
+        FROM staff s
+        LEFT JOIN attendance a ON a.staff_id = s.staff_id
+        GROUP BY branch_key
+        ORDER BY branch_key ASC
+    ";
+    $score_weekly_sql = "
+        SELECT
+            COALESCE(NULLIF(TRIM(s.branch),''), '__NO_BRANCH__') AS branch_key,
+            COUNT(DISTINCT CASE WHEN YEARWEEK(a.clock_in,1) = YEARWEEK(CURDATE(),1) THEN a.staff_id END) AS weekly_in,
+            COUNT(DISTINCT CASE WHEN YEARWEEK(a.clock_in,1) = YEARWEEK(CURDATE(),1) AND a.clock_out IS NOT NULL AND a.status != 'missed_out' THEN a.staff_id END) AS weekly_out
+        FROM staff s
+        LEFT JOIN attendance a ON a.staff_id = s.staff_id
+        GROUP BY branch_key
+        ORDER BY branch_key ASC
+    ";
+
+    $daily_map  = [];
+    $weekly_map = [];
+
+    $rd = $conn->query($score_daily_sql);
+    if ($rd) { while ($row = $rd->fetch_assoc()) { $daily_map[$row['branch_key']] = $row; } }
+
+    $rw = $conn->query($score_weekly_sql);
+    if ($rw) { while ($row = $rw->fetch_assoc()) { $weekly_map[$row['branch_key']] = $row; } }
+
+    // Merge keys
+    $all_branch_keys = array_unique(array_merge(array_keys($daily_map), array_keys($weekly_map)));
+    sort($all_branch_keys);
+
+    foreach ($all_branch_keys as $bk) {
+        $branch_scores[] = [
+            'key'        => $bk,
+            'name'       => ($bk === '__NO_BRANCH__') ? '⚫ No Branch Assigned' : $bk,
+            'daily_in'   => (int)($daily_map[$bk]['daily_in']  ?? 0),
+            'daily_out'  => (int)($daily_map[$bk]['daily_out'] ?? 0),
+            'weekly_in'  => (int)($weekly_map[$bk]['weekly_in']  ?? 0),
+            'weekly_out' => (int)($weekly_map[$bk]['weekly_out'] ?? 0),
+        ];
+    }
+
+    // ── Fetch branches for broadcast dropdown ──────────────────────
+    $branch_list_res = $conn->query("SELECT branch_name FROM branches ORDER BY branch_name ASC");
+    $branch_list = [];
+    if ($branch_list_res) {
+        while ($bl = $branch_list_res->fetch_assoc()) {
+            $branch_list[] = $bl['branch_name'];
+        }
     }
     ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
@@ -570,14 +790,81 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Absent Today</div>
             <div style="font-size: 26px; font-weight: 800;"><?php echo $absent_today; ?></div>
         </div>
+        <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3);">
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Branches</div>
+            <div style="font-size: 26px; font-weight: 800;"><?php echo count($branch_scores); ?></div>
+        </div>
     </div>
-    
+
     <!-- Chart.js Visualization -->
     <div style="background: white; border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);">
         <h3 style="margin-bottom: 15px; font-size: 16px; color: var(--text);">📊 7-Day Attendance Trend</h3>
         <canvas id="attendanceChart" height="80"></canvas>
     </div>
-    
+
+    <!-- ── Branch Scorecard ── -->
+    <div class="scorecard-section">
+        <div class="scorecard-title">
+            🏆 Branch Attendance Scorecard
+            <span style="font-size:12px;font-weight:600;color:#6366f1;background:#eef2ff;padding:4px 10px;border-radius:99px;">
+                <?php echo count($branch_scores); ?> branch<?php echo count($branch_scores) !== 1 ? 'es' : ''; ?>
+            </span>
+        </div>
+        <div class="scorecard-grid" id="scorecardGrid">
+        <?php foreach ($branch_scores as $bs): ?>
+            <div class="branch-score-card <?php echo $bs['key'] === '__NO_BRANCH__' ? 'no-branch' : ''; ?>"
+                 data-branch="<?php echo htmlspecialchars(strtoupper($bs['name'])); ?>">
+                <div class="branch-score-name" title="<?php echo htmlspecialchars($bs['name']); ?>">
+                    <?php echo htmlspecialchars($bs['name']); ?>
+                </div>
+                <div class="branch-score-stats">
+                    <div class="branch-stat">
+                        <div class="branch-stat-label">Today In</div>
+                        <div class="branch-stat-value in-val"><?php echo $bs['daily_in']; ?></div>
+                        <div class="branch-stat-sub">clocked in</div>
+                    </div>
+                    <div class="branch-stat">
+                        <div class="branch-stat-label">Today Out</div>
+                        <div class="branch-stat-value out-val"><?php echo $bs['daily_out']; ?></div>
+                        <div class="branch-stat-sub">clocked out</div>
+                    </div>
+                    <div class="branch-stat" style="grid-column:1;">
+                        <div class="branch-stat-label">Week In</div>
+                        <div class="branch-stat-value wk-val"><?php echo $bs['weekly_in']; ?></div>
+                        <div class="branch-stat-sub">this week</div>
+                    </div>
+                    <div class="branch-stat">
+                        <div class="branch-stat-label">Week Out</div>
+                        <div class="branch-stat-value" style="color:#f59e0b;"><?php echo $bs['weekly_out']; ?></div>
+                        <div class="branch-stat-sub">this week</div>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+        </div>
+    </div>
+
+    <!-- ── Admin Broadcast Message ── -->
+    <div class="broadcast-panel">
+        <h3>📢 Send Notification to Staff</h3>
+        <div class="broadcast-row">
+            <select id="broadcastTarget" class="broadcast-target">
+                <option value="all">📣 Everyone (All Staff)</option>
+                <?php foreach ($branch_list as $bl): ?>
+                <option value="<?php echo htmlspecialchars($bl); ?>">
+                    📍 <?php echo htmlspecialchars($bl); ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+            <textarea id="broadcastMsg" class="broadcast-msg" rows="2"
+                placeholder="Type your message here… it will pop up as a notification for the selected staff."></textarea>
+            <button class="broadcast-send-btn" id="broadcastSendBtn" onclick="sendBroadcast()">
+                🚀 Send Now
+            </button>
+        </div>
+        <div id="broadcastStatus" class="broadcast-status"></div>
+    </div>
+
     <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px;">
         <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
             <span>💾</span> Download Backup
@@ -590,10 +877,14 @@ if ($staff_id) {
     <!-- Hidden iframe to trigger auto backups seamlessly in the background if needed -->
     <iframe src="backup.php?action=auto" style="display:none;" title="Auto Backup Trigger"></iframe>
 
+    <!-- Staff Search Box -->
     <div class="search-section">
         <span class="search-icon">🔍</span>
-        <input type="text" id="staffSearch" class="search-input" placeholder="Search staff records..." onkeyup="filterTable()">
+        <input type="text" id="staffSearch" class="search-input"
+               placeholder="Search by staff name, ID, or branch (e.g. Miss Dalemo)…"
+               oninput="filterTable()" autocomplete="off">
     </div>
+    <p class="search-hint">💡 Type a branch name to filter all staff in that branch</p>
 
     <div class="recent-table">
         <div class="table-scroll">
@@ -602,6 +893,7 @@ if ($staff_id) {
                 <tr>
                     <th>Staff Name</th>
                     <th>Staff ID</th>
+                    <th>Branch</th>
                     <th>Clock In</th>
                     <th>Clock Out</th>
                     <th>Selfie</th>
@@ -610,7 +902,7 @@ if ($staff_id) {
             </thead>
             <tbody>
                 <?php
-                    $res = $conn->query("SELECT a.*, s.full_name, s.photo FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 50");
+                    $res = $conn->query("SELECT a.*, s.full_name, s.photo, COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') AS branch_name FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 100");
                     if ($res && !is_bool($res) && $res->num_rows > 0) {
                         while($row = $res->fetch_assoc()){
                         $status_badge = 'badge-success';
@@ -623,12 +915,14 @@ if ($staff_id) {
                             $status_text = 'Completed';
                         }
                         $selfie = $row['photo_in'] ?: $row['photo_out'];
-                        
-                        echo "<tr>";
+                        $branch_disp = htmlspecialchars($row['branch_name']);
+
+                        echo "<tr data-branch='".strtoupper(htmlspecialchars($row['branch_name']))."'>";
                         echo "<td data-label='Staff Name'>";
                         if($row['photo']) echo "<img src='{$row['photo']}' class='staff-thumb'>";
                         echo "<strong>".htmlspecialchars($row['full_name'])."</strong></td>";
                         echo "<td data-label='Staff ID'><code>".htmlspecialchars($row['staff_id'])."</code></td>";
+                        echo "<td data-label='Branch'><span style='background:#eef2ff;color:#4f46e5;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;'>{$branch_disp}</span></td>";
                         echo "<td data-label='Clock In'>".date('M j, g:i A', strtotime($row['clock_in']))."</td>";
                         $clockOutLabel = '—';
                         if (!empty($row['clock_out'])) {
@@ -647,7 +941,7 @@ if ($staff_id) {
                         echo "</tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='6' style='text-align:center;'>No attendance records found</td></tr>";
+                        echo "<tr><td colspan='7' style='text-align:center;'>No attendance records found</td></tr>";
                     }
                 ?>
             </tbody>
@@ -659,6 +953,14 @@ if ($staff_id) {
     <div class="footer">
         &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu
     </div>
+  </div>
+
+  <!-- Admin Notification Toast (for incoming admin broadcasts) -->
+  <div id="adminNotifToast" class="admin-notif-toast" role="alert" aria-live="polite">
+      <button class="admin-notif-close" id="adminNotifClose" onclick="dismissAdminNotif()" aria-label="Close">✕</button>
+      <div class="admin-notif-toast-header">📢 Message from Admin</div>
+      <div class="admin-notif-toast-msg" id="adminNotifMsg"></div>
+      <div class="admin-notif-toast-meta" id="adminNotifMeta"></div>
   </div>
 
 <?php if ($staff_id): ?>
@@ -1004,18 +1306,113 @@ if ($staff_id) {
     function filterTable() {
         const input = document.getElementById("staffSearch");
         if (!input) return;
-        const filter = input.value.toUpperCase();
+        const filter = input.value.trim().toUpperCase();
         const table = document.getElementById("attendanceTable");
         if (!table) return;
         const rows = table.getElementsByTagName("tr");
+        let visibleCount = 0;
         for (let i = 1; i < rows.length; i++) {
+            if (!filter) { rows[i].style.display = ""; visibleCount++; continue; }
             let found = false;
-            const tds = rows[i].getElementsByTagName("td");
-            for (let j = 0; j < tds.length; j++) {
-                if (tds[j] && tds[j].textContent.toUpperCase().indexOf(filter) > -1) { found = true; break; }
+            // Check branch attribute first (fast branch-level search)
+            const branchAttr = (rows[i].getAttribute('data-branch') || '').toUpperCase();
+            if (branchAttr && branchAttr.indexOf(filter) > -1) { found = true; }
+            // Also search all cells
+            if (!found) {
+                const tds = rows[i].getElementsByTagName("td");
+                for (let j = 0; j < tds.length; j++) {
+                    if (tds[j] && tds[j].textContent.toUpperCase().indexOf(filter) > -1) { found = true; break; }
+                }
             }
             rows[i].style.display = found ? "" : "none";
+            if (found) visibleCount++;
         }
+        // Update search hint
+        const hint = document.querySelector('.search-hint');
+        if (hint && filter) {
+            hint.textContent = `🔎 Showing ${visibleCount} result${visibleCount !== 1 ? 's' : ''} for "${input.value}"`;
+        } else if (hint) {
+            hint.textContent = '💡 Type a branch name to filter all staff in that branch';
+        }
+    }
+
+    // ── Admin Broadcast ──────────────────────────────────────────────
+    async function sendBroadcast() {
+        const target  = document.getElementById('broadcastTarget')?.value || 'all';
+        const message = document.getElementById('broadcastMsg')?.value?.trim();
+        const status  = document.getElementById('broadcastStatus');
+        const btn     = document.getElementById('broadcastSendBtn');
+        if (!message) {
+            if (status) { status.style.color = '#ef4444'; status.textContent = '⚠️ Please type a message first.'; }
+            return;
+        }
+        if (btn) btn.disabled = true;
+        if (status) { status.style.color = '#7c3aed'; status.textContent = '⏳ Sending…'; }
+        try {
+            const fd = new FormData();
+            fd.append('action',  'send');
+            fd.append('message', message);
+            fd.append('target',  target);
+            const res  = await fetch('/api/notifications.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                if (status) { status.style.color = '#10b981'; status.textContent = '✅ Notification sent successfully!'; }
+                document.getElementById('broadcastMsg').value = '';
+                setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+            } else {
+                if (status) { status.style.color = '#ef4444'; status.textContent = '❌ ' + (data.message || 'Failed to send'); }
+            }
+        } catch(e) {
+            if (status) { status.style.color = '#ef4444'; status.textContent = '❌ Network error. Try again.'; }
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    // ── Staff Notification Poller ───────────────────────────────────
+    let _pendingNotifs = [];
+    let _notifIndex    = 0;
+    let _currentNotifId = null;
+
+    async function pollAdminNotifications() {
+        try {
+            const res  = await fetch('/api/notifications.php?action=fetch', { credentials: 'same-origin' });
+            const data = await res.json();
+            if (data.status === 'success' && Array.isArray(data.notifications) && data.notifications.length > 0) {
+                _pendingNotifs = data.notifications;
+                _notifIndex    = 0;
+                showNextNotif();
+            }
+        } catch (_) {}
+    }
+
+    function showNextNotif() {
+        if (_notifIndex >= _pendingNotifs.length) return;
+        const n = _pendingNotifs[_notifIndex];
+        _currentNotifId = n.id;
+        const toast   = document.getElementById('adminNotifToast');
+        const msgEl   = document.getElementById('adminNotifMsg');
+        const metaEl  = document.getElementById('adminNotifMeta');
+        if (!toast || !msgEl) return;
+        msgEl.textContent  = n.message;
+        if (metaEl) metaEl.textContent = 'From ' + n.created_by + ' · ' + n.created_at;
+        toast.classList.add('show');
+        // Auto-dismiss after 8 seconds then show next
+        setTimeout(() => { dismissAdminNotif(); }, 8000);
+    }
+
+    function dismissAdminNotif() {
+        const toast = document.getElementById('adminNotifToast');
+        if (toast) toast.classList.remove('show');
+        if (_currentNotifId) {
+            const fd = new FormData();
+            fd.append('action', 'dismiss');
+            fd.append('id', _currentNotifId);
+            fetch('/api/notifications.php', { method: 'POST', body: fd, credentials: 'same-origin' }).catch(() => {});
+            _currentNotifId = null;
+        }
+        _notifIndex++;
+        setTimeout(() => { showNextNotif(); }, 600);
     }
     
     function showFull(src) { window.open(src, '_blank'); }
@@ -1113,6 +1510,9 @@ if ($staff_id) {
         <?php if ($staff_id): ?>
         init();
         <?php endif; ?>
+        // Poll for admin notifications every 30 seconds
+        pollAdminNotifications();
+        setInterval(pollAdminNotifications, 30000);
     });
 </script>
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>
