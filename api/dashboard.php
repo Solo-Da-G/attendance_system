@@ -296,6 +296,64 @@ if ($staff_id) {
     .broadcast-send-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
     .broadcast-status { font-size: 13px; font-weight: 600; margin-top: 10px; min-height: 20px; }
 
+    /* ── Collapsible Attendance Log Panel ── */
+    .att-log-panel {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid #e0e7ff;
+        box-shadow: 0 4px 24px rgba(79,70,229,0.09);
+        overflow: hidden;
+        margin-bottom: 28px;
+    }
+    .att-log-toggle {
+        width: 100%; background: none; border: none;
+        padding: 20px 24px;
+        display: flex; align-items: center; gap: 14px;
+        cursor: pointer;
+        text-align: left;
+        transition: background 0.18s;
+    }
+    .att-log-toggle:hover { background: #f5f3ff; }
+    .att-log-toggle-icon {
+        width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white; font-size: 22px;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 6px 16px rgba(79,70,229,0.28);
+    }
+    .att-log-toggle-text { flex: 1; }
+    .att-log-toggle-title {
+        font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 2px;
+    }
+    .att-log-toggle-sub {
+        font-size: 12px; color: #64748b; font-weight: 600;
+    }
+    .att-log-toggle-badges { display: flex; gap: 8px; align-items: center; }
+    .att-log-badge {
+        padding: 4px 12px; border-radius: 99px;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+    }
+    .att-log-badge.green  { background: #dcfce7; color: #166534; }
+    .att-log-badge.blue   { background: #dbeafe; color: #1e40af; }
+    .att-log-badge.red    { background: #fee2e2; color: #991b1b; }
+    .att-log-chevron {
+        width: 32px; height: 32px; border-radius: 10px;
+        background: #eef2ff; color: #4f46e5;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+        transition: transform 0.3s ease;
+    }
+    .att-log-chevron.open { transform: rotate(180deg); }
+    .att-log-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .att-log-body.open {
+        max-height: 2000px;
+    }
+    .att-log-body-inner { padding: 0 20px 20px; }
+
     /* ── Admin Notification Toast ── */
     .admin-notif-toast {
         position: fixed; bottom: 28px; right: 28px; z-index: 99998;
@@ -877,75 +935,126 @@ if ($staff_id) {
     <!-- Hidden iframe to trigger auto backups seamlessly in the background if needed -->
     <iframe src="backup.php?action=auto" style="display:none;" title="Auto Backup Trigger"></iframe>
 
-    <!-- Staff Search Box -->
-    <div class="search-section">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="staffSearch" class="search-input"
-               placeholder="Search by staff name, ID, or branch (e.g. Miss Dalemo)…"
-               oninput="filterTable()" autocomplete="off">
-    </div>
-    <p class="search-hint">💡 Type a branch name to filter all staff in that branch</p>
+    <!-- ── Collapsible Attendance Log ── -->
+    <?php
+        // Pre-count stats for the toggle header
+        $log_res = $conn->query("SELECT a.*, s.full_name, s.photo, COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') AS branch_name FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 200");
+        $log_rows      = [];
+        $log_working   = 0;
+        $log_completed = 0;
+        $log_missed    = 0;
+        if ($log_res && !is_bool($log_res)) {
+            while ($r = $log_res->fetch_assoc()) {
+                $log_rows[] = $r;
+                if (($r['status'] ?? '') === 'missed_out')   $log_missed++;
+                elseif (!empty($r['clock_out']))             $log_completed++;
+                else                                         $log_working++;
+            }
+        }
+        $log_total = count($log_rows);
+    ?>
+    <div class="att-log-panel">
+        <!-- Toggle Header -->
+        <button class="att-log-toggle" id="attLogToggle" onclick="toggleAttLog()" aria-expanded="false" aria-controls="attLogBody">
+            <div class="att-log-toggle-icon">📋</div>
+            <div class="att-log-toggle-text">
+                <div class="att-log-toggle-title">Staff Attendance Log</div>
+                <div class="att-log-toggle-sub">Click to expand · Last 200 records · Search by name, ID or branch</div>
+            </div>
+            <div class="att-log-toggle-badges">
+                <?php if ($log_working > 0): ?>
+                <span class="att-log-badge green">🟢 <?php echo $log_working; ?> Working</span>
+                <?php endif; ?>
+                <?php if ($log_completed > 0): ?>
+                <span class="att-log-badge blue">✅ <?php echo $log_completed; ?> Done</span>
+                <?php endif; ?>
+                <?php if ($log_missed > 0): ?>
+                <span class="att-log-badge red">⚠️ <?php echo $log_missed; ?> Missed</span>
+                <?php endif; ?>
+            </div>
+            <div class="att-log-chevron" id="attLogChevron">▾</div>
+        </button>
 
-    <div class="recent-table">
-        <div class="table-scroll">
-        <table id="attendanceTable" class="responsive-table">
-            <thead>
-                <tr>
-                    <th>Staff Name</th>
-                    <th>Staff ID</th>
-                    <th>Branch</th>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Selfie</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                    $res = $conn->query("SELECT a.*, s.full_name, s.photo, COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') AS branch_name FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 100");
-                    if ($res && !is_bool($res) && $res->num_rows > 0) {
-                        while($row = $res->fetch_assoc()){
-                        $status_badge = 'badge-success';
-                        $status_text = 'Working';
-                        if (($row['status'] ?? '') === 'missed_out') {
-                            $status_badge = 'badge-danger';
-                            $status_text = 'missed(clockout)';
-                        } elseif (!empty($row['clock_out'])) {
-                            $status_badge = 'badge-info';
-                            $status_text = 'Completed';
-                        }
-                        $selfie = $row['photo_in'] ?: $row['photo_out'];
-                        $branch_disp = htmlspecialchars($row['branch_name']);
+        <!-- Collapsible Body -->
+        <div class="att-log-body" id="attLogBody">
+            <div class="att-log-body-inner">
 
-                        echo "<tr data-branch='".strtoupper(htmlspecialchars($row['branch_name']))."'>";
-                        echo "<td data-label='Staff Name'>";
-                        if($row['photo']) echo "<img src='{$row['photo']}' class='staff-thumb'>";
-                        echo "<strong>".htmlspecialchars($row['full_name'])."</strong></td>";
-                        echo "<td data-label='Staff ID'><code>".htmlspecialchars($row['staff_id'])."</code></td>";
-                        echo "<td data-label='Branch'><span style='background:#eef2ff;color:#4f46e5;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;'>{$branch_disp}</span></td>";
-                        echo "<td data-label='Clock In'>".date('M j, g:i A', strtotime($row['clock_in']))."</td>";
-                        $clockOutLabel = '—';
-                        if (!empty($row['clock_out'])) {
-                            $clockOutLabel = date('M j, g:i A', strtotime($row['clock_out']));
-                            if (($row['status'] ?? '') === 'missed_out') $clockOutLabel .= " <small>(missed clockout)</small>";
-                        }
-                        echo "<td data-label='Clock Out'>".$clockOutLabel."</td>";
-                        echo "<td data-label='Selfie'>";
-                        if($selfie){
-                            echo "<img src='{$selfie}' class='photo' style='border-radius:12px;width:45px;height:45px;object-fit:cover;' onclick='showFull(\"{$selfie}\")'>";
-                        } else {
-                            echo "—";
-                        }
-                        echo "</td>";
-                        echo "<td data-label='Status'><span class='badge {$status_badge}'>{$status_text}</span></td>";
-                        echo "</tr>";
+                <!-- Search Box -->
+                <div class="search-section" style="margin-bottom:0;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="staffSearch" class="search-input"
+                           style="margin-bottom:8px;"
+                           placeholder="Search by name, staff ID, branch, or status…"
+                           oninput="filterTable()" autocomplete="off">
+                </div>
+                <p class="search-hint" style="margin-bottom:16px;">💡 e.g. type <strong>Miss Dalemo</strong> or <strong>Head Office</strong> to filter that branch</p>
+
+                <!-- Table -->
+                <div class="table-scroll" style="border-radius:16px;overflow:hidden;border:1px solid #e0e7ff;">
+                <table id="attendanceTable" class="responsive-table">
+                    <thead style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
+                        <tr>
+                            <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Staff Name</th>
+                            <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Staff ID</th>
+                            <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Branch</th>
+                            <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Clock In</th>
+                            <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Clock Out</th>
+                            <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Selfie</th>
+                            <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php
+                    if ($log_total > 0) {
+                        foreach ($log_rows as $idx => $row) {
+                            $status_badge = 'badge-success';
+                            $status_text  = 'Working';
+                            if (($row['status'] ?? '') === 'missed_out') {
+                                $status_badge = 'badge-danger';
+                                $status_text  = 'missed(clockout)';
+                            } elseif (!empty($row['clock_out'])) {
+                                $status_badge = 'badge-info';
+                                $status_text  = 'Completed';
+                            }
+                            $selfie      = $row['photo_in'] ?: $row['photo_out'];
+                            $branch_disp = htmlspecialchars($row['branch_name']);
+                            $row_bg      = ($idx % 2 === 0) ? '' : 'style="background:#fafbff;"';
+
+                            echo "<tr data-branch='".strtoupper(htmlspecialchars($row['branch_name']))."' {$row_bg}>";
+                            echo "<td data-label='Staff Name' style='padding:12px 16px;'>";
+                            if ($row['photo']) echo "<img src='{$row['photo']}' class='staff-thumb'>";
+                            echo "<strong>".htmlspecialchars($row['full_name'])."</strong></td>";
+                            echo "<td data-label='Staff ID' style='padding:12px 16px;'><code style='background:#f1f5f9;padding:2px 7px;border-radius:6px;font-size:13px;'>".htmlspecialchars($row['staff_id'])."</code></td>";
+                            echo "<td data-label='Branch' style='padding:12px 16px;'><span style='background:#eef2ff;color:#4f46e5;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;'>{$branch_disp}</span></td>";
+                            echo "<td data-label='Clock In' style='padding:12px 16px;font-size:13px;'>".date('M j, g:i A', strtotime($row['clock_in']))."</td>";
+                            $clockOutLabel = '<span style="color:#94a3b8;">—</span>';
+                            if (!empty($row['clock_out'])) {
+                                $clockOutLabel = date('M j, g:i A', strtotime($row['clock_out']));
+                                if (($row['status'] ?? '') === 'missed_out') $clockOutLabel .= " <small style='color:#ef4444;'>(missed clockout)</small>";
+                            }
+                            echo "<td data-label='Clock Out' style='padding:12px 16px;font-size:13px;'>".$clockOutLabel."</td>";
+                            echo "<td data-label='Selfie' style='padding:12px 16px;'>";
+                            if ($selfie) {
+                                echo "<img src='{$selfie}' style='border-radius:10px;width:42px;height:42px;object-fit:cover;cursor:pointer;border:2px solid #e0e7ff;' onclick='showFull(\"{$selfie}\")'>";
+                            } else {
+                                echo "<span style='color:#cbd5e1;font-size:18px;'>🚫</span>";
+                            }
+                            echo "</td>";
+                            echo "<td data-label='Status' style='padding:12px 16px;'><span class='badge {$status_badge}'>{$status_text}</span></td>";
+                            echo "</tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='7' style='text-align:center;'>No attendance records found</td></tr>";
+                        echo "<tr><td colspan='7' style='text-align:center;padding:32px;color:#94a3b8;'>No attendance records found</td></tr>";
                     }
-                ?>
-            </tbody>
-        </table>
+                    ?>
+                    </tbody>
+                </table>
+                </div>
+                <!-- Row count -->
+                <div style="margin-top:10px;font-size:12px;color:#94a3b8;font-weight:600;text-align:right;" id="attLogCount">
+                    Showing <?php echo $log_total; ?> of <?php echo $log_total; ?> records
+                </div>
+            </div>
         </div>
     </div>
     <?php endif; ?>
@@ -1329,10 +1438,38 @@ if ($staff_id) {
         }
         // Update search hint
         const hint = document.querySelector('.search-hint');
+        const countEl = document.getElementById('attLogCount');
+        const totalRows = rows.length - 1;
         if (hint && filter) {
-            hint.textContent = `🔎 Showing ${visibleCount} result${visibleCount !== 1 ? 's' : ''} for "${input.value}"`;
+            hint.textContent = `\uD83D\uDD0E Showing ${visibleCount} result${visibleCount !== 1 ? 's' : ''} for "${input.value}"`;
         } else if (hint) {
-            hint.textContent = '💡 Type a branch name to filter all staff in that branch';
+            hint.textContent = '\uD83D\uDCA1 e.g. type Miss Dalemo or Head Office to filter that branch';
+        }
+        if (countEl) {
+            countEl.textContent = `Showing ${visibleCount} of ${totalRows} records`;
+        }
+    }
+
+    // ── Toggle Attendance Log Panel ─────────────────────────────────
+    function toggleAttLog() {
+        const body    = document.getElementById('attLogBody');
+        const chevron = document.getElementById('attLogChevron');
+        const btn     = document.getElementById('attLogToggle');
+        if (!body) return;
+        const isOpen = body.classList.contains('open');
+        if (isOpen) {
+            body.classList.remove('open');
+            if (chevron) chevron.classList.remove('open');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        } else {
+            body.classList.add('open');
+            if (chevron) chevron.classList.add('open');
+            if (btn) btn.setAttribute('aria-expanded', 'true');
+            // Auto-focus search when opening
+            setTimeout(() => {
+                const s = document.getElementById('staffSearch');
+                if (s) s.focus();
+            }, 460);
         }
     }
 
