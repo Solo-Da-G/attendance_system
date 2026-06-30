@@ -674,10 +674,10 @@ if ($staff_id) {
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: <?php echo json_stringify($chart_labels); ?>,
+                    labels: <?php echo json_encode($chart_labels); ?>,
                     datasets: [{
                         label: 'Staff Present',
-                        data: <?php echo json_stringify($chart_data); ?>,
+                        data: <?php echo json_encode($chart_data); ?>,
                         borderColor: '#4f46e5',
                         backgroundColor: 'rgba(79, 70, 229, 0.1)',
                         borderWidth: 3,
@@ -1107,11 +1107,13 @@ if ($staff_id) {
         }
     }
     
-    setInterval(updateClock, 1000);
-    updateClock();
-    <?php if ($staff_id): ?>
-    init();
-    <?php endif; ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        updateClock();
+        setInterval(updateClock, 1000);
+        <?php if ($staff_id): ?>
+        init();
+        <?php endif; ?>
+    });
 </script>
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>
 </body>
