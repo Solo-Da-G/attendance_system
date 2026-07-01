@@ -28,7 +28,11 @@ $start = $month . '-01';
 $end = date('Y-m-t', strtotime($start));
 
 $stmt = $conn->prepare("
-    SELECT DATE(clock_in) AS day, COUNT(*) AS sessions, SUM(CASE WHEN total_hours IS NULL THEN 0 ELSE total_hours END) AS hours
+    SELECT DATE(clock_in) AS day, 
+           COUNT(*) AS sessions, 
+           SUM(CASE WHEN total_hours IS NULL THEN 0 ELSE total_hours END) AS hours,
+           GROUP_CONCAT(DISTINCT branch_in SEPARATOR ', ') AS branches_in,
+           GROUP_CONCAT(DISTINCT branch_out SEPARATOR ', ') AS branches_out
     FROM attendance
     WHERE staff_id = ? AND DATE(clock_in) BETWEEN ? AND ?
     GROUP BY DATE(clock_in)
@@ -92,13 +96,21 @@ $stmt->close();
   <table>
     <tr>
       <th>Date</th>
+      <th>Branches Visited</th>
       <th>Sessions</th>
       <th>Total Hours</th>
     </tr>
     <?php if (!empty($daily)): ?>
       <?php foreach ($daily as $row): ?>
+        <?php
+          $bIn = array_filter(array_map('trim', explode(',', $row['branches_in'] ?? '')));
+          $bOut = array_filter(array_map('trim', explode(',', $row['branches_out'] ?? '')));
+          $allBranches = array_unique(array_merge($bIn, $bOut));
+          $branchDisp = empty($allBranches) ? "<span style='color:#94a3b8;'>—</span>" : htmlspecialchars(implode(', ', $allBranches));
+        ?>
         <tr>
           <td><?php echo htmlspecialchars($row['day']); ?></td>
+          <td><span style="font-weight:600; color:#4f46e5;">📍 <?php echo $branchDisp; ?></span></td>
           <td><?php echo htmlspecialchars((string)$row['sessions']); ?></td>
           <td><?php echo formatHours((float)($row['hours'] ?? 0)); ?></td>
         </tr>

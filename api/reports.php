@@ -95,7 +95,7 @@ if ($stmtStat) {
     if (!empty($_GET['filter_date'])) {
         $filter_date = $_GET['filter_date'];
         $stmt = $conn->prepare("
-          SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours
+          SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out
           FROM attendance a
           JOIN staff s ON a.staff_id = s.staff_id
           WHERE DATE(a.clock_in) = ?
@@ -106,7 +106,7 @@ if ($stmtStat) {
         $result = $stmt->get_result();
     } else {
         $result = $conn->query("
-          SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours
+          SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out
           FROM attendance a
           JOIN staff s ON a.staff_id = s.staff_id
           ORDER BY a.clock_in DESC
@@ -120,13 +120,22 @@ if ($stmtStat) {
             $src = strtolower(trim((string)($row['source'] ?? '')));
             $srcLabel = $src === 'device' ? 'DEVICE' : ($src === 'mobile' ? 'MOBILE' : 'UNKNOWN');
             $srcBadge = $src === 'device' ? 'badge-info' : ($src === 'mobile' ? 'badge-success' : 'badge-warning');
+            $b_in = htmlspecialchars($row['branch_in'] ?? 'Unknown Branch');
+            $b_out = htmlspecialchars($row['branch_out'] ?? 'Unknown Branch');
+            
+            $clockInHtml = "{$row['clock_in']}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>";
+            $clockOutHtml = "—";
+            if (!empty($row['clock_out'])) {
+                $clockOutHtml = "{$row['clock_out']}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>";
+            }
+
             echo "<tr>
                     <td>{$row['id']}</td>
                     <td>{$row['staff_id']}</td>
                     <td>" . htmlspecialchars($row['full_name']) . "</td>
                     <td>{$row['department']}</td>
-                    <td>{$row['clock_in']}</td>
-                    <td>" . ($row['clock_out'] ?? '—') . "</td>
+                    <td>{$clockInHtml}</td>
+                    <td>{$clockOutHtml}</td>
                     <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
                     <td class='status {$statusClass}'>" . (($row['status'] ?? 'In') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'In')) . "</td>
                     <td>" . formatHours($hours) . "</td>

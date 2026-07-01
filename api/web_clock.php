@@ -112,83 +112,81 @@ try {
 }
 
 // ---------------------------------------------------------------
-// GEOFENCE VALIDATION
+// CREATE NEW COLUMNS IF MISSING
 // ---------------------------------------------------------------
-// Prefer staff's registered clocking spot; fallback to branch geofence
+try {
+    $conn->query("ALTER TABLE attendance ADD COLUMN branch_in VARCHAR(100) NULL");
+    $conn->query("ALTER TABLE attendance ADD COLUMN branch_out VARCHAR(100) NULL");
+} catch(Exception $e) {}
+
+// ---------------------------------------------------------------
+// GEOFENCE VALIDATION & BRANCH DETECTION
+// ---------------------------------------------------------------
 $staffHasClockLat = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lat');
 $staffHasClockLng = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lng');
 $staffHasClockRadius = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_radius');
-$staffHasBranchId = function_exists('db_has_column') && db_has_column($conn, 'staff', 'branch_id');
 $hasBranchesTable = function_exists('db_has_table') && db_has_table($conn, 'branches');
 
-$selectClockLat = $staffHasClockLat ? 's.clock_lat' : 'NULL AS clock_lat';
-$selectClockLng = $staffHasClockLng ? 's.clock_lng' : 'NULL AS clock_lng';
-$selectClockRadius = $staffHasClockRadius ? 's.clock_radius' : 'NULL AS clock_radius';
-$branchJoin = $hasBranchesTable
-    ? ($staffHasBranchId
-        ? "LEFT JOIN branches b ON (s.branch = b.branch_name OR s.branch_id = b.id)"
-        : "LEFT JOIN branches b ON (s.branch = b.branch_name)")
-    : "";
-$selectBranchCols = $hasBranchesTable
-    ? "b.latitude, b.longitude, b.radius_meters"
-    : "NULL AS latitude, NULL AS longitude, NULL AS radius_meters";
+// Find the closest branch the user is in
+$clock_branch = null;
+$min_distance = -1;
+$is_near = false;
+$closest_branch_limit = 200;
+$actual_distance = 0;
 
-$stmt = $conn->prepare("SELECT 
-                            {$selectClockLat},
-                            {$selectClockLng},
-                            {$selectClockRadius},
-                            {$selectBranchCols}
-                        FROM staff s
-                        {$branchJoin}
-                        WHERE s.staff_id = ? LIMIT 1");
-$locationRow = null;
-if ($stmt) {
-    $stmt->bind_param("s", $staff_id);
-    $stmt->execute();
-    $locationRow = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+if ($hasBranchesTable) {
+    $res = $conn->query("SELECT branch_name, latitude, longitude, radius_meters FROM branches");
+    if ($res) {
+        while ($b = $res->fetch_assoc()) {
+            $dist = Geolocation::getDistance($lat, $lng, $b['latitude'], $b['longitude']);
+            if ($dist <= ($b['radius_meters'] ?? 200)) {
+                if ($min_distance === -1 || $dist < $min_distance) {
+                    $min_distance = $dist;
+                    $clock_branch = $b['branch_name'];
+                    $closest_branch_limit = $b['radius_meters'] ?? 200;
+                    $actual_distance = $dist;
+                }
+            }
+        }
+    }
 }
 
-if (!$locationRow && $hasBranchesTable) {
-    // Fallback: If no branch assigned, check if there are ANY branches
-    $res = $conn->query("SELECT latitude, longitude, radius_meters FROM branches LIMIT 1");
-    $locationRow = $res ? $res->fetch_assoc() : null;
+if ($clock_branch) {
+    $is_near = true;
+} else {
+    // If not in any branch, check custom staff override location
+    $stmt = $conn->prepare("SELECT s.clock_lat, s.clock_lng, s.clock_radius, COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') as branch FROM staff s WHERE s.staff_id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("s", $staff_id);
+        $stmt->execute();
+        $locationRow = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        if ($locationRow && $locationRow['clock_lat'] !== null && $locationRow['clock_lng'] !== null) {
+            $dist = Geolocation::getDistance($lat, $lng, $locationRow['clock_lat'], $locationRow['clock_lng']);
+            $rad = (int)($locationRow['clock_radius'] ?? 300);
+            if ($dist <= $rad) {
+                $is_near = true;
+                $clock_branch = $locationRow['branch']; // use their assigned branch name
+                $actual_distance = $dist;
+            } else {
+                $actual_distance = $dist;
+                $closest_branch_limit = $rad;
+            }
+        }
+    }
 }
 
-if ($locationRow) {
-    $targetLat = null;
-    $targetLng = null;
-    $targetRadius = null;
-
-    if ($locationRow['clock_lat'] !== null && $locationRow['clock_lng'] !== null) {
-        $targetLat = (float)$locationRow['clock_lat'];
-        $targetLng = (float)$locationRow['clock_lng'];
-        $targetRadius = (int)($locationRow['clock_radius'] ?? 300);
-    } elseif ($locationRow['latitude'] !== null && $locationRow['longitude'] !== null) {
-        $targetLat = (float)$locationRow['latitude'];
-        $targetLng = (float)$locationRow['longitude'];
-        $targetRadius = (int)($locationRow['radius_meters'] ?? 200);
-    }
-
-    if ($targetLat !== null && $targetLng !== null && $targetRadius !== null) {
-        $distance = Geolocation::getDistance($lat, $lng, $targetLat, $targetLng);
-        $is_near = Geolocation::isWithinRadius($lat, $lng, $targetLat, $targetLng, $targetRadius);
-    } else {
-        $is_near = true;
-        $distance = 0;
-    }
-
-    if (!$is_near) {
-        json_response([
-            "status" => "error", 
-            "message" => "You are too far from the office to clock in/out.",
-            "debug" => [
-                "dist" => round($distance),
-                "limit" => $targetRadius,
-                "gps_accuracy" => $gps_accuracy
-            ]
-        ], 400);
-    }
+if (!$is_near) {
+    json_response([
+        "status" => "error", 
+        "message" => "You are too far from any office branch to clock in/out.",
+        "debug" => [
+            "dist" => round($actual_distance),
+            "limit" => $closest_branch_limit,
+            "gps_accuracy" => $gps_accuracy
+        ]
+    ], 400);
 }
 
 // ---------------------------------------------------------------
@@ -242,6 +240,12 @@ if ($action === 'clock_in') {
         $insertColumns[] = 'is_geofenced';
         $insertValues[] = '1';
     }
+    if (in_array('branch_in', $attendanceColumns, true)) {
+        $insertColumns[] = 'branch_in';
+        $insertValues[] = '?';
+        $insertTypes .= 's';
+        $insertParams[] = $clock_branch;
+    }
 
     $sql = "INSERT INTO attendance (" . implode(', ', $insertColumns) . ") VALUES (" . implode(', ', $insertValues) . ")";
     $stmt = $conn->prepare($sql);
@@ -290,6 +294,11 @@ if ($action === 'clock_in') {
             $updateParts[] = 'lng_out = ?';
             $updateTypes .= 'd';
             $updateParams[] = $lng;
+        }
+        if (in_array('branch_out', $attendanceColumns, true)) {
+            $updateParts[] = 'branch_out = ?';
+            $updateTypes .= 's';
+            $updateParams[] = $clock_branch;
         }
 
         $updateTypes .= 'i';
