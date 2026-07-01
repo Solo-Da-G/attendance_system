@@ -101,7 +101,7 @@ if ($action === 'email' || $action === 'auto') {
     // Send email using Brevo
     $apiKey = getenv('BREVO_API_KEY') ?: $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? '';
     if ($apiKey === '') {
-        die("<script>alert('Brevo API not configured in Vercel env vars.'); window.location.href='dashboard.php';</script>");
+        die("<!DOCTYPE html><html><body><script>alert('Brevo API not configured in Vercel env vars.'); window.location.href='dashboard.php';</script></body></html>");
     }
     
     $fromEmail = getenv('BREVO_FROM_EMAIL') ?: $_ENV['BREVO_FROM_EMAIL'] ?? $_SERVER['BREVO_FROM_EMAIL'] ?? 'no-reply@attendance.system';
@@ -150,10 +150,10 @@ if ($action === 'email' || $action === 'auto') {
     
     if ($action === 'email') {
         if ($code >= 200 && $code < 300) {
-            echo "<script>alert('✅ Backup sent successfully to $adminEmail'); window.location.href='dashboard.php';</script>";
+            echo "<!DOCTYPE html><html><body><script>alert('✅ Backup sent successfully to $adminEmail'); window.location.href='dashboard.php';</script></body></html>";
         } else {
-            $errDetails = "Status: " . $code . "\\nResponse: " . addslashes(substr((string)$resp, 0, 150));
-            echo "<script>alert('❌ Failed to send backup. Check Brevo config.\\n\\nDetails: $errDetails'); window.location.href='dashboard.php';</script>";
+            $safeResp = json_encode(substr((string)$resp, 0, 150));
+            echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send backup. Check Brevo config.\\n\\nStatus: " . $code . "\\nResponse: ' + " . $safeResp . "); window.location.href='dashboard.php';</script></body></html>";
         }
     }
 }
