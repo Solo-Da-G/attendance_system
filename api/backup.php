@@ -121,7 +121,7 @@ if ($action === 'email' || $action === 'auto') {
         'htmlContent' => '<h3>Database Backup</h3><p>Attached is your latest attendance database backup.</p>',
         'attachment'  => [
             [
-                'name'    => $filename,
+                'name'    => $filename . '.txt',
                 'content' => base64_encode($sql_dump)
             ]
         ]
