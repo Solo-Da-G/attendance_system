@@ -64,11 +64,36 @@ if ($stmtStat) {
     <div class="card"><h3>Total Hours</h3><p style="font-size: 20px;"><?php echo formatHours($stat_hours); ?></p></div>
   </div>
 
-  <form method="GET">
-    <label>Filter by Date:</label>
-    <input type="date" name="filter_date" value="<?php echo isset($_GET['filter_date']) ? htmlspecialchars($_GET['filter_date']) : ''; ?>">
-    <button type="submit">View</button>
-    <a href="reports.php" style="margin-left:10px; color:var(--primary); font-weight:500;">Reset</a>
+  <?php
+  $branch_res = $conn->query("SELECT branch_name FROM branches ORDER BY branch_name ASC");
+  $branches = [];
+  if ($branch_res) {
+      while ($b = $branch_res->fetch_assoc()) {
+          $branches[] = $b['branch_name'];
+      }
+  }
+  $selected_branch = $_GET['filter_branch'] ?? '';
+  ?>
+  <form method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+    <div>
+      <label style="display:block; margin-bottom:5px; font-weight:600;">Filter by Date:</label>
+      <input type="date" name="filter_date" value="<?php echo isset($_GET['filter_date']) ? htmlspecialchars($_GET['filter_date']) : ''; ?>" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:5px; font-weight:600;">Branch:</label>
+      <select name="filter_branch" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: 150px;">
+          <option value="">All Branches</option>
+          <?php foreach ($branches as $br): ?>
+              <option value="<?php echo htmlspecialchars($br); ?>" <?php echo $selected_branch === $br ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($br); ?>
+              </option>
+          <?php endforeach; ?>
+      </select>
+    </div>
+    <div>
+      <button type="submit" style="padding: 10px 20px; border-radius: 8px;">View</button>
+      <a href="reports.php" style="margin-left:10px; color:var(--primary); font-weight:600; text-decoration:none;">Reset</a>
+    </div>
   </form>
 
   <div class="print-box">
@@ -92,25 +117,36 @@ if ($stmtStat) {
     $totalRecords = 0;
     $totalHoursAll = 0;
 
-    if (!empty($_GET['filter_date'])) {
-        $filter_date = $_GET['filter_date'];
-        $stmt = $conn->prepare("
-          SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out
-          FROM attendance a
-          JOIN staff s ON a.staff_id = s.staff_id
-          WHERE DATE(a.clock_in) = ?
-          ORDER BY a.clock_in DESC
-        ");
-        $stmt->bind_param("s", $filter_date);
+    $filter_date = $_GET['filter_date'] ?? '';
+    $filter_branch = $_GET['filter_branch'] ?? '';
+    
+    $query = "SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out
+              FROM attendance a
+              JOIN staff s ON a.staff_id = s.staff_id WHERE 1=1";
+    $params = [];
+    $types = "";
+
+    if (!empty($filter_date)) {
+        $query .= " AND DATE(a.clock_in) = ?";
+        $params[] = $filter_date;
+        $types .= "s";
+    }
+    if (!empty($filter_branch)) {
+        $query .= " AND (a.branch_in = ? OR a.branch_out = ?)";
+        $params[] = $filter_branch;
+        $params[] = $filter_branch;
+        $types .= "ss";
+    }
+    
+    $query .= " ORDER BY a.clock_in DESC";
+    
+    if (!empty($params)) {
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $result = $stmt->get_result();
     } else {
-        $result = $conn->query("
-          SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out
-          FROM attendance a
-          JOIN staff s ON a.staff_id = s.staff_id
-          ORDER BY a.clock_in DESC
-        ");
+        $result = $conn->query($query);
     }
 
     if ($result && $result->num_rows > 0) {

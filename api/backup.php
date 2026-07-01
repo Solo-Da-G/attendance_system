@@ -152,7 +152,8 @@ if ($action === 'email' || $action === 'auto') {
         if ($code >= 200 && $code < 300) {
             echo "<script>alert('✅ Backup sent successfully to $adminEmail'); window.location.href='dashboard.php';</script>";
         } else {
-            echo "<script>alert('❌ Failed to send backup. Check Brevo config.'); window.location.href='dashboard.php';</script>";
+            $errDetails = "Status: " . $code . "\\nResponse: " . addslashes(substr((string)$resp, 0, 150));
+            echo "<script>alert('❌ Failed to send backup. Check Brevo config.\\n\\nDetails: $errDetails'); window.location.href='dashboard.php';</script>";
         }
     }
 }

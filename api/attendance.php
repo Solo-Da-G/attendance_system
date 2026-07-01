@@ -52,12 +52,32 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
     <div class="card"><h3>Currently In</h3><p><?php echo (int)$stat_open; ?></p></div>
   </div>
 
+  <?php
+  // Fetch branches for dropdown
+  $branch_res = $conn->query("SELECT branch_name FROM branches ORDER BY branch_name ASC");
+  $branches = [];
+  if ($branch_res) {
+      while ($b = $branch_res->fetch_assoc()) {
+          $branches[] = $b['branch_name'];
+      }
+  }
+  $selected_branch = $_GET['filter_branch'] ?? '';
+  ?>
   <!-- Filter form -->
-  <form method="GET">
+  <form method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
     <label>From:</label>
     <input type="date" name="from" value="<?php echo isset($_GET['from']) ? htmlspecialchars($_GET['from']) : ''; ?>" required>
     <label>To:</label>
     <input type="date" name="to" value="<?php echo isset($_GET['to']) ? htmlspecialchars($_GET['to']) : ''; ?>" required>
+    <label>Branch:</label>
+    <select name="filter_branch" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;">
+        <option value="">All Branches</option>
+        <?php foreach ($branches as $br): ?>
+            <option value="<?php echo htmlspecialchars($br); ?>" <?php echo $selected_branch === $br ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars($br); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
     <button type="submit">Filter</button>
     <button type="button" class="print-btn" onclick="window.print()">🖨️ Print</button>
   </form>
@@ -77,27 +97,39 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
     </tr>
 
     <?php
-    // Build query with prepared statements for date filter
-    if (isset($_GET['from']) && isset($_GET['to']) && !empty($_GET['from']) && !empty($_GET['to'])) {
-      $from = $_GET['from'];
-      $to = $_GET['to'];
-      $stmt = $conn->prepare("
-        SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status, a.source, a.photo_in, a.photo_out
-        FROM attendance a
-        JOIN staff s ON a.staff_id = s.staff_id
-        WHERE DATE(a.clock_in) BETWEEN ? AND ?
-        ORDER BY a.clock_in DESC
-      ");
-      $stmt->bind_param("ss", $from, $to);
-      $stmt->execute();
-      $result = $stmt->get_result();
+    $from = $_GET['from'] ?? '';
+    $to = $_GET['to'] ?? '';
+    $filter_branch = $_GET['filter_branch'] ?? '';
+
+    $query = "SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status, a.source, a.photo_in, a.photo_out, a.branch_in, a.branch_out
+              FROM attendance a
+              JOIN staff s ON a.staff_id = s.staff_id WHERE 1=1";
+    $params = [];
+    $types = "";
+
+    if (!empty($from) && !empty($to)) {
+        $query .= " AND DATE(a.clock_in) BETWEEN ? AND ?";
+        $params[] = $from;
+        $params[] = $to;
+        $types .= "ss";
+    }
+
+    if (!empty($filter_branch)) {
+        $query .= " AND (a.branch_in = ? OR a.branch_out = ?)";
+        $params[] = $filter_branch;
+        $params[] = $filter_branch;
+        $types .= "ss";
+    }
+
+    $query .= " ORDER BY a.clock_in DESC";
+
+    if (!empty($params)) {
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
     } else {
-      $result = $conn->query("
-        SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status, a.source, a.photo_in, a.photo_out
-        FROM attendance a
-        JOIN staff s ON a.staff_id = s.staff_id
-        ORDER BY a.clock_in DESC
-      ");
+        $result = $conn->query($query);
     }
 
     if ($result && $result->num_rows > 0) {
@@ -111,14 +143,22 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
         $srcBadge = $src === 'device' ? 'badge-info' : ($src === 'mobile' ? 'badge-success' : 'badge-warning');
         $selfie = $row['photo_in'] ?: ($row['photo_out'] ?: '');
 
+        $b_in = htmlspecialchars($row['branch_in'] ?? 'Unknown Branch');
+        $b_out = htmlspecialchars($row['branch_out'] ?? 'Unknown Branch');
+        $timeInHtml = "{$timeIn}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>";
+        $timeOutHtml = "—";
+        if ($row['clock_out']) {
+            $timeOutHtml = "{$timeOut}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>";
+        }
+
         echo "<tr>
           <td>" . htmlspecialchars($row['full_name']) . "</td>
           <td>{$row['staff_id']}</td>
           <td>{$row['job_title']}</td>
           <td>{$row['branch']}</td>
           <td>{$date}</td>
-          <td>{$timeIn}</td>
-          <td>{$timeOut}</td>
+          <td>{$timeInHtml}</td>
+          <td>{$timeOutHtml}</td>
           <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
           <td>" . ($selfie ? "<img src='{$selfie}' class='photo' style='border-radius:12px;' alt='Selfie'>" : "<span style='color:var(--text-muted);'>—</span>") . "</td>
           <td class='status {$statusClass}'>" . ($row['status'] ?? 'In') . "</td>
