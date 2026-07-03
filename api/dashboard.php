@@ -1211,7 +1211,7 @@ if ($staff_id) {
         }
     }
 
-    function updateGeoStatusText(coords) {
+    async function updateGeoStatusText(coords) {
         const geoBox = document.getElementById('gpsCoordsBox');
         const geoText = document.getElementById('liveGpsText');
         if (geoBox && geoText && coords) {
@@ -1222,6 +1222,30 @@ if ($staff_id) {
         if (geoStatus) {
             geoStatus.innerHTML = coords ? '📍 Location detected ✓' : '📍 Waiting for location permission...';
             geoStatus.style.color = coords ? '#10b981' : '';
+        }
+
+        if (coords && !window._autoDetectedBranch) {
+            window._autoDetectedBranch = true;
+            try {
+                const fd = new FormData();
+                fd.append('lat', coords.latitude);
+                fd.append('lng', coords.longitude);
+                const resp = await fetch('/api/check_location.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    if (geoStatus) {
+                        geoStatus.innerHTML = `📍 Auto-detected at branch: <strong>${data.branch}</strong>`;
+                        geoStatus.style.color = '#10b981';
+                    }
+                    const regBtn = document.getElementById('registerLocBtn');
+                    if (regBtn) regBtn.style.display = 'none';
+                    
+                    const helperText = regBtn ? regBtn.nextElementSibling : null;
+                    if (helperText && helperText.tagName.toLowerCase() === 'p') {
+                        helperText.style.display = 'none';
+                    }
+                }
+            } catch (e) {}
         }
     }
 
