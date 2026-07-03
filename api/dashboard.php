@@ -482,6 +482,99 @@ if ($staff_id) {
         border: 2px solid #ef4444;
         box-shadow: 0 10px 25px rgba(239, 68, 68, 0.2);
     }
+    
+    .clickable-card {
+        cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .clickable-card:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 15px 30px -5px rgba(0,0,0,0.2) !important;
+    }
+    
+    .dashboard-modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 100000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .dashboard-modal-overlay.show {
+        display: flex;
+        opacity: 1;
+    }
+    .dashboard-modal {
+        background: var(--surface);
+        width: 90%;
+        max-width: 600px;
+        border-radius: 24px;
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+        transform: translateY(20px);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh;
+    }
+    .dashboard-modal-overlay.show .dashboard-modal {
+        transform: translateY(0);
+    }
+    .dashboard-modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, var(--surface), var(--surface-alt));
+    }
+    .dashboard-modal-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--text);
+    }
+    .dashboard-modal-close {
+        background: var(--surface-alt);
+        border: 1px solid var(--border);
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+    .dashboard-modal-close:hover {
+        background: #ef4444;
+        color: white;
+        border-color: #ef4444;
+        transform: rotate(90deg);
+    }
+    .dashboard-modal-body {
+        padding: 0;
+        overflow-y: auto;
+    }
+    .dashboard-modal-list {
+        list-style: none;
+        margin: 0; padding: 0;
+    }
+    .dashboard-modal-list li {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background 0.2s;
+    }
+    .dashboard-modal-list li:hover {
+        background: var(--surface-alt);
+    }
+    .dashboard-modal-list li:last-child {
+        border-bottom: none;
+    }
   </style>
 </head>
 <body class="app-page dashboard-page">
@@ -836,19 +929,19 @@ if ($staff_id) {
     }
     ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
-        <div class="widget-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(59,130,246,0.3);">
+        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('total_staff')" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(59,130,246,0.3);">
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Staff</div>
             <div style="font-size: 26px; font-weight: 800;"><?php echo $total_staff; ?></div>
         </div>
-        <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">
+        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('present_today')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Present Today</div>
             <div style="font-size: 26px; font-weight: 800;"><?php echo $present_today; ?></div>
         </div>
-        <div class="widget-card" style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(244,63,94,0.3);">
+        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('absent_today')" style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(244,63,94,0.3);">
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Absent Today</div>
             <div style="font-size: 26px; font-weight: 800;"><?php echo $absent_today; ?></div>
         </div>
-        <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3);">
+        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('total_branches')" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3);">
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Branches</div>
             <div style="font-size: 26px; font-weight: 800;"><?php echo count($branch_scores); ?></div>
         </div>
@@ -876,22 +969,22 @@ if ($staff_id) {
                     <?php echo htmlspecialchars($bs['name']); ?>
                 </div>
                 <div class="branch-score-stats">
-                    <div class="branch-stat">
+                    <div class="branch-stat clickable-card" onclick="openDashboardDetailsModal('branch_today_in', '<?php echo addslashes($bs['key']); ?>')">
                         <div class="branch-stat-label">Today In</div>
                         <div class="branch-stat-value in-val"><?php echo $bs['daily_in']; ?></div>
                         <div class="branch-stat-sub">clocked in</div>
                     </div>
-                    <div class="branch-stat">
+                    <div class="branch-stat clickable-card" onclick="openDashboardDetailsModal('branch_today_out', '<?php echo addslashes($bs['key']); ?>')">
                         <div class="branch-stat-label">Today Out</div>
                         <div class="branch-stat-value out-val"><?php echo $bs['daily_out']; ?></div>
                         <div class="branch-stat-sub">clocked out</div>
                     </div>
-                    <div class="branch-stat" style="grid-column:1;">
+                    <div class="branch-stat clickable-card" style="grid-column:1;" onclick="openDashboardDetailsModal('branch_week_in', '<?php echo addslashes($bs['key']); ?>')">
                         <div class="branch-stat-label">Week In</div>
                         <div class="branch-stat-value wk-val"><?php echo $bs['weekly_in']; ?></div>
                         <div class="branch-stat-sub">this week</div>
                     </div>
-                    <div class="branch-stat">
+                    <div class="branch-stat clickable-card" onclick="openDashboardDetailsModal('branch_week_out', '<?php echo addslashes($bs['key']); ?>')">
                         <div class="branch-stat-label">Week Out</div>
                         <div class="branch-stat-value" style="color:#f59e0b;"><?php echo $bs['weekly_out']; ?></div>
                         <div class="branch-stat-sub">this week</div>
@@ -1676,6 +1769,100 @@ if ($staff_id) {
         setInterval(pollAdminNotifications, 30000);
     });
 </script>
+<!-- Dashboard Details Modal -->
+<div class="dashboard-modal-overlay" id="dashboardDetailsOverlay" onclick="if(event.target===this) closeDashboardDetailsModal()">
+    <div class="dashboard-modal">
+        <div class="dashboard-modal-header">
+            <div class="dashboard-modal-title" id="dashboardDetailsTitle">Details</div>
+            <div class="dashboard-modal-close" onclick="closeDashboardDetailsModal()">✕</div>
+        </div>
+        <div class="dashboard-modal-body">
+            <div id="dashboardDetailsLoading" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                ⏳ Loading...
+            </div>
+            <ul class="dashboard-modal-list" id="dashboardDetailsList" style="display: none;">
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openDashboardDetailsModal(type, branch = '') {
+        const overlay = document.getElementById('dashboardDetailsOverlay');
+        const title = document.getElementById('dashboardDetailsTitle');
+        const list = document.getElementById('dashboardDetailsList');
+        const loading = document.getElementById('dashboardDetailsLoading');
+        
+        let titleText = 'Details';
+        if (type === 'total_staff') titleText = 'Total Staff';
+        if (type === 'present_today') titleText = 'Present Today';
+        if (type === 'absent_today') titleText = 'Absent Today';
+        if (type === 'total_branches') titleText = 'Branches';
+        if (type === 'branch_today_in') titleText = branch + ' - Today In';
+        if (type === 'branch_today_out') titleText = branch + ' - Today Out';
+        if (type === 'branch_week_in') titleText = branch + ' - Week In';
+        if (type === 'branch_week_out') titleText = branch + ' - Week Out';
+        
+        title.innerText = titleText;
+        list.innerHTML = '';
+        list.style.display = 'none';
+        loading.style.display = 'block';
+        
+        overlay.classList.add('show');
+        
+        fetch('/api/get_dashboard_details.php?type=' + encodeURIComponent(type) + '&branch=' + encodeURIComponent(branch))
+            .then(r => r.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if (res.status === 'success' && res.data) {
+                    if (res.data.length === 0) {
+                        list.innerHTML = '<li style="justify-content:center;color:var(--text-muted);padding:30px;">No records found.</li>';
+                    } else {
+                        res.data.forEach(item => {
+                            let li = document.createElement('li');
+                            let html = `<div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-light);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">
+                                    ${item.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div style="font-weight:700;font-size:15px;">${item.name} <span style="font-size:12px;color:var(--text-muted);font-weight:600;">(${item.id})</span></div>
+                                    <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">
+                                        <span style="background:var(--surface-alt);padding:2px 8px;border-radius:12px;font-weight:600;font-size:11px;">${item.branch}</span>
+                                        ${item.dept ? ' · ' + item.dept : ''}
+                                    </div>
+                                </div>
+                            </div>`;
+                            
+                            if (item.time_in || item.time_out) {
+                                html += `<div style="text-align:right;">
+                                    <div style="font-size:13px;font-weight:700;color:#10b981;">IN: ${item.time_in || '-'}</div>
+                                    <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-top:2px;">OUT: ${item.time_out || '-'}</div>
+                                </div>`;
+                            } else if (item.status === 'absent') {
+                                html += `<div style="text-align:right;"><span style="background:#fef2f2;color:#ef4444;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:700;border:1px solid #fecaca;">Absent</span></div>`;
+                            }
+                            li.innerHTML = html;
+                            list.appendChild(li);
+                        });
+                    }
+                    list.style.display = 'block';
+                } else {
+                    list.innerHTML = '<li style="color:#ef4444;justify-content:center;">Error loading data: ' + (res.message || 'Unknown error') + '</li>';
+                    list.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                list.innerHTML = '<li style="color:#ef4444;justify-content:center;">Failed to connect to server.</li>';
+                list.style.display = 'block';
+            });
+    }
+    
+    function closeDashboardDetailsModal() {
+        document.getElementById('dashboardDetailsOverlay').classList.remove('show');
+    }
+</script>
+
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>
 </body>
 </html>
