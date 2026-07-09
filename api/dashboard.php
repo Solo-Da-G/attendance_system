@@ -1002,7 +1002,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⏳</span> Total Time This Week
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo formatHours($th); ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-hours" data-target="<?php echo (float)$th; ?>">0min</div>
         </div>
         
         <div class="premium-scorecard orange">
@@ -1015,7 +1015,7 @@ if ($staff_id) {
                     <svg id="timeTrackedIcon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
                 </button>
             </div>
-            <div style="font-size: 28px; font-weight: 800;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
+            <div style="font-size: 28px; font-weight: 800;" id="timeTrackedValue" class="animate-hours" data-target="<?php echo (float)$th_today; ?>">0min</div>
         </div>
         
         <div class="premium-scorecard purple">
@@ -1023,7 +1023,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">🗓️</span> Days Present (Month)
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo $days_present; ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$days_present; ?>">0</div>
         </div>
         
         <div class="premium-scorecard blue">
@@ -1031,7 +1031,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⏱️</span> Total Hours (Month)
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo formatHours($th_month); ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-hours" data-target="<?php echo (float)$th_month; ?>">0min</div>
         </div>
         
         <div class="premium-scorecard <?php echo $missed_count > 0 ? 'red' : 'pink'; ?>">
@@ -1039,7 +1039,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⚠️</span> Missed Clock-Outs
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo $missed_count; ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$missed_count; ?>">0</div>
         </div>
     </div>
 
@@ -1149,7 +1149,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">👥</span> Total Staff
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo $total_staff; ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$total_staff; ?>">0</div>
         </div>
         
         <div class="premium-scorecard green clickable-card" onclick="openDashboardDetailsModal('present_today')">
@@ -1157,7 +1157,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">✅</span> Present Today
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo $present_today; ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$present_today; ?>">0</div>
         </div>
         
         <div class="premium-scorecard red clickable-card" onclick="openDashboardDetailsModal('absent_today')">
@@ -1165,7 +1165,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">❌</span> Absent Today
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo $absent_today; ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$absent_today; ?>">0</div>
         </div>
         
         <div class="premium-scorecard orange clickable-card" onclick="openDashboardDetailsModal('total_branches')">
@@ -1173,7 +1173,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">🏢</span> Total Branches
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo count($branch_scores); ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo count($branch_scores); ?>">0</div>
         </div>
         
         <div class="premium-scorecard purple">
@@ -1181,7 +1181,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⏱️</span> Total Hours Today
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo formatHours($admin_th_today); ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-hours" data-target="<?php echo (float)$admin_th_today; ?>">0min</div>
         </div>
         
         <div class="premium-scorecard <?php echo $missed_yest > 0 ? 'pink' : 'green'; ?>">
@@ -1189,7 +1189,7 @@ if ($staff_id) {
             <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⚠️</span> Missed Clock-Out (Yest.)
             </div>
-            <div style="font-size: 28px; font-weight: 800;"><?php echo $missed_yest; ?></div>
+            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$missed_yest; ?>">0</div>
         </div>
     </div>
 
@@ -2107,6 +2107,59 @@ if ($staff_id) {
     function closeDashboardDetailsModal() {
         document.getElementById('dashboardDetailsOverlay').classList.remove('show');
     }
+</script>
+
+<script>
+    function formatHoursJS(decimal) {
+        if (!decimal || decimal <= 0) return "0min";
+        const h = Math.floor(decimal);
+        const m = Math.floor((decimal - h) * 60);
+        const s = Math.round(((decimal - h) * 60 - m) * 60);
+        let str = "";
+        if (h > 0) str += `${h}hrs `;
+        if (m > 0 || (h === 0 && s === 0)) str += `${m}min`;
+        if (s > 0) str += ` ${s}sec`;
+        return str.trim();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const animateElements = document.querySelectorAll('.animate-number');
+        const animateHours = document.querySelectorAll('.animate-hours');
+        const duration = 1500; // ms
+        
+        const startAnimation = (el, isHours) => {
+            const target = parseFloat(el.getAttribute('data-target')) || 0;
+            const startTime = performance.now();
+            
+            const update = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // easeOutQuart
+                const ease = 1 - Math.pow(1 - progress, 4);
+                const currentVal = target * ease;
+                
+                if (isHours) {
+                    el.textContent = formatHoursJS(currentVal);
+                } else {
+                    el.textContent = Math.round(currentVal);
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    if (isHours) el.textContent = formatHoursJS(target);
+                    else el.textContent = Math.round(target);
+                }
+            };
+            requestAnimationFrame(update);
+        };
+        
+        // Slight delay for smoother visual experience on page load
+        setTimeout(() => {
+            animateElements.forEach(el => startAnimation(el, false));
+            animateHours.forEach(el => startAnimation(el, true));
+        }, 150);
+    });
 </script>
 
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>
