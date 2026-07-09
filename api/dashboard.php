@@ -575,6 +575,90 @@ if ($staff_id) {
     .dashboard-modal-list li:last-child {
         border-bottom: none;
     }
+    
+    /* ── Animated Scorecards CSS ── */
+    .premium-scorecard {
+        position: relative;
+        overflow: hidden;
+        color: white;
+        padding: 24px;
+        border-radius: 24px;
+        box-shadow: 0 15px 35px -5px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 1;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    }
+    .premium-scorecard:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 20px 40px -5px rgba(0,0,0,0.3);
+    }
+    .premium-scorecard::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+        z-index: -1;
+    }
+    .premium-scorecard .animated-graph {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        z-index: -1;
+        opacity: 0.3;
+        background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,20 L0,10 C10,15 20,5 30,10 C40,15 50,2 60,10 C70,18 80,8 90,12 C95,14 100,10 100,10 L100,20 Z" fill="white"/></svg>');
+        background-size: 200% 100%;
+        animation: wave-animation 4s linear infinite;
+    }
+    @keyframes wave-animation {
+        0% { background-position: 100% 0; }
+        100% { background-position: 0 0; }
+    }
+    .premium-scorecard.purple { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
+    .premium-scorecard.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .premium-scorecard.orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .premium-scorecard.pink { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); }
+    .premium-scorecard.blue { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+    .premium-scorecard.red { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+    
+    /* ── Accordion CSS ── */
+    .accordion-btn {
+        background: #f1f5f9;
+        border: none;
+        width: 100%;
+        text-align: left;
+        padding: 16px 20px;
+        border-radius: 16px;
+        font-weight: 700;
+        font-size: 15px;
+        color: #334155;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.3s;
+        margin-top: 16px;
+    }
+    .accordion-btn:hover { background: #e2e8f0; }
+    .accordion-btn .icon {
+        transition: transform 0.3s;
+        font-size: 20px;
+    }
+    .accordion-btn.active .icon { transform: rotate(180deg); }
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-out;
+        padding: 0;
+    }
+    .accordion-content.active {
+        max-height: 1000px; /* arbitrary large value */
+        margin-top: 16px;
+    }
+    
   </style>
 </head>
 <body class="app-page dashboard-page">
@@ -744,46 +828,120 @@ if ($staff_id) {
     </div>
     
     <div class="recent-table" style="margin-top: 30px;">
-        <h3>🕒 Your Recent Attendance</h3>
-        <div class="table-scroll">
-        <table id="staffAttendanceTable" class="responsive-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                $stmt = $conn->prepare("SELECT clock_in, clock_out, status FROM attendance WHERE staff_id = ? ORDER BY clock_in DESC LIMIT 10");
-                if ($stmt) {
-                    $stmt->bind_param("s", $staff_id);
-                    $stmt->execute();
-                    $res = $stmt->get_result();
-                    while ($r = $res->fetch_assoc()) {
-                        $badgeClass = 'badge-warning';
-                        $label = strtoupper((string)($r['status'] ?? ''));
-                        if ($r['status'] === 'in') { $badgeClass = 'badge-success'; $label = 'IN'; }
-                        elseif ($r['status'] === 'out') { $badgeClass = 'badge-info'; $label = 'OUT'; }
-                        elseif ($r['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'missed(clockout)'; }
-                        $stat = "<span class='badge {$badgeClass}'>{$label}</span>";
-                        $out = $r['clock_out'] ? date("h:i A", strtotime($r['clock_out'])) : '—';
-                        echo "<tr>";
-                        echo "<td data-label='Date'>".date("M d, Y", strtotime($r['clock_in']))."</td>";
-                        echo "<td data-label='Clock In'>".date("h:i A", strtotime($r['clock_in']))."</td>";
-                        echo "<td data-label='Clock Out'>".$out."</td>";
-                        echo "<td data-label='Status'>".$stat."</td>";
-                        echo "</tr>";
-                    }
-                    if ($res->num_rows === 0) echo "<tr><td colspan='4' style='text-align:center;'>No records found.</td></tr>";
-                    $stmt->close();
+        <h3 style="display:flex;align-items:center;gap:10px;">
+            <div style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);">🕒</div>
+            Your Recent Attendance
+        </h3>
+        
+        <?php
+        $today_records = [];
+        $history_records = [];
+        
+        $stmt = $conn->prepare("SELECT clock_in, clock_out, status FROM attendance WHERE staff_id = ? ORDER BY clock_in DESC LIMIT 15");
+        if ($stmt) {
+            $stmt->bind_param("s", $staff_id);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            while ($r = $res->fetch_assoc()) {
+                $clock_date = date("Y-m-d", strtotime($r['clock_in']));
+                if ($clock_date === $today_date) {
+                    $today_records[] = $r;
+                } else {
+                    $history_records[] = $r;
                 }
-                ?>
-            </tbody>
-        </table>
+            }
+            $stmt->close();
+        }
+        ?>
+        
+        <!-- Today's Attendance Display -->
+        <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(255,255,255,0.7);">
+            <h4 style="margin: 0 0 12px 0; font-size: 15px; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Today's Record</h4>
+            <?php if (empty($today_records)): ?>
+                <div style="text-align: center; color: #94a3b8; font-weight: 600; padding: 10px 0;">No clock-in record for today yet.</div>
+            <?php else: ?>
+                <?php foreach ($today_records as $tr): ?>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 16px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Clock In</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #10b981;"><?php echo date("h:i A", strtotime($tr['clock_in'])); ?></div>
+                        </div>
+                        <div style="width: 1px; height: 30px; background: #e2e8f0;"></div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Clock Out</div>
+                            <div style="font-size: 18px; font-weight: 800; color: <?php echo $tr['clock_out'] ? '#ef4444' : '#94a3b8'; ?>;">
+                                <?php echo $tr['clock_out'] ? date("h:i A", strtotime($tr['clock_out'])) : 'Still Working'; ?>
+                            </div>
+                        </div>
+                        <div style="width: 1px; height: 30px; background: #e2e8f0;"></div>
+                        <div>
+                            <?php
+                            $badgeClass = 'badge-warning';
+                            $label = strtoupper((string)($tr['status'] ?? ''));
+                            if ($tr['status'] === 'in') { $badgeClass = 'badge-success'; $label = 'WORKING'; }
+                            elseif ($tr['status'] === 'out') { $badgeClass = 'badge-info'; $label = 'COMPLETED'; }
+                            elseif ($tr['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'MISSED OUT'; }
+                            ?>
+                            <span class="badge <?php echo $badgeClass; ?>" style="padding: 8px 14px; font-size: 12px; font-weight: 800;"><?php echo $label; ?></span>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
+
+        <!-- Accordion for Historical Attendance -->
+        <?php if (!empty($history_records)): ?>
+        <button class="accordion-btn" onclick="toggleHistoryAccordion(this)">
+            <span>📅 View Previous Days</span>
+            <span class="icon">▾</span>
+        </button>
+        <div class="accordion-content">
+            <div class="table-scroll" style="border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+                <table id="staffAttendanceTable" class="responsive-table">
+                    <thead style="background: #f8fafc;">
+                        <tr>
+                            <th>Date</th>
+                            <th>Clock In</th>
+                            <th>Clock Out</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($history_records as $r): ?>
+                            <?php
+                                $badgeClass = 'badge-warning';
+                                $label = strtoupper((string)($r['status'] ?? ''));
+                                if ($r['status'] === 'in') { $badgeClass = 'badge-success'; $label = 'IN'; }
+                                elseif ($r['status'] === 'out') { $badgeClass = 'badge-info'; $label = 'OUT'; }
+                                elseif ($r['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'missed(out)'; }
+                                $stat = "<span class='badge {$badgeClass}'>{$label}</span>";
+                                $out = $r['clock_out'] ? date("h:i A", strtotime($r['clock_out'])) : '—';
+                            ?>
+                            <tr>
+                                <td data-label='Date' style="font-weight: 600;"><?php echo date("M d, Y", strtotime($r['clock_in'])); ?></td>
+                                <td data-label='Clock In' style="color:#10b981; font-weight: 700;"><?php echo date("h:i A", strtotime($r['clock_in'])); ?></td>
+                                <td data-label='Clock Out' style="color:#ef4444; font-weight: 700;"><?php echo $out; ?></td>
+                                <td data-label='Status'><?php echo $stat; ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <script>
+            function toggleHistoryAccordion(btn) {
+                btn.classList.toggle('active');
+                const content = btn.nextElementSibling;
+                if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                    content.style.maxHeight = '0px';
+                    content.classList.remove('active');
+                } else {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    content.classList.add('active');
+                }
+            }
+        </script>
+        <?php endif; ?>
     </div>
     
     <?php
@@ -811,6 +969,15 @@ if ($staff_id) {
         $stmt_yest->close();
     }
     
+    $stmt_month_th = $conn->prepare("SELECT SUM(total_hours) as th FROM attendance WHERE staff_id = ? AND MONTH(clock_in) = MONTH(CURDATE()) AND YEAR(clock_in) = YEAR(CURDATE())");
+    $th_month = 0;
+    if ($stmt_month_th) {
+        $stmt_month_th->bind_param("s", $staff_id);
+        $stmt_month_th->execute();
+        $th_month = $stmt_month_th->get_result()->fetch_assoc()['th'] ?? 0;
+        $stmt_month_th->close();
+    }
+    
     $stmt_days = $conn->prepare("SELECT COUNT(DISTINCT DATE(clock_in)) as days FROM attendance WHERE staff_id = ? AND MONTH(clock_in) = MONTH(CURDATE()) AND YEAR(clock_in) = YEAR(CURDATE())");
     $days_present = 0;
     if ($stmt_days) {
@@ -819,24 +986,60 @@ if ($staff_id) {
         $days_present = $stmt_days->get_result()->fetch_assoc()['days'] ?? 0;
         $stmt_days->close();
     }
+    
+    $stmt_missed = $conn->prepare("SELECT COUNT(*) as missed FROM attendance WHERE staff_id = ? AND status = 'missed_out' AND MONTH(clock_in) = MONTH(CURDATE()) AND YEAR(clock_in) = YEAR(CURDATE())");
+    $missed_count = 0;
+    if ($stmt_missed) {
+        $stmt_missed->bind_param("s", $staff_id);
+        $stmt_missed->execute();
+        $missed_count = $stmt_missed->get_result()->fetch_assoc()['missed'] ?? 0;
+        $stmt_missed->close();
+    }
     ?>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 24px;">
-        <div class="widget-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Time This Week</div>
-            <div style="font-size: 26px; font-weight: 800;"><?php echo formatHours($th); ?></div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-top: 24px;">
+        <div class="premium-scorecard green">
+            <div class="animated-graph"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⏳</span> Total Time This Week
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo formatHours($th); ?></div>
         </div>
-        <div class="widget-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3);">
+        
+        <div class="premium-scorecard orange">
+            <div class="animated-graph" style="animation-delay: -1s;"></div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9;" id="timeTrackedLabel">Today</div>
-                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.55); color: white; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; display: flex; align-items: center; gap: 8px;" id="timeTrackedLabel">
+                    <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">☀️</span> Today's Hours
+                </div>
+                <button onclick="toggleDayTracked()" style="background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4); color: white; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
                     <svg id="timeTrackedIcon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
                 </button>
             </div>
-            <div style="font-size: 26px; font-weight: 800;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
+            <div style="font-size: 28px; font-weight: 800;" id="timeTrackedValue"><?php echo formatHours($th_today); ?></div>
         </div>
-        <div class="widget-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; padding: 24px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(139,92,246,0.3);">
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Days Present (This Month)</div>
-            <div style="font-size: 26px; font-weight: 800;"><?php echo $days_present; ?></div>
+        
+        <div class="premium-scorecard purple">
+            <div class="animated-graph" style="animation-delay: -2s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">🗓️</span> Days Present (Month)
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo $days_present; ?></div>
+        </div>
+        
+        <div class="premium-scorecard blue">
+            <div class="animated-graph" style="animation-delay: -0.5s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⏱️</span> Total Hours (Month)
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo formatHours($th_month); ?></div>
+        </div>
+        
+        <div class="premium-scorecard <?php echo $missed_count > 0 ? 'red' : 'pink'; ?>">
+            <div class="animated-graph" style="animation-delay: -3s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⚠️</span> Missed Clock-Outs
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo $missed_count; ?></div>
         </div>
     </div>
 
@@ -858,6 +1061,18 @@ if ($staff_id) {
     }
 
     $absent_today = max(0, $total_staff - $present_today);
+    
+    $res_th_today = $conn->query("SELECT SUM(total_hours) as th FROM attendance WHERE DATE(clock_in) = CURDATE()");
+    $admin_th_today = 0;
+    if ($res_th_today) {
+        $admin_th_today = $res_th_today->fetch_assoc()['th'] ?? 0;
+    }
+    
+    $res_missed_yest = $conn->query("SELECT COUNT(*) as c FROM attendance WHERE DATE(clock_in) = CURDATE() - INTERVAL 1 DAY AND status = 'missed_out'");
+    $missed_yest = 0;
+    if ($res_missed_yest) {
+        $missed_yest = $res_missed_yest->fetch_assoc()['c'] ?? 0;
+    }
 
     // 7-Day Attendance Trend for Chart.js
     $chart_labels = [];
@@ -929,21 +1144,52 @@ if ($staff_id) {
     }
     ?>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
-        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('total_staff')" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(59,130,246,0.3);">
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Staff</div>
-            <div style="font-size: 26px; font-weight: 800;"><?php echo $total_staff; ?></div>
+        <div class="premium-scorecard blue clickable-card" onclick="openDashboardDetailsModal('total_staff')">
+            <div class="animated-graph"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">👥</span> Total Staff
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo $total_staff; ?></div>
         </div>
-        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('present_today')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.3);">
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Present Today</div>
-            <div style="font-size: 26px; font-weight: 800;"><?php echo $present_today; ?></div>
+        
+        <div class="premium-scorecard green clickable-card" onclick="openDashboardDetailsModal('present_today')">
+            <div class="animated-graph" style="animation-delay: -1s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">✅</span> Present Today
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo $present_today; ?></div>
         </div>
-        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('absent_today')" style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(244,63,94,0.3);">
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Absent Today</div>
-            <div style="font-size: 26px; font-weight: 800;"><?php echo $absent_today; ?></div>
+        
+        <div class="premium-scorecard red clickable-card" onclick="openDashboardDetailsModal('absent_today')">
+            <div class="animated-graph" style="animation-delay: -2s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">❌</span> Absent Today
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo $absent_today; ?></div>
         </div>
-        <div class="widget-card clickable-card" onclick="openDashboardDetailsModal('total_branches')" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px -5px rgba(245,158,11,0.3);">
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">Total Branches</div>
-            <div style="font-size: 26px; font-weight: 800;"><?php echo count($branch_scores); ?></div>
+        
+        <div class="premium-scorecard orange clickable-card" onclick="openDashboardDetailsModal('total_branches')">
+            <div class="animated-graph" style="animation-delay: -0.5s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">🏢</span> Total Branches
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo count($branch_scores); ?></div>
+        </div>
+        
+        <div class="premium-scorecard purple">
+            <div class="animated-graph" style="animation-delay: -1.5s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⏱️</span> Total Hours Today
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo formatHours($admin_th_today); ?></div>
+        </div>
+        
+        <div class="premium-scorecard <?php echo $missed_yest > 0 ? 'pink' : 'green'; ?>">
+            <div class="animated-graph" style="animation-delay: -2.5s;"></div>
+            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⚠️</span> Missed Clock-Out (Yest.)
+            </div>
+            <div style="font-size: 28px; font-weight: 800;"><?php echo $missed_yest; ?></div>
         </div>
     </div>
 
