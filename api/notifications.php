@@ -85,6 +85,45 @@ if ($action === 'fetch') {
     exit;
 }
 
+// ── FETCH INBOX (any authenticated user) ──────────────────────────
+if ($action === 'fetch_inbox') {
+    $staff_id    = $_SESSION['staff_id'] ?? null;
+    $admin_id    = $_SESSION['admin_id'] ?? null;
+    $user_key    = $staff_id ? 's_' . $staff_id : 'a_' . $admin_id;
+    $user_branch = '';
+
+    if ($staff_id) {
+        $br = $conn->prepare("SELECT branch FROM staff WHERE staff_id = ? LIMIT 1");
+        $br->bind_param("s", $staff_id);
+        $br->execute();
+        $user_branch = $br->get_result()->fetch_assoc()['branch'] ?? '';
+        $br->close();
+    }
+
+    $stmt = $conn->prepare("
+        SELECT n.id, n.message, n.created_by, n.created_at, nr.read_at
+        FROM admin_notifications n
+        LEFT JOIN notif_reads nr ON nr.notification_id = n.id AND nr.user_key = ?
+        WHERE n.is_active = 1
+          AND (n.target = 'all' OR n.target = ?)
+          AND (nr.id IS NULL OR nr.read_at >= DATE_SUB(NOW(), INTERVAL 7 DAY))
+        ORDER BY n.created_at DESC
+        LIMIT 50
+    ");
+    $stmt->bind_param("ss", $user_key, $user_branch);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $notifications = [];
+    $unread_count = 0;
+    while ($row = $result->fetch_assoc()) { 
+        $notifications[] = $row; 
+        if (empty($row['read_at'])) $unread_count++;
+    }
+    $stmt->close();
+    echo json_encode(['status' => 'success', 'notifications' => $notifications, 'unread_count' => $unread_count]);
+    exit;
+}
+
 // ── DISMISS ────────────────────────────────────────────────────────
 if ($action === 'dismiss') {
     $notif_id = (int)($_POST['id'] ?? 0);

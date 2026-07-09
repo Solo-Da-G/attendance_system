@@ -676,9 +676,17 @@ if ($staff_id) {
         $greeting = "Good afternoon";
     }
 ?>
-    <div class="dashboard-header">
-        <h2><?php echo $greeting; ?>, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
-        <p>Facial verification active · Auto sign-out after 1 minute of inactivity</p>
+    <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+        <div>
+            <h2><?php echo $greeting; ?>, <?php echo htmlspecialchars($display_name); ?> 👋</h2>
+            <p>Facial verification active · Auto sign-out after 1 minute of inactivity</p>
+        </div>
+        <div style="position:relative; margin-top: 10px;">
+            <button onclick="toggleInboxModal()" style="background:var(--surface); border:1px solid var(--border); border-radius:50%; width:48px; height:48px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; box-shadow:var(--shadow-sm); transition:all 0.2s;">
+                <span style="font-size:22px;">🔔</span>
+                <span id="inboxBadge" style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:white; font-size:11px; font-weight:800; padding:2px 6px; border-radius:99px; display:none; border:2px solid var(--surface);">0</span>
+            </button>
+        </div>
     </div>
 
     <!-- Live Time & Date Widgets -->
@@ -1897,8 +1905,8 @@ if ($staff_id) {
         msgEl.textContent  = n.message;
         if (metaEl) metaEl.textContent = 'From ' + n.created_by + ' · ' + n.created_at;
         toast.classList.add('show');
-        // Auto-dismiss after 8 seconds then show next
-        setTimeout(() => { dismissAdminNotif(); }, 8000);
+        // Auto-dismiss after 30 seconds then show next
+        setTimeout(() => { dismissAdminNotif(); }, 30000);
     }
 
     function dismissAdminNotif() {
@@ -2015,6 +2023,118 @@ if ($staff_id) {
         setInterval(pollAdminNotifications, 30000);
     });
 </script>
+<!-- Inbox Modal -->
+<div class="dashboard-modal-overlay" id="inboxModalOverlay" onclick="if(event.target===this) toggleInboxModal()">
+    <div class="dashboard-modal">
+        <div class="dashboard-modal-header">
+            <div class="dashboard-modal-title">Notifications Inbox</div>
+            <div class="dashboard-modal-close" onclick="toggleInboxModal()">✕</div>
+        </div>
+        <div class="dashboard-modal-body">
+            <div id="inboxLoading" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                ⏳ Loading notifications...
+            </div>
+            <ul class="dashboard-modal-list" id="inboxList" style="display: none;">
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleInboxModal() {
+        const overlay = document.getElementById('inboxModalOverlay');
+        if (overlay.classList.contains('show')) {
+            overlay.classList.remove('show');
+        } else {
+            overlay.classList.add('show');
+            loadInbox();
+        }
+    }
+
+    function loadInbox() {
+        const list = document.getElementById('inboxList');
+        const loading = document.getElementById('inboxLoading');
+        const badge = document.getElementById('inboxBadge');
+        
+        list.style.display = 'none';
+        loading.style.display = 'block';
+        
+        fetch('/api/notifications.php?action=fetch_inbox', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if (res.status === 'success' && res.notifications) {
+                    list.innerHTML = '';
+                    if (res.notifications.length === 0) {
+                        list.innerHTML = '<li style="justify-content:center;color:var(--text-muted);padding:30px;">No notifications found.</li>';
+                    } else {
+                        res.notifications.forEach(n => {
+                            let isUnread = !n.read_at;
+                            let li = document.createElement('li');
+                            li.style.flexDirection = 'column';
+                            li.style.alignItems = 'flex-start';
+                            li.style.gap = '8px';
+                            if (isUnread) li.style.background = 'var(--surface-alt)';
+                            
+                            let dateStr = new Date(n.created_at).toLocaleString();
+                            
+                            li.innerHTML = `
+                                <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                                    <span style="font-weight:700; font-size:15px; color:var(--text);">${n.created_by}</span>
+                                    <span style="font-size:12px; color:var(--text-muted); font-weight:600;">${dateStr}</span>
+                                </div>
+                                <div style="font-size:14px; color:var(--text); line-height:1.5;">${n.message}</div>
+                                ${isUnread ? '<div style="font-size:11px; font-weight:800; color:#10b981; margin-top:4px;">NEW</div>' : '<div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-top:4px;">READ</div>'}
+                            `;
+                            
+                            // Mark as read if unread
+                            if (isUnread) {
+                                li.onclick = () => {
+                                    const fd = new FormData();
+                                    fd.append('action', 'dismiss');
+                                    fd.append('id', n.id);
+                                    fetch('/api/notifications.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+                                        .then(() => loadInbox()); // reload to update badge & status
+                                };
+                                li.style.cursor = 'pointer';
+                            }
+                            
+                            list.appendChild(li);
+                        });
+                    }
+                    list.style.display = 'block';
+                    
+                    if (badge) {
+                        if (res.unread_count > 0) {
+                            badge.style.display = 'block';
+                            badge.textContent = res.unread_count;
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                list.innerHTML = '<li style="color:#ef4444;justify-content:center;">Failed to load inbox.</li>';
+                list.style.display = 'block';
+            });
+    }
+    
+    // Initial badge load
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('/api/notifications.php?action=fetch_inbox', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(res => {
+                const badge = document.getElementById('inboxBadge');
+                if (badge && res.status === 'success' && res.unread_count > 0) {
+                    badge.style.display = 'block';
+                    badge.textContent = res.unread_count;
+                }
+            }).catch(e => {});
+    });
+</script>
+
 <!-- Dashboard Details Modal -->
 <div class="dashboard-modal-overlay" id="dashboardDetailsOverlay" onclick="if(event.target===this) closeDashboardDetailsModal()">
     <div class="dashboard-modal">
@@ -2128,6 +2248,9 @@ if ($staff_id) {
         const duration = 1500; // ms
         
         const startAnimation = (el, isHours) => {
+            if (el.dataset.animated) return;
+            el.dataset.animated = "true";
+            
             const target = parseFloat(el.getAttribute('data-target')) || 0;
             const startTime = performance.now();
             
@@ -2154,11 +2277,19 @@ if ($staff_id) {
             requestAnimationFrame(update);
         };
         
-        // Slight delay for smoother visual experience on page load
-        setTimeout(() => {
-            animateElements.forEach(el => startAnimation(el, false));
-            animateHours.forEach(el => startAnimation(el, true));
-        }, 150);
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const isHours = el.classList.contains('animate-hours');
+                    startAnimation(el, isHours);
+                    obs.unobserve(el);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        animateElements.forEach(el => observer.observe(el));
+        animateHours.forEach(el => observer.observe(el));
     });
 </script>
 
