@@ -13,14 +13,15 @@
   // Use local models (no CDN delay on mobile)
   const MODEL_URL = '/asset/models';
 
-  // STRICTER threshold: 0.48 = must be a very close match.
+  // STRICTER threshold: 0.54 = must be a close match.
   // Glasses or caps shift facial geometry enough to push distance above this.
   // Previous value was 0.60 — too lenient (allowed wrong-person matches).
-  const MATCH_THRESHOLD = 0.48;
+  // Was 0.48 temporarily but caused false rejections for correct users.
+  const MATCH_THRESHOLD = 0.54;
 
   // Minimum landmark-based eye openness ratio. Glasses/caps cause partial
   // face occlusion; this ratio detects suspiciously covered eyes/forehead.
-  const MIN_EYE_OPEN_RATIO = 0.12;
+  const MIN_EYE_OPEN_RATIO = 0.10;
 
   let modelsReady = false;
   let profileDescriptor = null;
