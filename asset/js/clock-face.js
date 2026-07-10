@@ -136,7 +136,7 @@
     for (let i = 0; i < attempts; i++) {
       const opts = new faceapi.TinyFaceDetectorOptions({
         inputSize: 320,
-        scoreThreshold: 0.50,  // Raised from 0.30 — only high-confidence detections
+        scoreThreshold: 0.35,  // Lowered back to 0.35 so mobile cameras can detect the face
       });
       const det = await faceapi
         .detectSingleFace(videoEl, opts)
