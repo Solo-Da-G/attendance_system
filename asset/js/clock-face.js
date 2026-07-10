@@ -40,67 +40,13 @@
   }
 
   // ── Accessory detection helpers ────────────────────────────────
-  /**
-   * Estimate eye openness from landmark points.
-   * Points 37-41 = left eye, 43-47 = right eye (68-point model, 0-indexed: 36-41, 42-47)
-   * Returns average vertical span / horizontal span ratio.
-   * Low ratio → eye appears closed/occluded (glasses, sunglasses, cap shadow).
-   */
-  function eyeOpenRatio(landmarks) {
-    try {
-      const pts = landmarks.positions;
-      // Left eye: indices 36–41
-      const lTop    = pts[37];
-      const lBottom = pts[41];
-      const lLeft   = pts[36];
-      const lRight  = pts[39];
-      // Right eye: indices 42–47
-      const rTop    = pts[43];
-      const rBottom = pts[47];
-      const rLeft   = pts[42];
-      const rRight  = pts[45];
-
-      const lVertical   = Math.abs(lTop.y - lBottom.y);
-      const lHorizontal = Math.abs(lRight.x - lLeft.x) || 1;
-      const rVertical   = Math.abs(rTop.y - rBottom.y);
-      const rHorizontal = Math.abs(rRight.x - rLeft.x) || 1;
-
-      return (lVertical / lHorizontal + rVertical / rHorizontal) / 2;
-    } catch (_) {
-      return 0.2; // assume ok if we can't compute
-    }
-  }
-
-  /**
-   * Detect if a cap/hat is covering the forehead.
-   * Compares distance from top-of-face-bounding-box to the eyebrow row.
-   * If the brow is unusually high relative to detected face height → cap detected.
-   */
-  function hasCapDetected(det) {
-    try {
-      const pts = det.landmarks.positions;
-      const box = det.detection.box;
-      // Average left brow top point (indices 17-21) and right brow (22-26)
-      const browY = (pts[19].y + pts[24].y) / 2;
-      const faceTop = box.y;
-      const faceHeight = box.height || 1;
-      const foreheadRatio = (browY - faceTop) / faceHeight;
-      // Normally forehead takes ~25–35% of face. If < 12%, something is covering the top.
-      return foreheadRatio < 0.12;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /**
-   * Check whether detected landmark positions suggest glasses.
-   * Glasses add a rectangular occlusion across both eyes.
-   * We measure if eye vertical openness is suspiciously uniform AND low.
-   */
-  function hasGlassesDetected(landmarks) {
-    const ratio = eyeOpenRatio(landmarks);
-    return ratio < MIN_EYE_OPEN_RATIO;
-  }
+  // Note: Manual landmark-based heuristics for caps/glasses were too aggressive
+  // with TinyFaceDetector and caused false positives for legitimate users.
+  // We now rely purely on the stricter MATCH_THRESHOLD (0.50) to naturally reject
+  // faces where glasses/caps distort the descriptor distance.
+  
+  function hasGlassesDetected(landmarks) { return false; }
+  function hasCapDetected(det) { return false; }
 
   // ── model loading ───────────────────────────────────────────────
   async function loadModels() {
