@@ -36,6 +36,8 @@ $queries = [
     "ALTER TABLE `attendance` ADD COLUMN `lat_out` DECIMAL(10,8) NULL",
     "ALTER TABLE `attendance` ADD COLUMN `lng_out` DECIMAL(11,8) NULL",
     "ALTER TABLE `attendance` ADD COLUMN `is_geofenced` TINYINT(1) DEFAULT 0",
+    "ALTER TABLE `attendance` ADD COLUMN `branch_in` VARCHAR(100) NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `branch_out` VARCHAR(100) NULL",
     
     // Create branches table if not exists
     "CREATE TABLE IF NOT EXISTS `branches` (
@@ -45,6 +47,28 @@ $queries = [
         `longitude` DECIMAL(11,8) NOT NULL,
         `radius_meters` INT DEFAULT 200,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    // Create field_work_comments table if not exists
+    "CREATE TABLE IF NOT EXISTS `field_work_comments` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `staff_id` VARCHAR(50) NOT NULL,
+        `full_name` VARCHAR(200),
+        `branch` VARCHAR(100),
+        `comment` TEXT NOT NULL,
+        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+        `is_read` TINYINT(1) DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    // Create audit_log table if not exists
+    "CREATE TABLE IF NOT EXISTS `audit_log` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `staff_id` VARCHAR(50),
+        `full_name` VARCHAR(200),
+        `event_type` VARCHAR(80) NOT NULL,
+        `event_detail` TEXT,
+        `ip_address` VARCHAR(60),
+        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     
     // Create zk_devices table if not exists

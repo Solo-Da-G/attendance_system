@@ -736,7 +736,6 @@ if ($staff_id) {
     <div class="clocking-card">
         <h3 style="text-align:center;">📸 Face Verification & Clock In/Out</h3>
         <p style="text-align:center;color:var(--text-muted);margin-bottom:20px;">Look at the camera and click the button below</p>
-
         <div id="camera-container">
             <video id="video" autoplay playsinline></video>
             <div id="scanningOverlay" class="scanning-overlay"></div>
@@ -754,47 +753,64 @@ if ($staff_id) {
                 if ($missed_res && $missed_res->num_rows > 0) {
                     $m = $missed_res->fetch_assoc();
                     $clock_in_date = date("Y-m-d", strtotime($m['clock_in']));
-                    $today_date = date("Y-m-d");
+                    $today_date    = date("Y-m-d");
                     if ($clock_in_date < $today_date) {
-                        $midnight = date("Y-m-d 00:00:00", strtotime($clock_in_date . " +1 day"));
+                        $midnight   = date("Y-m-d 00:00:00", strtotime($clock_in_date . " +1 day"));
                         $upd_missed = $conn->prepare("UPDATE `attendance` SET clock_out = ?, status = 'missed_out', total_hours = 0 WHERE id = ? AND clock_out IS NULL");
-                        if ($upd_missed) {
-                            $upd_missed->bind_param("si", $midnight, $m['id']);
-                            $upd_missed->execute();
-                            $upd_missed->close();
-                        }
+                        if ($upd_missed) { $upd_missed->bind_param("si", $midnight, $m['id']); $upd_missed->execute(); $upd_missed->close(); }
                     }
                 }
                 $missed_stmt->close();
             }
 
-            $has_clocked_in_today = false;
-            $has_clocked_out_today = false;
-            $stmt = $conn->prepare("SELECT id, clock_out FROM `attendance` WHERE staff_id = ? AND DATE(clock_in) = CURDATE() ORDER BY id DESC LIMIT 1");
-            if ($stmt) {
-                $stmt->bind_param("s", $staff_id);
-                $stmt->execute();
-                $res = $stmt->get_result();
-                if ($res && $res->num_rows > 0) {
-                    $row = $res->fetch_assoc();
-                    $has_clocked_in_today = true;
-                    if ($row['clock_out'] !== null) {
-                        $has_clocked_out_today = true;
-                    }
+            // ── Multi-session logic (up to 3 pairs per day) ────────────
+            $MAX_SESSIONS   = 3;
+            $sessions_today = [];
+            $stmt_sessions  = $conn->prepare("SELECT id, clock_in, clock_out FROM `attendance` WHERE staff_id = ? AND DATE(clock_in) = CURDATE() ORDER BY id ASC");
+            if ($stmt_sessions) {
+                $stmt_sessions->bind_param("s", $staff_id);
+                $stmt_sessions->execute();
+                $res_sessions = $stmt_sessions->get_result();
+                while ($sr = $res_sessions->fetch_assoc()) {
+                    $sessions_today[] = $sr;
                 }
-                $stmt->close();
+                $stmt_sessions->close();
             }
+
+            $total_sessions    = count($sessions_today);
+            $last_session      = $total_sessions > 0 ? $sessions_today[$total_sessions - 1] : null;
+            $currently_in      = $last_session && $last_session['clock_out'] === null;
+            $all_sessions_used = $total_sessions >= $MAX_SESSIONS && !$currently_in;
+            $can_clock_in      = !$currently_in && $total_sessions < $MAX_SESSIONS;
+            $can_clock_out     = $currently_in;
+
+            // 6PM cutoff
+            $past_6pm = (int)date('G') >= 18;
+            $session_labels = ['Morning', 'Midday', 'Afternoon'];
+            $next_session_label = $session_labels[min($total_sessions, 2)];
         ?>
-        
+
         <div id="clockControls">
-            <?php if ($has_clocked_out_today): ?>
-                <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true" style="background:#64748b;box-shadow:none;">Already Clocked Out Today</button>
-            <?php elseif (!$has_clocked_in_today): ?>
-                <button id="clockBtn" class="clock-btn" disabled onclick="processClocking('clock_in')">Verify & Clock In</button>
+            <?php if ($past_6pm): ?>
+                <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
+                    style="background:#64748b;box-shadow:none;">⏰ Clock-in/out disabled after 6:00 PM</button>
+            <?php elseif ($all_sessions_used): ?>
+                <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
+                    style="background:#64748b;box-shadow:none;">✅ All <?php echo $MAX_SESSIONS; ?> sessions complete for today</button>
+            <?php elseif ($can_clock_out): ?>
+                <button id="clockBtn" class="clock-btn out" disabled onclick="processClocking('clock_out')">Verify &amp; Clock Out</button>
+            <?php elseif ($can_clock_in): ?>
+                <button id="clockBtn" class="clock-btn" disabled onclick="processClocking('clock_in')">Verify &amp; Clock In <?php if($total_sessions > 0): ?>(<?php echo $next_session_label; ?>)<?php endif; ?></button>
             <?php else: ?>
-                <button id="clockBtn" class="clock-btn out" disabled onclick="processClocking('clock_out')">Verify & Clock Out</button>
+                <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
+                    style="background:#64748b;box-shadow:none;">Already Clocked Out Today</button>
             <?php endif; ?>
         </div>
+        <!-- Sessions counter -->
+        <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:10px;font-weight:600;">
+            📊 Sessions today: <strong style="color:var(--primary);"><?php echo $total_sessions; ?> / <?php echo $MAX_SESSIONS; ?></strong>
+            <?php if($past_6pm): ?>&nbsp;· <span style="color:#ef4444;font-weight:700;">⏰ After 6 PM</span><?php endif; ?>
+        </p>
         
         <p id="faceStatus" class="status-line">🔄 Loading face recognition...</p>
         <div id="gpsCoordsBox" class="gps-coords-box" style="display:none;">
@@ -808,6 +824,25 @@ if ($staff_id) {
         <p style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center;">
             Use this to set your exact clock-in location if GPS is inaccurate
         </p>
+    </div>
+
+    <!-- ── Field Work Comment Box (Staff Only) ── -->
+    <div class="clocking-card" id="fieldWorkCard" style="margin-top:0;border-top:2px solid #fbbf24;background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+        <h3 style="color:#92400e;display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <span style="background:#f59e0b;color:white;width:36px;height:36px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;">🏃</span>
+            Going for Field Work?
+        </h3>
+        <p style="color:#78350f;font-size:13px;margin-bottom:14px;font-weight:600;">
+            If you are going to the field and may not return to clock out before day-end, leave a note here for your manager.
+        </p>
+        <textarea id="fieldWorkMsg" rows="3" maxlength="1000"
+            style="width:100%;padding:12px 16px;border:1.5px solid #fbbf24;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;background:white;outline:none;resize:vertical;box-sizing:border-box;color:#1e293b;"
+            placeholder="e.g. I am heading to ABC site and will not return before 6 PM. My return is expected on [date]."></textarea>
+        <button onclick="submitFieldWorkComment()" id="fieldWorkBtn"
+            style="margin-top:12px;padding:12px 24px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer;width:100%;box-shadow:0 6px 16px rgba(245,158,11,0.35);transition:all 0.2s;">
+            📤 Submit Field Work Note
+        </button>
+        <div id="fieldWorkStatus" style="margin-top:10px;font-size:13px;font-weight:700;min-height:20px;text-align:center;"></div>
     </div>
 
     <div class="clocking-card">
@@ -1270,6 +1305,86 @@ if ($staff_id) {
         <div id="broadcastStatus" class="broadcast-status"></div>
     </div>
 
+    <!-- ── Field Work Messages Panel (Admin View) ── -->
+    <?php
+        // Fetch today's field work comments
+        $fw_count = 0;
+        $fw_rows  = [];
+        try {
+            $conn->query("CREATE TABLE IF NOT EXISTS field_work_comments (id INT AUTO_INCREMENT PRIMARY KEY, staff_id VARCHAR(50) NOT NULL, full_name VARCHAR(200), branch VARCHAR(100), comment TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, is_read TINYINT(1) DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $fw_res = $conn->query("SELECT * FROM field_work_comments WHERE DATE(created_at) = CURDATE() ORDER BY created_at DESC LIMIT 50");
+            if ($fw_res) { while ($fr = $fw_res->fetch_assoc()) { $fw_rows[] = $fr; } }
+            $fw_unread = $conn->query("SELECT COUNT(*) as c FROM field_work_comments WHERE is_read=0");
+            $fw_count  = $fw_unread ? (int)$fw_unread->fetch_assoc()['c'] : 0;
+        } catch(Throwable $e) {}
+    ?>
+    <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fbbf24;border-radius:24px;padding:24px 28px;margin-bottom:28px;box-shadow:0 8px 24px rgba(245,158,11,0.12);">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <h3 style="font-size:17px;font-weight:800;color:#92400e;margin:0;display:flex;align-items:center;gap:10px;">
+                <span style="background:#f59e0b;color:white;width:36px;height:36px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;">🏃</span>
+                Field Work Messages
+                <?php if($fw_count > 0): ?>
+                <span style="background:#ef4444;color:white;font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;border:2px solid white;"><?php echo $fw_count; ?> NEW</span>
+                <?php endif; ?>
+            </h3>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <button onclick="loadFieldWorkComments('today')" id="fwTodayBtn"
+                    style="padding:8px 16px;border:none;border-radius:10px;background:#f59e0b;color:white;font-weight:700;font-size:13px;cursor:pointer;">Today</button>
+                <button onclick="loadFieldWorkComments('all')" id="fwAllBtn"
+                    style="padding:8px 16px;border:1.5px solid #fbbf24;border-radius:10px;background:white;color:#92400e;font-weight:700;font-size:13px;cursor:pointer;">All Time</button>
+                <button onclick="markAllFwRead()"
+                    style="padding:8px 16px;border:1.5px solid #fbbf24;border-radius:10px;background:white;color:#92400e;font-weight:700;font-size:13px;cursor:pointer;">✓ Mark All Read</button>
+            </div>
+        </div>
+        <div id="fwCommentsList">
+            <?php if(empty($fw_rows)): ?>
+                <div style="text-align:center;color:#78350f;font-weight:600;padding:20px 0;opacity:0.7;">No field work messages for today.</div>
+            <?php else: ?>
+                <?php foreach($fw_rows as $fw): ?>
+                <div class="fw-comment-card" data-id="<?php echo $fw['id']; ?>"
+                    style="background:white;border-radius:16px;padding:16px 20px;margin-bottom:12px;border-left:4px solid <?php echo $fw['is_read'] ? '#fbbf24' : '#ef4444'; ?>;box-shadow:0 4px 12px rgba(0,0,0,0.06);display:flex;align-items:flex-start;gap:14px;justify-content:space-between;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:200px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                            <strong style="font-size:15px;color:#1e293b;"><?php echo htmlspecialchars($fw['full_name']); ?></strong>
+                            <span style="font-size:11px;font-weight:700;background:#eef2ff;color:#4f46e5;padding:2px 8px;border-radius:99px;"><?php echo htmlspecialchars($fw['branch'] ?: 'No Branch'); ?></span>
+                            <span style="font-size:11px;font-weight:700;background:<?php echo $fw['is_read'] ? '#f0fdf4' : '#fef2f2'; ?>;color:<?php echo $fw['is_read'] ? '#166534' : '#ef4444'; ?>;padding:2px 8px;border-radius:99px;"><?php echo $fw['is_read'] ? 'READ' : 'UNREAD'; ?></span>
+                        </div>
+                        <p style="margin:0;color:#334155;font-size:14px;line-height:1.6;"><?php echo nl2br(htmlspecialchars($fw['comment'])); ?></p>
+                        <div style="font-size:11px;color:#94a3b8;font-weight:600;margin-top:8px;"><?php echo date('M d, Y h:i A', strtotime($fw['created_at'])); ?></div>
+                    </div>
+                    <?php if(!$fw['is_read']): ?>
+                    <button onclick="markFwRead(<?php echo $fw['id']; ?>, this)"
+                        style="padding:8px 14px;border:none;border-radius:10px;background:#10b981;color:white;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;">✓ Mark Read</button>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- ── Audit Trail Panel (Admin) ── -->
+    <div style="background:white;border:1px solid #e0e7ff;border-radius:24px;overflow:hidden;margin-bottom:28px;box-shadow:0 4px 24px rgba(79,70,229,0.09);">
+        <button class="att-log-toggle" id="auditLogToggle" onclick="toggleAuditLog()" aria-expanded="false">
+            <div class="att-log-toggle-icon" style="background:linear-gradient(135deg,#1e293b,#334155);">🛡️</div>
+            <div class="att-log-toggle-text">
+                <div class="att-log-toggle-title">Audit Trail</div>
+                <div class="att-log-toggle-sub">System events log · Clock-ins, rejections, field work, blocked attempts</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button onclick="event.stopPropagation();loadAuditLog('all')" style="padding:5px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;font-weight:700;background:white;color:#475569;cursor:pointer;">All Time</button>
+                <button onclick="event.stopPropagation();loadAuditLog('today')" style="padding:5px 12px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:#1e293b;color:white;cursor:pointer;">Today</button>
+            </div>
+            <div class="att-log-chevron" id="auditLogChevron">▾</div>
+        </button>
+        <div class="att-log-body" id="auditLogBody">
+            <div class="att-log-body-inner">
+                <div id="auditLogContent" style="min-height:60px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-weight:600;">
+                    Click "Today" or "All Time" to load the audit trail.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px;">
         <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
             <span>💾</span> Download Backup
@@ -1661,6 +1776,13 @@ if ($staff_id) {
     }
 
     async function processClocking(action) {
+        // ── 6 PM Client-side cutoff ─────────────────────────────────
+        const nowHour = new Date().getHours();
+        if (nowHour >= 18) {
+            showApiError('⏰ Clock-in and clock-out are disabled after 6:00 PM. Please contact your admin if you need assistance.');
+            return;
+        }
+
         if (typeof ClockFace === 'undefined') {
             showApiError('Face verification not loaded. Refresh the page.');
             return;
@@ -1922,7 +2044,191 @@ if ($staff_id) {
         _notifIndex++;
         setTimeout(() => { showNextNotif(); }, 600);
     }
-    
+
+    // ── Field Work Comment Submission (Staff) ───────────────────────
+    async function submitFieldWorkComment() {
+        const msg = document.getElementById('fieldWorkMsg');
+        const btn = document.getElementById('fieldWorkBtn');
+        const status = document.getElementById('fieldWorkStatus');
+        if (!msg || !msg.value.trim()) {
+            if (status) { status.style.color = '#ef4444'; status.textContent = '⚠️ Please type your field work note first.'; }
+            return;
+        }
+        if (btn) btn.disabled = true;
+        if (status) { status.style.color = '#7c3aed'; status.textContent = '⏳ Submitting...'; }
+        try {
+            const fd = new FormData();
+            fd.append('action', 'submit');
+            fd.append('comment', msg.value.trim());
+            const res = await fetch('/api/field_work_comment.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                if (status) { status.style.color = '#10b981'; status.textContent = '✅ ' + data.message; }
+                msg.value = '';
+                showTopNotification('Field work note submitted successfully!', true);
+            } else {
+                if (status) { status.style.color = '#ef4444'; status.textContent = '❌ ' + (data.message || 'Failed.'); }
+            }
+        } catch(e) {
+            if (status) { status.style.color = '#ef4444'; status.textContent = '❌ Network error. Try again.'; }
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    // ── Admin: Load Field Work Comments ────────────────────────────
+    async function loadFieldWorkComments(filter) {
+        const list = document.getElementById('fwCommentsList');
+        if (!list) return;
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:#78350f;font-weight:600;">⏳ Loading...</div>';
+        try {
+            const res = await fetch('/api/field_work_comment.php?action=fetch&filter=' + encodeURIComponent(filter), { credentials: 'same-origin' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                if (!data.comments || data.comments.length === 0) {
+                    list.innerHTML = '<div style="text-align:center;color:#78350f;font-weight:600;padding:20px;opacity:0.7;">No field work messages found.</div>';
+                    return;
+                }
+                list.innerHTML = data.comments.map(fw => `
+                    <div class="fw-comment-card" data-id="${fw.id}"
+                        style="background:white;border-radius:16px;padding:16px 20px;margin-bottom:12px;border-left:4px solid ${fw.is_read == 1 ? '#fbbf24' : '#ef4444'};box-shadow:0 4px 12px rgba(0,0,0,0.06);display:flex;align-items:flex-start;gap:14px;justify-content:space-between;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                                <strong style="font-size:15px;color:#1e293b;">${fw.full_name || 'Unknown'}</strong>
+                                <span style="font-size:11px;font-weight:700;background:#eef2ff;color:#4f46e5;padding:2px 8px;border-radius:99px;">${fw.branch || 'No Branch'}</span>
+                                <span style="font-size:11px;font-weight:700;background:${fw.is_read == 1 ? '#f0fdf4' : '#fef2f2'};color:${fw.is_read == 1 ? '#166534' : '#ef4444'};padding:2px 8px;border-radius:99px;">${fw.is_read == 1 ? 'READ' : 'UNREAD'}</span>
+                            </div>
+                            <p style="margin:0;color:#334155;font-size:14px;line-height:1.6;">${fw.comment.replace(/\n/g,'<br>')}</p>
+                            <div style="font-size:11px;color:#94a3b8;font-weight:600;margin-top:8px;">${new Date(fw.created_at).toLocaleString()}</div>
+                        </div>
+                        ${fw.is_read == 0 ? `<button onclick="markFwRead(${fw.id}, this)" style="padding:8px 14px;border:none;border-radius:10px;background:#10b981;color:white;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;">✓ Mark Read</button>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = '<div style="color:#ef4444;text-align:center;padding:20px;">Failed to load: ' + (data.message || '') + '</div>';
+            }
+        } catch(e) {
+            list.innerHTML = '<div style="color:#ef4444;text-align:center;padding:20px;">Network error.</div>';
+        }
+    }
+
+    async function markFwRead(id, btn) {
+        if (btn) btn.disabled = true;
+        const fd = new FormData();
+        fd.append('action', 'mark_read');
+        fd.append('id', id);
+        await fetch('/api/field_work_comment.php', { method: 'POST', body: fd, credentials: 'same-origin' }).catch(()=>{});
+        // Update UI
+        const card = document.querySelector(`.fw-comment-card[data-id="${id}"]`);
+        if (card) {
+            card.style.borderLeftColor = '#fbbf24';
+            const badges = card.querySelectorAll('span');
+            badges.forEach(s => { if (s.textContent.trim() === 'UNREAD') { s.textContent = 'READ'; s.style.background='#f0fdf4'; s.style.color='#166534'; } });
+            if (btn) btn.remove();
+        }
+    }
+
+    async function markAllFwRead() {
+        const fd = new FormData();
+        fd.append('action', 'mark_all_read');
+        await fetch('/api/field_work_comment.php', { method: 'POST', body: fd, credentials: 'same-origin' }).catch(()=>{});
+        loadFieldWorkComments('today');
+    }
+
+    // ── Admin: Audit Trail ──────────────────────────────────────────
+    function toggleAuditLog() {
+        const body    = document.getElementById('auditLogBody');
+        const chevron = document.getElementById('auditLogChevron');
+        const btn     = document.getElementById('auditLogToggle');
+        if (!body) return;
+        const isOpen = body.classList.contains('open');
+        if (isOpen) {
+            body.classList.remove('open');
+            if (chevron) chevron.classList.remove('open');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        } else {
+            body.classList.add('open');
+            if (chevron) chevron.classList.add('open');
+            if (btn) btn.setAttribute('aria-expanded', 'true');
+            loadAuditLog('today');
+        }
+    }
+
+    const EVENT_ICONS = {
+        'clock_in': '✅', 'clock_out': '🏁', 'blocked_after_6pm': '⏰',
+        'location_rejected': '📍', 'face_rejected': '❌', 'field_work_comment': '🏃',
+        'default': '📋'
+    };
+    const EVENT_COLORS = {
+        'clock_in': '#10b981', 'clock_out': '#3b82f6', 'blocked_after_6pm': '#f59e0b',
+        'location_rejected': '#ef4444', 'face_rejected': '#ef4444', 'field_work_comment': '#f59e0b',
+        'default': '#64748b'
+    };
+
+    async function loadAuditLog(filter) {
+        const content = document.getElementById('auditLogContent');
+        if (!content) return;
+        content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">⏳ Loading audit trail...</div>';
+
+        const body = document.getElementById('auditLogBody');
+        if (body && !body.classList.contains('open')) {
+            body.classList.add('open');
+            const chevron = document.getElementById('auditLogChevron');
+            if (chevron) chevron.classList.add('open');
+        }
+
+        try {
+            const res = await fetch('/api/audit_log.php?action=fetch&filter=' + encodeURIComponent(filter) + '&limit=100', { credentials: 'same-origin' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                if (!data.logs || data.logs.length === 0) {
+                    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">No audit records found for this period.</div>';
+                    return;
+                }
+                content.innerHTML = `
+                    <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="padding:10px 14px;text-align:left;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Event</th>
+                                <th style="padding:10px 14px;text-align:left;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Staff</th>
+                                <th style="padding:10px 14px;text-align:left;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Detail</th>
+                                <th style="padding:10px 14px;text-align:left;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">Time</th>
+                                <th style="padding:10px 14px;text-align:left;font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.logs.map((log, i) => {
+                                const icon  = EVENT_ICONS[log.event_type] || EVENT_ICONS['default'];
+                                const color = EVENT_COLORS[log.event_type] || EVENT_COLORS['default'];
+                                const rowBg = i % 2 === 0 ? '' : 'background:#fafbff;';
+                                return `<tr style="${rowBg}">
+                                    <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;">
+                                        <span style="background:${color}22;color:${color};padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap;">${icon} ${log.event_type.replace(/_/g,' ')}</span>
+                                    </td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-weight:600;">
+                                        ${log.full_name || ''} <span style="color:#94a3b8;font-size:11px;">(${log.staff_id || '-'})</span>
+                                    </td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;color:#475569;max-width:260px;word-break:break-word;">${log.event_detail || '-'}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;color:#64748b;white-space:nowrap;">${new Date(log.created_at).toLocaleString()}</td>
+                                    <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:11px;">${log.ip_address || '-'}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                    <div style="font-size:12px;color:#94a3b8;font-weight:600;text-align:right;margin-top:8px;padding-right:14px;">
+                        Showing ${data.logs.length} records ${filter === 'today' ? 'for today' : '(all time)'}
+                    </div>
+                `;
+            } else {
+                content.innerHTML = '<div style="color:#ef4444;text-align:center;padding:20px;">' + (data.message || 'Failed to load audit trail') + '</div>';
+            }
+        } catch(e) {
+            content.innerHTML = '<div style="color:#ef4444;text-align:center;padding:20px;">Network error loading audit trail.</div>';
+        }
+    }
+
     function showFull(src) { window.open(src, '_blank'); }
     
     function updateClock() {
