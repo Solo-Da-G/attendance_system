@@ -4,6 +4,7 @@ $is_staff = isset($_SESSION['staff_id']) && !isset($_SESSION['admin_id']);
 $is_admin = isset($_SESSION['admin_id']);
 ?>
 <style>
+    /* ── Mobile hamburger button ── */
     .mobile-menu-toggle {
         display: none;
         position: fixed;
@@ -19,27 +20,39 @@ $is_admin = isset($_SESSION['admin_id']);
         cursor: pointer;
         font-size: 22px;
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+        align-items: center;
+        justify-content: center;
     }
 
+    /* ── Dark overlay behind sidebar on mobile ── */
     .sidebar-overlay {
         display: none;
         position: fixed;
         inset: 0;
         background: rgba(15, 23, 42, 0.55);
         z-index: 1190;
+        backdrop-filter: blur(2px);
     }
+    .sidebar-overlay.active { display: block; }
 
-    .sidebar-overlay.active {
-        display: block;
-    }
-
+    /* ── SIDEBAR — always fixed on the left ── */
     .sidebar {
-        display: flex !important;
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        height: 100vh;
         width: var(--sidebar-w, 280px);
         max-width: 82vw;
+        display: flex !important;
+        flex-direction: column;
         background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
         color: #fff;
         z-index: 1200;
+        overflow-y: auto;
+        padding: 28px 0 18px;
+        border-right: 1px solid rgba(255,255,255,0.06);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
     }
 
     .sidebar-nav {
@@ -47,7 +60,7 @@ $is_admin = isset($_SESSION['admin_id']);
         flex-direction: column;
         flex: 1;
         min-height: 0;
-        padding-top: 20px;
+        padding-top: 8px;
     }
 
     .nav-item {
@@ -58,70 +71,47 @@ $is_admin = isset($_SESSION['admin_id']);
         color: rgba(255,255,255,0.82) !important;
         text-decoration: none;
         transition: all 0.25s ease;
-        margin: 4px 12px;
+        margin: 3px 12px;
         border-radius: 12px;
         border-left: none !important;
     }
-
-    .nav-item:hover,
-    .nav-item.active {
-        background: rgba(79, 70, 229, 0.22);
-        color: #fff !important;
-    }
-
+    .nav-item:hover { background: rgba(79,70,229,0.22); color: #fff !important; }
     .nav-item.active {
         background: linear-gradient(135deg, var(--primary), var(--primary-light));
-        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.28);
+        color: #fff !important;
+        box-shadow: 0 10px 20px rgba(79,70,229,0.28);
     }
 
-    .nav-icon {
-        font-size: 20px;
-        width: 28px;
-        text-align: center;
-        flex: 0 0 28px;
-    }
-
-    .nav-text {
-        font-size: 14px;
-        font-weight: 600;
-    }
+    .nav-icon { font-size: 20px; width: 28px; text-align: center; flex: 0 0 28px; }
+    .nav-text  { font-size: 14px; font-weight: 600; }
 
     .nav-divider {
         height: 1px;
         background: rgba(255,255,255,0.10);
-        margin: 16px 24px;
+        margin: 12px 24px;
     }
 
-    .nav-footer {
-        margin-top: auto;
-        padding-bottom: 16px;
+    .nav-footer { margin-top: auto; padding-bottom: 16px; }
+
+    /* ── CONTENT — offset by sidebar width on desktop ── */
+    .content {
+        margin-left: var(--sidebar-w, 280px) !important;
     }
 
+    /* ── MOBILE: slide sidebar off-screen, full-width content ── */
     @media (max-width: 768px) {
-        .mobile-menu-toggle {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
+        .mobile-menu-toggle { display: inline-flex; }
         .sidebar {
-            transform: translateX(-100%);
-            transition: transform 0.28s ease;
+            transform: translateX(-110%);
+            transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
         }
-
-        .sidebar.open {
-            transform: translateX(0);
-        }
-
+        .sidebar.open { transform: translateX(0); }
         .content {
             margin-left: 0 !important;
             width: 100% !important;
             padding-top: 80px !important;
         }
-
-        body.mobile-menu-open {
-            overflow: hidden;
-        }
+        body.mobile-menu-open { overflow: hidden; }
     }
 </style>
 
