@@ -55,7 +55,6 @@
   --ease: cubic-bezier(.4,0,.2,1);
 }
 
-
 /* ---------- Reset & Base ---------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -73,7 +72,6 @@ body {
 
 /* ============================================================
    GLOBAL APP BACKGROUND (Dashboard pages)
-   Add class="app-page" on pages that use the sidebar layout
    ============================================================ */
 body.app-page {
   position: relative;
@@ -81,14 +79,12 @@ body.app-page {
   overflow-x: hidden;
 }
 
-/* Soft gradient + faint watermark pattern */
 body.app-page::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 1;
   background:
     radial-gradient(900px 600px at 15% 10%, rgba(79,70,229,.18), transparent 55%),
     radial-gradient(900px 600px at 85% 20%, rgba(59,130,246,.12), transparent 50%),
@@ -100,18 +96,17 @@ body.app-page::before {
 }
 
 @keyframes appBgDrift {
-  0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+  0%   { background-position: 0 0, 0 0, 0 0, 0 0; }
   100% { background-position: 0 0, 0 0, 0 0, 260px 260px; }
 }
 
-/* Keep real UI above background layers */
-.sidebar,
+/* Keep content above background layer */
 .content {
   position: relative;
   z-index: 1;
 }
 
-/* Nice reveal animation (used by ui-enhancements.js) */
+/* Reveal animation */
 .reveal {
   opacity: 0;
   transform: translateY(14px);
@@ -147,7 +142,8 @@ img { max-width: 100%; height: auto; }
   color: #e2e8f0;
   height: 100vh;
   position: fixed;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -375,7 +371,6 @@ td {
   border-bottom: 1px solid var(--border);
   color: var(--text);
   vertical-align: top;
-  /* Allow long texts (emails, branch names) to wrap instead of hiding */
   white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -388,8 +383,7 @@ tr:hover td {
 }
 
 /* ============================================================
-   RESPONSIVE TABLE (mobile-friendly)
-   Add class="responsive-table" to any table you want to stack on phones.
+   RESPONSIVE TABLE
    ============================================================ */
 @media (max-width: 600px) {
   table.responsive-table thead { display: none; }
@@ -430,13 +424,11 @@ tr:hover td {
   }
 }
 
-/* Extra compact on very small phones */
 @media (max-width: 420px) {
   table.responsive-table td {
     padding: 10px 12px;
     gap: 10px;
     font-size: 12px;
-    /* stack label above value to avoid any horizontal scrolling */
     flex-direction: column;
     align-items: flex-start;
   }
@@ -447,7 +439,6 @@ tr:hover td {
   }
 }
 
-/* Professional dense tables for desktop */
 table.pro-table th, table.pro-table td {
   font-size: 13px;
   padding: 12px 14px;
@@ -571,7 +562,6 @@ button:hover,
   box-shadow: 0 4px 14px rgba(239,68,68,.35);
 }
 
-/* Action buttons in tables */
 .action-btn {
   padding: 7px 14px;
   border-radius: var(--radius-sm);
@@ -842,35 +832,6 @@ body.login-page {
 }
 
 /* ============================================================
-   PRINT STYLES
-   ============================================================ */
-@media print {
-  .sidebar, .print-btn, .print-box, .add-btn, .footer,
-  form, .action-btn, .logout, .no-print {
-    display: none !important;
-  }
-
-  body { background: #fff; display: block; }
-
-  .content {
-    margin: 0 !important;
-    padding: 20px !important;
-  }
-
-  table {
-    box-shadow: none;
-    border: 1px solid #ddd;
-  }
-
-  th {
-    background: #333 !important;
-    color: #fff !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-}
-
-/* ============================================================
    FACE VERIFICATION MODAL
    ============================================================ */
 .face-modal-overlay {
@@ -1016,30 +977,11 @@ body.login-page {
   transition: all .3s var(--ease);
 }
 
-.face-status.loading {
-  background: var(--info-bg);
-  color: #1e40af;
-}
-
-.face-status.scanning {
-  background: linear-gradient(135deg, #ede9fe, #dbeafe);
-  color: #4338ca;
-}
-
-.face-status.matched {
-  background: var(--success-bg);
-  color: #065f46;
-}
-
-.face-status.rejected {
-  background: var(--danger-bg);
-  color: #991b1b;
-}
-
-.face-status.error {
-  background: var(--warning-bg);
-  color: #92400e;
-}
+.face-status.loading  { background: var(--info-bg);    color: #1e40af; }
+.face-status.scanning { background: linear-gradient(135deg, #ede9fe, #dbeafe); color: #4338ca; }
+.face-status.matched  { background: var(--success-bg); color: #065f46; }
+.face-status.rejected { background: var(--danger-bg);  color: #991b1b; }
+.face-status.error    { background: var(--warning-bg); color: #92400e; }
 
 /* Face comparison display */
 .face-compare {
@@ -1059,13 +1001,10 @@ body.login-page {
   transition: border-color .3s;
 }
 
-.face-compare-img.match { border-color: var(--success); }
+.face-compare-img.match    { border-color: var(--success); }
 .face-compare-img.no-match { border-color: var(--danger); }
 
-.face-compare-arrow {
-  font-size: 24px;
-  color: var(--text-muted);
-}
+.face-compare-arrow  { font-size: 24px; color: var(--text-muted); }
 
 .face-compare-result {
   text-align: center;
@@ -1126,202 +1065,7 @@ body.login-page {
 
 /* Pulse animation for scanning */
 @keyframes pulse-ring {
-  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.6; }
-  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0; }
-}
-
-.face-guide.scanning::after {
-  content: '';
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 100%; height: 100%;
-  border: 2px solid var(--primary-light);
-  border-radius: 50%;
-  animation: pulse-ring 1.5s ease-out infinite;
-margin-bottom: 16px;
-}
-
-.camera-container video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
-}
-
-.camera-container canvas {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/* Face guide overlay */
-.face-guide {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 180px;
-  height: 220px;
-  border: 3px dashed rgba(255,255,255,0.35);
-  border-radius: 50%;
-  pointer-events: none;
-  transition: border-color .3s, box-shadow .3s;
-}
-
-.face-guide.detected {
-  border-color: var(--success);
-  border-style: solid;
-  box-shadow: 0 0 25px rgba(16, 185, 129, .3);
-}
-
-.face-guide.no-match {
-  border-color: var(--danger);
-  border-style: solid;
-  box-shadow: 0 0 25px rgba(239, 68, 68, .3);
-}
-
-/* Scanning animation */
-.scan-line {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
-  animation: scanDown 2s ease-in-out infinite;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.scan-line.active { opacity: 1; }
-
-@keyframes scanDown {
-  0%   { top: 0; }
-  50%  { top: 100%; }
-  100% { top: 0; }
-}
-
-/* Status messages */
-.face-status {
-  text-align: center;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  transition: all .3s var(--ease);
-}
-
-.face-status.loading {
-  background: var(--info-bg);
-  color: #1e40af;
-}
-
-.face-status.scanning {
-  background: linear-gradient(135deg, #ede9fe, #dbeafe);
-  color: #4338ca;
-}
-
-.face-status.matched {
-  background: var(--success-bg);
-  color: #065f46;
-}
-
-.face-status.rejected {
-  background: var(--danger-bg);
-  color: #991b1b;
-}
-
-.face-status.error {
-  background: var(--warning-bg);
-  color: #92400e;
-}
-
-/* Face comparison display */
-.face-compare {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.face-compare-img {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--border);
-  transition: border-color .3s;
-}
-
-.face-compare-img.match { border-color: var(--success); }
-.face-compare-img.no-match { border-color: var(--danger); }
-
-.face-compare-arrow {
-  font-size: 24px;
-  color: var(--text-muted);
-}
-
-.face-compare-result {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-/* Confidence bar */
-.confidence-bar {
-  width: 100%;
-  height: 8px;
-  background: var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  margin: 8px 0;
-}
-
-.confidence-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width .5s var(--ease), background .3s;
-}
-
-.confidence-fill.high { background: linear-gradient(90deg, var(--success), #34d399); }
-.confidence-fill.low  { background: linear-gradient(90deg, var(--danger), #f87171); }
-
-/* Modal buttons */
-.face-modal-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.face-modal-actions button {
-  flex: 1;
-  padding: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-}
-
-.btn-capture {
-  background: linear-gradient(135deg, var(--primary), var(--primary-light)) !important;
-  color: #fff !important;
-}
-
-.btn-retry {
-  background: var(--surface-alt) !important;
-  color: var(--text) !important;
-  border: 1.5px solid var(--border) !important;
-  box-shadow: none !important;
-}
-
-.btn-retry:hover {
-  background: var(--border) !important;
-  box-shadow: none !important;
-}
-
-/* Pulse animation for scanning */
-@keyframes pulse-ring {
-  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.6; }
+  0%   { transform: translate(-50%, -50%) scale(1);    opacity: 0.6; }
   100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0; }
 }
 
@@ -1336,40 +1080,48 @@ margin-bottom: 16px;
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE LAYOUT — Desktop sidebar + mobile drawer
    ============================================================ */
+
+/* Tablet: sidebar stays but content gets less padding */
+@media (max-width: 900px) {
+  .content {
+    padding: 24px 28px;
+  }
+}
+
+/* Mobile: sidebar slides off-screen, content fills width */
 @media (max-width: 768px) {
-  .sidebar { width: 280px; }
-  :root { --sidebar-w: 280px; }
-  .content { padding: 20px; }
-  .cards { grid-template-columns: 1fr; }
+  .content {
+    margin-left: 0 !important;
+    padding: 80px 16px 24px;
+    width: 100% !important;
+  }
+
+  .cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
   .face-modal { width: 96vw; }
   .face-guide { width: 140px; height: 170px; }
+
+  .login-container { width: 92vw; padding: 30px 24px; }
 }
 
-@media (max-width: 600px) {
-  .sidebar { display: none; }
-  .content { margin-left: 0 !important; }
-  .login-container { width: 92vw; }
-}
-
+/* Small phones */
 @media (max-width: 480px) {
-  .widget-card {
-    padding: 16px 20px !important;
+  .content {
+    padding: 72px 12px 20px;
   }
-  .premium-scorecard {
-    padding: 16px !important;
-    border-radius: 16px !important;
-  }
-}
 
-/* Face guide overlay */
-@media (max-width: 480px) {
+  .cards { grid-template-columns: 1fr; }
+
   .face-guide { width: 120px; height: 150px; }
 }
 
 /* ============================================================
-   WIDGET CARDS (UI ENHANCEMENTS)
+   WIDGET CARDS
    ============================================================ */
 .widget-card {
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
@@ -1390,8 +1142,8 @@ margin-bottom: 16px;
 }
 
 @keyframes shine {
-  0% { left: -100%; }
-  20% { left: 200%; }
+  0%   { left: -100%; }
+  20%  { left: 200%; }
   100% { left: 200%; }
 }
 
@@ -1401,6 +1153,7 @@ margin-bottom: 16px;
   z-index: 10;
 }
 
+/* Table row hover */
 .responsive-table tbody tr {
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
@@ -1413,19 +1166,9 @@ margin-bottom: 16px;
 }
 
 /* ============================================================
-   PRINT STYLES — Hides all dashboard UI, prints only content
+   PRINT STYLES
    ============================================================ */
 @media print {
-
-  /* --- Force white background, black text --- */
-  *, *::before, *::after {
-    background: #fff !important;
-    color: #000 !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  /* --- Hide sidebar, topbar, buttons, nav, footer --- */
   .sidebar,
   .sidebar-overlay,
   .mobile-menu-toggle,
@@ -1459,12 +1202,19 @@ margin-bottom: 16px;
     display: none !important;
   }
 
-  /* --- Make content fill the full page width --- */
+  *, *::before, *::after {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
   body, html {
     margin: 0 !important;
     padding: 0 !important;
     font-size: 12pt !important;
     font-family: Arial, sans-serif !important;
+    display: block !important;
   }
 
   .content {
@@ -1474,7 +1224,6 @@ margin-bottom: 16px;
     max-width: 100% !important;
   }
 
-  /* --- Tables: clean, full width --- */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -1482,15 +1231,9 @@ margin-bottom: 16px;
     page-break-inside: auto;
   }
 
-  thead {
-    display: table-header-group;
-    background: #f0f0f0 !important;
-  }
+  thead { display: table-header-group; background: #f0f0f0 !important; }
 
-  tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
-  }
+  tr { page-break-inside: avoid; page-break-after: auto; }
 
   th, td {
     border: 1px solid #999 !important;
@@ -1499,12 +1242,8 @@ margin-bottom: 16px;
     color: #000 !important;
   }
 
-  th {
-    background: #e8e8e8 !important;
-    font-weight: bold !important;
-  }
+  th { background: #e8e8e8 !important; font-weight: bold !important; }
 
-  /* --- Profile card: clean layout --- */
   .profile-card, .clocking-card, .recent-table {
     border: 1px solid #ccc !important;
     padding: 12px !important;
@@ -1512,7 +1251,6 @@ margin-bottom: 16px;
     border-radius: 0 !important;
   }
 
-  /* --- Badges: show text only, no color background --- */
   .badge {
     background: none !important;
     border: 1px solid #999 !important;
@@ -1522,7 +1260,6 @@ margin-bottom: 16px;
     font-size: 9pt !important;
   }
 
-  /* --- Images: keep profile photos small --- */
   img.staff-thumb, img.photo {
     width: 40px !important;
     height: 40px !important;
@@ -1530,7 +1267,6 @@ margin-bottom: 16px;
     border: 1px solid #ccc !important;
   }
 
-  /* --- Page title header for print --- */
   .recent-table h3,
   .profile-card h3 {
     font-size: 14pt !important;
@@ -1540,8 +1276,5 @@ margin-bottom: 16px;
     padding-bottom: 4px !important;
   }
 
-  /* --- URLs of links not needed in print --- */
-  a[href]::after {
-    content: "" !important;
-  }
+  a[href]::after { content: "" !important; }
 }

@@ -42,7 +42,6 @@ $is_admin = isset($_SESSION['admin_id']);
         left: 0;
         height: 100vh;
         width: var(--sidebar-w, 280px);
-        max-width: 82vw;
         display: flex !important;
         flex-direction: column;
         background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
@@ -93,12 +92,7 @@ $is_admin = isset($_SESSION['admin_id']);
 
     .nav-footer { margin-top: auto; padding-bottom: 16px; }
 
-    /* ── CONTENT — offset by sidebar width on desktop ── */
-    .content {
-        margin-left: var(--sidebar-w, 280px) !important;
-    }
-
-    /* ── MOBILE: slide sidebar off-screen, full-width content ── */
+    /* ── MOBILE: slide sidebar off-screen ── */
     @media (max-width: 768px) {
         .mobile-menu-toggle { display: inline-flex; }
         .sidebar {
@@ -106,11 +100,6 @@ $is_admin = isset($_SESSION['admin_id']);
             transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
         }
         .sidebar.open { transform: translateX(0); }
-        .content {
-            margin-left: 0 !important;
-            width: 100% !important;
-            padding-top: 80px !important;
-        }
         body.mobile-menu-open { overflow: hidden; }
     }
 </style>
