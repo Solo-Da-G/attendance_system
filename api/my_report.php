@@ -62,7 +62,7 @@ $stmt->close();
 <title>My Report</title>
 <link rel="stylesheet" href="/asset/css/style.css">
 </head>
-<body>
+<body class="app-page report-page">
 
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
@@ -93,32 +93,40 @@ $stmt->close();
     </div>
   </div>
 
-  <table>
-    <tr>
-      <th>Date</th>
-      <th>Branches Visited</th>
-      <th>Sessions</th>
-      <th>Total Hours</th>
-    </tr>
-    <?php if (!empty($daily)): ?>
-      <?php foreach ($daily as $row): ?>
-        <?php
-          $bIn = array_filter(array_map('trim', explode(',', $row['branches_in'] ?? '')));
-          $bOut = array_filter(array_map('trim', explode(',', $row['branches_out'] ?? '')));
-          $allBranches = array_unique(array_merge($bIn, $bOut));
-          $branchDisp = empty($allBranches) ? "<span style='color:#94a3b8;'>—</span>" : htmlspecialchars(implode(', ', $allBranches));
-        ?>
-        <tr>
-          <td><?php echo htmlspecialchars($row['day']); ?></td>
-          <td><span style="font-weight:600; color:#4f46e5;">📍 <?php echo $branchDisp; ?></span></td>
-          <td><?php echo htmlspecialchars((string)$row['sessions']); ?></td>
-          <td><?php echo formatHours((float)($row['hours'] ?? 0)); ?></td>
-        </tr>
-      <?php endforeach; ?>
-    <?php else: ?>
-      <tr><td colspan="3" style="text-align:center;">No records found for this month</td></tr>
-    <?php endif; ?>
-  </table>
+  <div class="table-card">
+    <div class="table-scroll">
+      <table class="responsive-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Branches Visited</th>
+            <th>Sessions</th>
+            <th>Total Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (!empty($daily)): ?>
+            <?php foreach ($daily as $row): ?>
+              <?php
+                $bIn = array_filter(array_map('trim', explode(',', $row['branches_in'] ?? '')));
+                $bOut = array_filter(array_map('trim', explode(',', $row['branches_out'] ?? '')));
+                $allBranches = array_unique(array_merge($bIn, $bOut));
+                $branchDisp = empty($allBranches) ? "<span style='color:#94a3b8;'>—</span>" : htmlspecialchars(implode(', ', $allBranches));
+              ?>
+              <tr>
+                <td data-label="Date"><?php echo htmlspecialchars($row['day']); ?></td>
+                <td data-label="Branches Visited"><span style="font-weight:600; color:#4f46e5;">📍 <?php echo $branchDisp; ?></span></td>
+                <td data-label="Sessions"><?php echo htmlspecialchars((string)$row['sessions']); ?></td>
+                <td data-label="Total Hours"><?php echo formatHours((float)($row['hours'] ?? 0)); ?></td>
+              </tr>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <tr><td colspan="4" style="text-align:center;">No records found for this month</td></tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System</div>
 </div>

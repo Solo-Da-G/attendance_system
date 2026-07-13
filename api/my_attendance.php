@@ -35,7 +35,7 @@ if ($from !== '' && $to !== '') {
 <title>My Attendance</title>
 <link rel="stylesheet" href="/asset/css/style.css">
 </head>
-<body>
+<body class="app-page attendance-page">
 
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
@@ -53,35 +53,43 @@ if ($from !== '' && $to !== '') {
     <button type="button" class="print-btn" onclick="window.print()">🖨️ Print</button>
   </form>
 
-  <table>
-    <tr>
-      <th>Date</th>
-      <th>Time In</th>
-      <th>Time Out</th>
-      <th>Status</th>
-      <th>Total Hours</th>
-    </tr>
-    <?php if (!empty($rows)): ?>
-      <?php foreach ($rows as $row): ?>
-        <?php
-          $date = date("Y-m-d", strtotime($row['clock_in']));
-          $timeIn = date("H:i:s", strtotime($row['clock_in']));
-          $timeOut = $row['clock_out'] ? date("H:i:s", strtotime($row['clock_out'])) : "—";
-          $statusClass = strtolower($row['status'] ?? 'in');
-          $hrs = isset($row['total_hours']) ? (float)$row['total_hours'] : 0;
-        ?>
-        <tr>
-          <td><?php echo htmlspecialchars($date); ?></td>
-          <td><?php echo htmlspecialchars($timeIn); ?></td>
-          <td><?php echo htmlspecialchars($timeOut); ?></td>
-          <td class="status <?php echo htmlspecialchars($statusClass); ?>"><?php echo ($row['status'] === 'missed_out' ? 'missed(clockout)' : htmlspecialchars($row['status'] ?? 'in')); ?></td>
-          <td><?php echo htmlspecialchars(number_format($hrs, 2)); ?> hrs</td>
-        </tr>
-      <?php endforeach; ?>
-    <?php else: ?>
-      <tr><td colspan="5" style="text-align:center;">No attendance records found</td></tr>
-    <?php endif; ?>
-  </table>
+  <div class="table-card">
+    <div class="table-scroll">
+      <table class="responsive-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time In</th>
+            <th>Time Out</th>
+            <th>Status</th>
+            <th>Total Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (!empty($rows)): ?>
+            <?php foreach ($rows as $row): ?>
+              <?php
+                $date = date("Y-m-d", strtotime($row['clock_in']));
+                $timeIn = date("H:i:s", strtotime($row['clock_in']));
+                $timeOut = $row['clock_out'] ? date("H:i:s", strtotime($row['clock_out'])) : "—";
+                $statusClass = strtolower($row['status'] ?? 'in');
+                $hrs = isset($row['total_hours']) ? (float)$row['total_hours'] : 0;
+              ?>
+              <tr>
+                <td data-label="Date"><?php echo htmlspecialchars($date); ?></td>
+                <td data-label="Time In"><?php echo htmlspecialchars($timeIn); ?></td>
+                <td data-label="Time Out"><?php echo htmlspecialchars($timeOut); ?></td>
+                <td data-label="Status" class="status <?php echo htmlspecialchars($statusClass); ?>"><?php echo ($row['status'] === 'missed_out' ? 'missed(clockout)' : htmlspecialchars($row['status'] ?? 'in')); ?></td>
+                <td data-label="Total Hours"><?php echo htmlspecialchars(number_format($hrs, 2)); ?> hrs</td>
+              </tr>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <tr><td colspan="5" style="text-align:center;">No attendance records found</td></tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System</div>
 </div>

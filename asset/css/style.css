@@ -74,6 +74,9 @@ body {
    GLOBAL APP BACKGROUND (Dashboard pages)
    ============================================================ */
 body.app-page {
+  display: block;
+  width: 100%;
+  min-width: 0;
   position: relative;
   background: var(--bg);
   overflow-x: hidden;
@@ -216,9 +219,16 @@ img { max-width: 100%; height: auto; }
    ============================================================ */
 .content {
   margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
+  max-width: calc(100vw - var(--sidebar-w));
   padding: 36px 40px;
-  flex: 1;
   min-height: 100vh;
+  min-width: 0;
+}
+
+.content > * {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .content h2 {
@@ -450,6 +460,18 @@ table.pro-table td strong { font-weight: 700; }
     overflow: hidden;
     text-overflow: ellipsis;
   }
+}
+
+.table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll > table {
+  min-width: 100%;
 }
 
 /* ============================================================
@@ -1094,8 +1116,10 @@ body.login-page {
 @media (max-width: 768px) {
   .content {
     margin-left: 0 !important;
-    padding: 80px 16px 24px;
     width: 100% !important;
+    max-width: 100% !important;
+    padding: 80px 16px 24px;
+    overflow-x: clip;
   }
 
   .cards {

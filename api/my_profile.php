@@ -43,7 +43,7 @@ if (!$staff) {
   @media (max-width: 520px) { .kv-row { grid-template-columns: 1fr; } }
 </style>
 </head>
-<body>
+<body class="app-page profile-page">
 
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 

@@ -28,7 +28,7 @@ try {
     }
 } catch (Throwable $t) { /* ignore */ }
 
-$is_admin = isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'super_admin');
+$is_admin = isset($_SESSION['admin_id']) || (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'], true));
 $staff_id = $_SESSION['staff_id'] ?? null;
 $display_name = $_SESSION['admin'] ?? 'User';
 $staff_branch_name = '';
@@ -92,7 +92,8 @@ if ($staff_id) {
   <style>
     body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); overflow-x: hidden; }
     html, body { max-width: 100vw; overflow-x: hidden; }
-    .dashboard-page .content { width: auto; box-sizing: border-box; padding: 20px; flex: 1; min-width: 0; }
+    .dashboard-page .content { box-sizing: border-box; padding: 20px; min-width: 0; }
+    .dashboard-page .content > * { max-width: 100%; min-width: 0; }
 
     .dashboard-header {
         background: linear-gradient(135deg, #1e293b, #334155);
@@ -413,7 +414,77 @@ if ($staff_id) {
             font-size: 12px;
         }
         .dashboard-page .content {
-            padding: 12px;
+            padding: 84px 14px 24px !important;
+        }
+        .dashboard-header {
+            padding: 18px !important;
+        }
+        .dashboard-header > div:last-child {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0 !important;
+        }
+        .dashboard-widgets {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+        }
+        .widget-card,
+        .premium-scorecard,
+        .branch-score-card,
+        .clocking-card,
+        .recent-table,
+        .broadcast-panel,
+        .att-log-panel,
+        .scorecard-section {
+            min-width: 0;
+        }
+        .broadcast-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .broadcast-target,
+        .broadcast-msg,
+        .broadcast-send-btn {
+            width: 100%;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        .scorecard-grid {
+            grid-template-columns: 1fr;
+            max-height: none;
+            overflow: visible;
+            padding-right: 0;
+        }
+        .dashboard-links-container {
+            width: 100% !important;
+        }
+        .dashboard-links-container a {
+            min-width: 0 !important;
+        }
+        .att-log-toggle {
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .att-log-toggle-badges {
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .top-notification {
+            left: 12px;
+            right: 12px;
+            width: auto;
+            max-width: none;
+            transform: none;
+        }
+        .top-notification.show {
+            top: 12px;
+        }
+        .admin-notif-toast {
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            max-width: none;
         }
     }
     
@@ -438,9 +509,19 @@ if ($staff_id) {
         #camera-container { width: min(240px, 80vw); border-width: 4px; }
         .clock-btn { padding: 12px 20px; font-size: 14px; }
         .dashboard-widgets { gap: 12px; }
+        .time-widget,
+        .info-widget {
+            padding: 18px 16px !important;
+        }
         .dashboard-links-container {
             flex-direction: column !important;
             gap: 8px !important;
+        }
+        .dashboard-header h2 {
+            font-size: 1.35rem;
+        }
+        .recent-table h3 {
+            flex-wrap: wrap;
         }
     }
 
