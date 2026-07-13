@@ -35,7 +35,7 @@ $is_admin = isset($_SESSION['admin_id']);
 
     .sidebar {
         display: flex !important;
-        width: 280px;
+        width: var(--sidebar-w, 280px);
         max-width: 82vw;
         background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
         color: #fff;

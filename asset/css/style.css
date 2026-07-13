@@ -37,7 +37,7 @@
   --sidebar-hover: #1e293b;
   --sidebar-text:  #94a3b8;
   --sidebar-active:#4f46e5;
-  --sidebar-w:     250px;
+  --sidebar-w:     280px;
 
   /* Radius */
   --radius-sm:  6px;
@@ -1138,57 +1138,57 @@ body.login-page {
   border: 2px solid var(--primary-light);
   border-radius: 50%;
   animation: pulse-ring 1.5s ease-out infinite;
+margin-bottom: 16px;
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 768px) {
-  .sidebar { width: 200px; }
-  :root { --sidebar-w: 200px; }
-  .content { padding: 20px; }
-  .cards { grid-template-columns: 1fr; }
-  .face-modal { width: 96vw; }
-  .face-guide { width: 140px; height: 170px; }
+.camera-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
 }
 
-@media (max-width: 600px) {
-  .sidebar { display: none; }
-  .content { margin-left: 0 !important; }
-  .login-container { width: 92vw; }
-}
-
-/* ============================================================
-   WIDGET CARDS (UI ENHANCEMENTS)
-   ============================================================ */
-.widget-card {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.widget-card::before {
-  content: '';
+.camera-container canvas {
   position: absolute;
-  top: 0; left: -100%;
-  width: 50%; height: 100%;
-  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
-  transform: skewX(-25deg);
-  animation: shine 6s infinite;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
-@keyframes shine {
-  0% { left: -100%; }
-  20% { left: 200%; }
-  100% { left: 200%; }
+/* Face guide overlay */
+.face-guide {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 180px;
+  height: 220px;
+  border: 3px dashed rgba(255,255,255,0.35);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: border-color .3s, box-shadow .3s;
 }
 
-.widget-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
-  z-index: 10;
+.face-guide.detected {
+  border-color: var(--success);
+  border-style: solid;
+  box-shadow: 0 0 25px rgba(16, 185, 129, .3);
+}
+
+.face-guide.no-match {
+  border-color: var(--danger);
+  border-style: solid;
+  box-shadow: 0 0 25px rgba(239, 68, 68, .3);
+}
+
+/* Scanning animation */
+.scan-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
+  animation: scanDown 2s ease-in-out infinite;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -1309,7 +1309,7 @@ body.login-page {
 
 .btn-retry {
   background: var(--surface-alt) !important;
-  color: #text !important;
+  color: var(--text) !important;
   border: 1.5px solid var(--border) !important;
   box-shadow: none !important;
 }
@@ -1339,8 +1339,8 @@ body.login-page {
    RESPONSIVE
    ============================================================ */
 @media (max-width: 768px) {
-  .sidebar { width: 200px; }
-  :root { --sidebar-w: 200px; }
+  .sidebar { width: 280px; }
+  :root { --sidebar-w: 280px; }
   .content { padding: 20px; }
   .cards { grid-template-columns: 1fr; }
   .face-modal { width: 96vw; }
@@ -1351,6 +1351,21 @@ body.login-page {
   .sidebar { display: none; }
   .content { margin-left: 0 !important; }
   .login-container { width: 92vw; }
+}
+
+@media (max-width: 480px) {
+  .widget-card {
+    padding: 16px 20px !important;
+  }
+  .premium-scorecard {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* Face guide overlay */
+@media (max-width: 480px) {
+  .face-guide { width: 120px; height: 150px; }
 }
 
 /* ============================================================

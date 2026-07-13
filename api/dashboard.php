@@ -692,7 +692,7 @@ if ($staff_id) {
 
     <!-- Live Time & Date Widgets -->
     <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 30px;">
-        <div class="widget-card time-widget" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 24px 30px; border-radius: 24px; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between;">
+        <div class="widget-card time-widget" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 24px 30px; border-radius: 24px; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
             <div style="position: absolute; bottom: -40px; left: 10px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
             
@@ -1386,7 +1386,7 @@ if ($staff_id) {
         </div>
     </div>
 
-    <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+    <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap;">
         <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
             <span>💾</span> Download Backup
         </a>
