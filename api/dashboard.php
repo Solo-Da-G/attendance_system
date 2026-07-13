@@ -91,7 +91,8 @@ if ($staff_id) {
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); overflow-x: hidden; }
-    .dashboard-page .content { width: 100%; max-width: 100%; box-sizing: border-box; padding: 20px; }
+    html, body { max-width: 100vw; overflow-x: hidden; }
+    .dashboard-page .content { width: auto; box-sizing: border-box; padding: 20px; flex: 1; min-width: 0; }
 
     .dashboard-header {
         background: linear-gradient(135deg, #1e293b, #334155);
@@ -190,7 +191,7 @@ if ($staff_id) {
     }
     .scorecard-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         gap: 16px;
         max-height: 520px;
         overflow-y: auto;
@@ -690,7 +691,7 @@ if ($staff_id) {
     </div>
 
     <!-- Live Time & Date Widgets -->
-    <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 30px;">
+    <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 30px;">
         <div class="widget-card time-widget" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 24px 30px; border-radius: 24px; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between;">
             <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
             <div style="position: absolute; bottom: -40px; left: 10px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
