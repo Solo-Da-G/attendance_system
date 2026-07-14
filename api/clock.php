@@ -12,6 +12,7 @@ $staff_id = $_POST['staff_id'] ?? '';
 date_default_timezone_set("Africa/Lagos");
 $current_time = date("Y-m-d H:i:s");
 $today = date("Y-m-d");
+$current_hour = (int)date('G');
 
 // Validate staff exists
 $stmt = $conn->prepare("SELECT id FROM staff WHERE staff_id = ?");
@@ -48,9 +49,15 @@ if ($stmtMiss) {
     }
 }
 
-// Check if already clocked in today
-$stmt = $conn->prepare("SELECT id, clock_in, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
-// Check if already clocked in today
+// ---------------------------------------------------------------
+// Stop clocking after 7:00pm
+// ---------------------------------------------------------------
+if ($current_hour >= 19) {
+    echo json_encode(["status" => "error", "message" => "Clock-in and clock-out are disabled after 7:00 PM. The system will reset at 12:00 AM."]);
+    exit;
+}
+
+// Check today's attendance record
 $stmt = $conn->prepare("SELECT id, clock_in, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
 $stmt->bind_param("ss", $staff_id, $today);
 $stmt->execute();
@@ -78,7 +85,7 @@ if (!$record) {
     $stmt3->close();
     echo json_encode(["status" => "success", "message" => "Clock-out recorded at $current_time. Total hours: $total_hours"]);
 } else {
-    // Already clocked out today
-    echo json_encode(["status" => "error", "message" => "Already clocked in and out today. Cannot clock in again until tomorrow."]);
+    // Already completed attendance for today
+    echo json_encode(["status" => "error", "message" => "Already clocked in and out today. The system will reset at 12:00 AM."]);
 }
 ?>

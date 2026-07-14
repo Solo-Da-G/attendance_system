@@ -4,9 +4,10 @@
  *
  * Handles clock-in/out from the web/mobile dashboard with location verification.
  *
- * CHANGES:
- * - 6 PM CUTOFF: Rejects clock-in/out after 18:00 server time
- * - MULTIPLE SESSIONS: Up to 3 clock-in/out pairs per day
+ * RULES:
+ * - 7 PM CUTOFF: Rejects clock-in/out after 19:00 server time
+ * - ONE SESSION PER DAY: Only one clock-in and one clock-out are allowed each day
+ * - MIDNIGHT RESET: Any unclosed previous-day record is auto-closed at 12:00 AM
  * - AUDIT LOGGING: Every clock event is logged to audit_log table
  */
 error_reporting(E_ALL);
@@ -97,17 +98,17 @@ if ($photo !== '' && !str_starts_with($photo, 'data:image/')) {
 }
 
 // ──────────────────────────────────────────────────────────────────
-// 6 PM CUTOFF CHECK (server-side enforcement)
+// 7 PM CUTOFF CHECK (server-side enforcement)
 // ──────────────────────────────────────────────────────────────────
 $current_hour = (int)date('G'); // 0-23
-if ($current_hour >= 18) {
+if ($current_hour >= 19) {
     $full_name_for_log = '';
     $sRow = $conn->prepare("SELECT full_name FROM staff WHERE staff_id = ? LIMIT 1");
     if ($sRow) { $sRow->bind_param("s", $staff_id); $sRow->execute(); $r = $sRow->get_result()->fetch_assoc(); $full_name_for_log = $r['full_name'] ?? ''; $sRow->close(); }
-    audit_clock_event($conn, $staff_id, $full_name_for_log, 'blocked_after_6pm', "Attempted $action at " . date('H:i:s'));
+    audit_clock_event($conn, $staff_id, $full_name_for_log, 'blocked_after_7pm', "Attempted $action at " . date('H:i:s'));
     json_response([
         "status"  => "error",
-        "message" => "⏰ Clock-in and clock-out are disabled after 6:00 PM. Please contact your admin if you need assistance."
+        "message" => "⏰ Clock-in and clock-out are disabled after 7:00 PM. Please contact your admin if you need assistance."
     ], 400);
 }
 
@@ -217,51 +218,34 @@ if (!$is_near) {
 }
 
 // ──────────────────────────────────────────────────────────────────
-// PROCESS CLOCKING (up to 3 sessions per day)
+// PROCESS CLOCKING (one session per day)
 // ──────────────────────────────────────────────────────────────────
 $now  = date("Y-m-d H:i:s");
 $date = date("Y-m-d");
 
-$MAX_SESSIONS_PER_DAY = 3;
-
 if ($action === 'clock_in') {
-    // Count today's clock-in records
-    $countStmt = $conn->prepare("SELECT COUNT(*) as cnt FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ?");
-    $todayCount = 0;
-    if ($countStmt) {
-        $countStmt->bind_param("ss", $staff_id, $date);
-        $countStmt->execute();
-        $todayCount = (int)($countStmt->get_result()->fetch_assoc()['cnt'] ?? 0);
-        $countStmt->close();
-    }
-
-    if ($todayCount >= $MAX_SESSIONS_PER_DAY) {
-        json_response([
-            "status"  => "error",
-            "message" => "You have reached the maximum of {$MAX_SESSIONS_PER_DAY} clock-in sessions for today."
-        ], 400);
-    }
-
-    // Check if last record today is still open (no clock_out) — prevent double-open
-    $lastStmt = $conn->prepare("SELECT id, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
-    if ($lastStmt) {
-        $lastStmt->bind_param("ss", $staff_id, $date);
-        $lastStmt->execute();
-        $lastRec = $lastStmt->get_result()->fetch_assoc();
-        $lastStmt->close();
-        if ($lastRec && $lastRec['clock_out'] === null) {
+    // Only one attendance record is allowed per day
+    $dayStmt = $conn->prepare("SELECT id, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
+    if ($dayStmt) {
+        $dayStmt->bind_param("ss", $staff_id, $date);
+        $dayStmt->execute();
+        $todayRec = $dayStmt->get_result()->fetch_assoc();
+        $dayStmt->close();
+        if ($todayRec) {
+            if ($todayRec['clock_out'] === null) {
+                json_response([
+                    "status"  => "error",
+                    "message" => "You are already clocked in for today. Please clock out before 7:00 PM."
+                ], 400);
+            }
             json_response([
                 "status"  => "error",
-                "message" => "You are already clocked in. Please clock out first before clocking in again."
+                "message" => "You have already completed your clock-in and clock-out for today. The system will reset at 12:00 AM."
             ], 400);
         }
     }
 
     $attendanceColumns = function_exists('db_table_columns') ? db_table_columns($conn, 'attendance') : [];
-
-    // Determine session label (1st, 2nd, 3rd)
-    $sessionLabels = ['Morning', 'Midday', 'Afternoon'];
-    $sessionLabel  = $sessionLabels[min($todayCount, 2)];
 
     $insertColumns = ['staff_id', 'clock_in', 'status'];
     $insertValues  = ['?', '?', "'in'"];
@@ -282,12 +266,10 @@ if ($action === 'clock_in') {
     }
     $stmt->bind_param($insertTypes, ...$insertParams);
     if ($stmt->execute()) {
-        $sessionNum = $todayCount + 1;
-        audit_clock_event($conn, $staff_id, $staff_full_name, 'clock_in', "$sessionLabel session #{$sessionNum} at branch: $clock_branch");
+        audit_clock_event($conn, $staff_id, $staff_full_name, 'clock_in', "Daily clock-in at branch: $clock_branch");
         json_response([
             "status"   => "success",
-            "message"  => "✅ Clocked in successfully! ($sessionLabel session — {$sessionNum}/{$MAX_SESSIONS_PER_DAY})",
-            "session"  => $sessionNum
+            "message"  => "✅ Clocked in successfully for today."
         ]);
     } else {
         json_response(["status" => "error", "message" => "Database error. Please try again."], 500);
@@ -325,19 +307,10 @@ if ($action === 'clock_in') {
         }
         $stmt->bind_param($updateTypes, ...$updateParams);
         if ($stmt->execute()) {
-            // Count remaining sessions
-            $sessionsUsed = 0;
-            $csStmt = $conn->prepare("SELECT COUNT(*) as c FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ?");
-            if ($csStmt) { $csStmt->bind_param("ss", $staff_id, $date); $csStmt->execute(); $sessionsUsed = (int)$csStmt->get_result()->fetch_assoc()['c']; $csStmt->close(); }
-            $remaining = $MAX_SESSIONS_PER_DAY - $sessionsUsed;
-
             audit_clock_event($conn, $staff_id, $staff_full_name, 'clock_out', "Session closed. Duration: {$total_hours}h. Branch: $clock_branch");
-
-            $remMsg = $remaining > 0 ? " ({$remaining} session(s) remaining today)" : " (All {$MAX_SESSIONS_PER_DAY} sessions used for today)";
             json_response([
                 "status"  => "success",
-                "message" => "✅ Clocked out successfully! Duration: $total_hours hours." . $remMsg,
-                "remaining_sessions" => $remaining
+                "message" => "✅ Clocked out successfully! Duration: $total_hours hours. Today's attendance is complete."
             ]);
         } else {
             json_response(["status" => "error", "message" => "Database error. Please try again."], 500);

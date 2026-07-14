@@ -845,8 +845,7 @@ if ($staff_id) {
                 $missed_stmt->close();
             }
 
-            // ── Multi-session logic (up to 3 pairs per day) ────────────
-            $MAX_SESSIONS   = 3;
+            // ── One attendance session per day ──────────────────────────
             $sessions_today = [];
             $stmt_sessions  = $conn->prepare("SELECT id, clock_in, clock_out FROM `attendance` WHERE staff_id = ? AND DATE(clock_in) = CURDATE() ORDER BY id ASC");
             if ($stmt_sessions) {
@@ -862,36 +861,34 @@ if ($staff_id) {
             $total_sessions    = count($sessions_today);
             $last_session      = $total_sessions > 0 ? $sessions_today[$total_sessions - 1] : null;
             $currently_in      = $last_session && $last_session['clock_out'] === null;
-            $all_sessions_used = $total_sessions >= $MAX_SESSIONS && !$currently_in;
-            $can_clock_in      = !$currently_in && $total_sessions < $MAX_SESSIONS;
+            $attendance_done   = $total_sessions >= 1 && !$currently_in;
+            $can_clock_in      = !$currently_in && $total_sessions === 0;
             $can_clock_out     = $currently_in;
 
-            // 6PM cutoff
-            $past_6pm = (int)date('G') >= 18;
-            $session_labels = ['Morning', 'Midday', 'Afternoon'];
-            $next_session_label = $session_labels[min($total_sessions, 2)];
+            // 7PM cutoff
+            $past_7pm = (int)date('G') >= 19;
         ?>
 
         <div id="clockControls">
-            <?php if ($past_6pm): ?>
+            <?php if ($past_7pm): ?>
                 <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
-                    style="background:#64748b;box-shadow:none;">⏰ Clock-in/out disabled after 6:00 PM</button>
-            <?php elseif ($all_sessions_used): ?>
+                    style="background:#64748b;box-shadow:none;">⏰ Clock-in/out disabled after 7:00 PM</button>
+            <?php elseif ($attendance_done): ?>
                 <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
-                    style="background:#64748b;box-shadow:none;">✅ All <?php echo $MAX_SESSIONS; ?> sessions complete for today</button>
+                    style="background:#64748b;box-shadow:none;">✅ Attendance completed for today</button>
             <?php elseif ($can_clock_out): ?>
                 <button id="clockBtn" class="clock-btn out" disabled onclick="processClocking('clock_out')">Verify &amp; Clock Out</button>
             <?php elseif ($can_clock_in): ?>
-                <button id="clockBtn" class="clock-btn" disabled onclick="processClocking('clock_in')">Verify &amp; Clock In <?php if($total_sessions > 0): ?>(<?php echo $next_session_label; ?>)<?php endif; ?></button>
+                <button id="clockBtn" class="clock-btn" disabled onclick="processClocking('clock_in')">Verify &amp; Clock In</button>
             <?php else: ?>
                 <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
-                    style="background:#64748b;box-shadow:none;">Already Clocked Out Today</button>
+                    style="background:#64748b;box-shadow:none;">Attendance unavailable for today</button>
             <?php endif; ?>
         </div>
-        <!-- Sessions counter -->
+        <!-- Daily attendance status -->
         <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:10px;font-weight:600;">
-            📊 Sessions today: <strong style="color:var(--primary);"><?php echo $total_sessions; ?> / <?php echo $MAX_SESSIONS; ?></strong>
-            <?php if($past_6pm): ?>&nbsp;· <span style="color:#ef4444;font-weight:700;">⏰ After 6 PM</span><?php endif; ?>
+            📊 Daily attendance: <strong style="color:var(--primary);"><?php echo $total_sessions > 0 ? ($currently_in ? 'Clocked in' : 'Completed') : 'Not started'; ?></strong>
+            <?php if($past_7pm): ?>&nbsp;· <span style="color:#ef4444;font-weight:700;">⏰ After 7 PM</span><?php endif; ?>
         </p>
         
         <p id="faceStatus" class="status-line">🔄 Loading face recognition...</p>
@@ -919,7 +916,7 @@ if ($staff_id) {
         </p>
         <textarea id="fieldWorkMsg" rows="3" maxlength="1000"
             style="width:100%;padding:12px 16px;border:1.5px solid #fbbf24;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;background:white;outline:none;resize:vertical;box-sizing:border-box;color:#1e293b;"
-            placeholder="e.g. I am heading to ABC site and will not return before 6 PM. My return is expected on [date]."></textarea>
+            placeholder="e.g. I am heading to ABC site and may not return before 7 PM. My return is expected on [date]."></textarea>
         <button onclick="submitFieldWorkComment()" id="fieldWorkBtn"
             style="margin-top:12px;padding:12px 24px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer;width:100%;box-shadow:0 6px 16px rgba(245,158,11,0.35);transition:all 0.2s;">
             📤 Submit Field Work Note
@@ -1858,10 +1855,10 @@ if ($staff_id) {
     }
 
     async function processClocking(action) {
-        // ── 6 PM Client-side cutoff ─────────────────────────────────
+        // ── 7 PM Client-side cutoff ─────────────────────────────────
         const nowHour = new Date().getHours();
-        if (nowHour >= 18) {
-            showApiError('⏰ Clock-in and clock-out are disabled after 6:00 PM. Please contact your admin if you need assistance.');
+        if (nowHour >= 19) {
+            showApiError('⏰ Clock-in and clock-out are disabled after 7:00 PM. Please contact your admin if you need assistance.');
             return;
         }
 
@@ -2237,12 +2234,12 @@ if ($staff_id) {
     }
 
     const EVENT_ICONS = {
-        'clock_in': '✅', 'clock_out': '🏁', 'blocked_after_6pm': '⏰',
+        'clock_in': '✅', 'clock_out': '🏁', 'blocked_after_6pm': '⏰', 'blocked_after_7pm': '⏰',
         'location_rejected': '📍', 'face_rejected': '❌', 'field_work_comment': '🏃',
         'default': '📋'
     };
     const EVENT_COLORS = {
-        'clock_in': '#10b981', 'clock_out': '#3b82f6', 'blocked_after_6pm': '#f59e0b',
+        'clock_in': '#10b981', 'clock_out': '#3b82f6', 'blocked_after_6pm': '#f59e0b', 'blocked_after_7pm': '#f59e0b',
         'location_rejected': '#ef4444', 'face_rejected': '#ef4444', 'field_work_comment': '#f59e0b',
         'default': '#64748b'
     };
