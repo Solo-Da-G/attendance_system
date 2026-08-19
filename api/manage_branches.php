@@ -150,9 +150,10 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                 <div class="coordinates">
                     LAT: <?php echo $b['latitude']; ?> | LNG: <?php echo $b['longitude']; ?>
                 </div>
-                <div style="font-size:14px; margin-bottom:12px;">
-                    Allowed Radius: <strong><?php echo $b['radius_meters']; ?> meters</strong>
-                </div>
+                    <div style="font-size:14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+                        <span>Allowed Radius: <strong id="radius-<?php echo $b['id']; ?>"><?php echo $b['radius_meters']; ?> meters</strong></span>
+                        <button type="button" class="action-btn edit-btn" onclick="editBranchRadius(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')" style="margin-left:8px;">✏️ Edit Radius</button>
+                    </div>
                 <button type="button" class="action-btn edit-btn" style="width:100%;margin-bottom:8px;"
                     onclick="updateBranchGps(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')">
                     📍 Set coords from my device GPS
@@ -213,7 +214,27 @@ function updateBranchGps(branchId, branchName) {
         if (data.status === 'success') location.reload();
     }, function() { alert('GPS failed'); }, { enableHighAccuracy: true, timeout: 25000 });
 }
+function editBranchRadius(branchId, branchName) {
+    const newRadius = prompt(`Enter new radius (meters) for "${branchName}":`, '');
+    if (newRadius === null) return;
+    const radius = parseInt(newRadius, 10);
+    if (isNaN(radius) || radius <= 0) {
+        alert('Please enter a valid positive number.');
+        return;
+    }
+    const fd = new FormData();
+    fd.append('branch_id', branchId);
+    fd.append('radius_meters', radius);
+    fetch('update_branch_radius.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message || (data.status === 'success' ? 'Radius updated!' : 'Failed'));
+            if (data.status === 'success') location.reload();
+        })
+        .catch(() => alert('Network error.'));
+}
 </script>
+
 
 <script src="/asset/js/ui-enhancements.js" defer></script>
 </body>
