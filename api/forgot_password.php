@@ -160,10 +160,14 @@ if (isset($_POST['reset_request'])) {
     <title>Forgot Password — Attendance System</title>
     <link rel="stylesheet" href="/asset/css/style.css">
     <style>
+        :root {
+            --primary: #10439f;
+            --primary-light: #2563eb;
+            --primary-glow: rgba(16, 67, 159, 0.15);
+        }
         body.login-page {
-            background: #0f172a;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            height: 100vh;
+            background: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -171,66 +175,71 @@ if (isset($_POST['reset_request'])) {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
         .login-container {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 45px;
-            border-radius: 32px;
+            background: #ffffff;
+            padding: 40px 36px;
+            border-radius: 24px;
             width: 100%;
             max-width: 420px;
             text-align: center;
-            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            box-sizing: border-box;
         }
-        .login-container h2 { color: #ffffff; margin-bottom: 10px; font-weight: 800; font-size: 28px; }
-        .login-container p { color: rgba(255,255,255,0.7); font-size: 15px; margin-bottom: 30px; line-height: 1.6; }
+        .login-container h2 { color: #0f172a; margin-bottom: 10px; font-weight: 800; font-size: 26px; }
+        .login-container p { color: #475569; font-size: 14.5px; margin-bottom: 24px; line-height: 1.6; }
         .login-container input {
             width: 100%;
-            padding: 16px 24px;
-            background-color: #1e293b !important;
-            border: 2px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 16px;
-            color: #ffffff !important;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 15px 18px;
+            background-color: #f8fafc !important;
+            border: 1.5px solid #e2e8f0 !important;
+            border-radius: 12px;
+            color: #0f172a !important;
+            font-size: 15px;
+            font-weight: 550;
             margin-bottom: 20px;
             box-sizing: border-box;
+            font-family: inherit;
         }
         .login-container input:focus {
             outline: none;
-            border-color: rgba(129, 140, 248, 0.85) !important;
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.25);
+            background-color: #ffffff !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 4px var(--primary-glow);
         }
-        .login-container input::placeholder { color: rgba(255,255,255,0.5) !important; }
+        .login-container input::placeholder { color: #94a3b8 !important; }
 
         /* Force Autofill colors */
         input:-webkit-autofill,
         input:-webkit-autofill:hover, 
         input:-webkit-autofill:focus {
-            -webkit-text-fill-color: #ffffff !important;
-            -webkit-box-shadow: 0 0 0px 1000px #1e293b inset !important;
+            -webkit-text-fill-color: #0f172a !important;
+            -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
             transition: background-color 5000s ease-in-out 0s;
         }
         .login-container button {
             width: 100%;
-            padding: 16px;
-            background: var(--primary);
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             color: #ffffff;
-            font-weight: 700;
-            font-size: 16px;
+            font-weight: 750;
+            font-size: 15px;
             cursor: pointer;
-            transition: all 0.3s var(--ease);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 20px -6px rgba(16, 67, 159, 0.4);
         }
-        .login-container button:hover { background: var(--primary-light); transform: translateY(-3px); }
-        .msg-success { color: #86efac; font-size: 14px; margin-bottom: 20px; background: rgba(16, 185, 129, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .msg-error { color: #fca5a5; font-size: 14px; margin-bottom: 20px; background: rgba(239, 68, 68, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .login-container button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px -4px rgba(16, 67, 159, 0.5);
+        }
+        .msg-success { color: #166534; font-size: 14px; margin-bottom: 20px; background: rgba(22, 101, 52, 0.08); padding: 15px; border-radius: 12px; border: 1px solid rgba(22, 101, 52, 0.16); font-weight: 600; }
+        .msg-error { color: #b91c1c; font-size: 14px; margin-bottom: 20px; background: rgba(185, 28, 28, 0.08); padding: 15px; border-radius: 12px; border: 1px solid rgba(185, 28, 28, 0.16); font-weight: 600; }
     </style>
 </head>
 <body class="login-page">
 
 <div class="login-container">
-    <img src="/asset/img/miss_logo.png" alt="Logo" width="80">
+    <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-width: 180px; width: 100%; height: auto; margin-bottom: 20px; display: inline-block;">
     <h2>Reset Access</h2>
     <p>Enter your recovery email address and we'll send you a secure link to reset your password.</p>
 
@@ -244,7 +253,7 @@ if (isset($_POST['reset_request'])) {
     </form>
 
     <div style="margin-top:25px;">
-        <a href="index.php" style="color:var(--primary); font-weight:600; text-decoration:none; font-size:14px;">← Back to Login</a>
+        <a href="index.php" style="color:var(--primary); font-weight:700; text-decoration:none; font-size:14px; transition: color 0.2s;">← Back to Login</a>
     </div>
 </div>
 

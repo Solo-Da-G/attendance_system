@@ -108,6 +108,9 @@ $is_admin = isset($_SESSION['admin_id']);
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand" style="background: #ffffff; border-radius: 16px; padding: 14px 12px; margin: 0 20px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
+        <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 44px; max-width: 100%; width: auto; object-fit: contain; display: block;">
+    </div>
     <nav class="sidebar-nav" aria-label="Dashboard navigation">
         <?php if ($is_staff): ?>
             <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>" data-mobile-nav-link>

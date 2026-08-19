@@ -127,12 +127,13 @@ render_form:
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     :root {
-        --primary: #4f46e5;
-        --primary-light: #818cf8;
-        --login-bg-1: #0f172a;
-        --login-bg-2: #1e1b4b;
-        --login-bg-3: #020617;
-        --login-bg-4: #172554;
+        --primary: #10439f;
+        --primary-light: #2563eb;
+        --primary-glow: rgba(16, 67, 159, 0.15);
+        --login-bg-1: #0b0f19;
+        --login-bg-2: #111827;
+        --login-bg-3: #1f2937;
+        --login-bg-4: #030712;
     }
     
     body.login-page {
@@ -160,12 +161,12 @@ render_form:
     body.login-page::after {
         content: '';
         position: absolute;
-        width: 400px;
-        height: 400px;
+        width: 450px;
+        height: 450px;
         border-radius: 50%;
-        filter: blur(100px);
-        opacity: 0.4;
-        animation: float 10s infinite alternate ease-in-out;
+        filter: blur(120px);
+        opacity: 0.3;
+        animation: float 12s infinite alternate ease-in-out;
         z-index: 0;
         pointer-events: none;
     }
@@ -175,95 +176,58 @@ render_form:
         left: -10%;
     }
     body.login-page::after {
-        background: #06b6d4;
+        background: #0ea5e9;
         bottom: -10%;
         right: -10%;
-        animation-delay: -5s;
+        animation-delay: -6s;
     }
     
     @keyframes float {
         0% { transform: translate(0, 0); }
-        100% { transform: translate(40px, 40px); }
+        100% { transform: translate(60px, 60px); }
     }
-
-    /* Faint watermark (clock-in / clock-out / time icons) */
-    .login-watermark {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        pointer-events: none;
-        opacity: 0.12;
-        background-image:
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='70' cy='80' r='26' opacity='0.9'/%3E%3Cpath d='M70 64v18l13 7' opacity='0.9'/%3E%3Cpath d='M136 78h60' opacity='0.9'/%3E%3Cpath d='M196 78l-10-10' opacity='0.9'/%3E%3Cpath d='M196 78l-10 10' opacity='0.9'/%3E%3Cpath d='M136 168h60' opacity='0.9'/%3E%3Cpath d='M196 168l-10-10' opacity='0.9'/%3E%3Cpath d='M196 168l-10 10' opacity='0.9'/%3E%3Crect x='42' y='150' width='64' height='44' rx='14' opacity='0.9'/%3E%3Cpath d='M58 172h32' opacity='0.9'/%3E%3C/g%3E%3C/svg%3E");
-        background-repeat: repeat;
-        background-size: 320px 320px;
-        animation: watermarkMove 28s linear infinite;
-    }
-
-    @keyframes watermarkMove {
-        0% { background-position: 0 0; }
-        100% { background-position: 320px 320px; }
-    }
-    
+ 
     .login-container {
         position: relative;
         z-index: 10;
-        background: rgba(15, 23, 42, 0.4);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
-        border-left: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 34px 34px;
-        border-radius: 32px;
+        background: #ffffff;
+        padding: 40px 36px;
+        border-radius: 24px;
         width: 100%;
         max-width: 380px;
         text-align: center;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
         transform: translateY(0);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .login-container::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 32px;
-        padding: 1px;
-        background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05), rgba(255,255,255,0.12));
-        -webkit-mask:
-          linear-gradient(#000 0 0) content-box,
-          linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        pointer-events: none;
-        opacity: 0.9;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-sizing: border-box;
     }
     .login-container:hover {
         transform: translateY(-4px);
+        box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.5);
     }
     
     .login-container img { 
-        margin-bottom: 24px; 
-        filter: drop-shadow(0 8px 16px rgba(255,255,255,0.15));
+        margin-bottom: 28px; 
         transition: transform 0.3s ease;
     }
     .login-container img:hover {
-        transform: scale(1.05);
+        transform: scale(1.03);
     }
     
     .login-container h2 { 
-        color: #ffffff; 
-        margin-bottom: 8px; 
-        font-weight: 750; 
-        font-size: 28px; 
+        color: #0f172a; 
+        margin-bottom: 6px; 
+        font-weight: 800; 
+        font-size: 26px; 
         letter-spacing: -0.5px;
     }
     .login-container p.subtitle { 
-        color: rgba(255, 255, 255, 0.65); 
-        font-size: 14px; 
-        margin-bottom: 26px; 
+        color: #475569; 
+        font-size: 14.5px; 
+        margin-bottom: 28px; 
+        font-weight: 500;
     }
-
+ 
     .login-container h2,
     .login-container p.subtitle,
     .login-container form {
@@ -271,99 +235,96 @@ render_form:
     }
     .login-container p.subtitle { animation-delay: .05s; }
     .login-container form { animation-delay: .10s; }
-
+ 
     @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(10px); }
+        from { opacity: 0; transform: translateY(12px); }
         to   { opacity: 1; transform: translateY(0); }
     }
     
     .input-group {
         position: relative;
-        margin-bottom: 14px;
+        margin-bottom: 16px;
         text-align: left;
     }
     .login-container input {
         width: 100%;
-        padding: 14px 18px;
-        background-color: rgba(15, 23, 42, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        border-radius: 16px;
-        color: #ffffff !important;
+        padding: 15px 18px;
+        background-color: #f8fafc !important;
+        border: 1.5px solid #e2e8f0 !important;
+        border-radius: 12px;
+        color: #0f172a !important;
         font-size: 15px;
-        font-weight: 520;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 550;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         box-sizing: border-box;
         display: block;
         font-family: inherit;
     }
     .login-container input::placeholder {
-        color: rgba(255, 255, 255, 0.4) !important;
+        color: #94a3b8 !important;
     }
     .login-container input:focus {
-        background-color: rgba(15, 23, 42, 0.8) !important;
-        border-color: var(--primary-light) !important;
+        background-color: #ffffff !important;
+        border-color: var(--primary) !important;
         outline: none;
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.25), inset 0 0 0 1px var(--primary-light);
-        transform: translateY(-2px);
+        box-shadow: 0 0 0 4px var(--primary-glow);
     }
     
     /* Force Autofill colors */
     input:-webkit-autofill,
     input:-webkit-autofill:hover, 
     input:-webkit-autofill:focus {
-        -webkit-text-fill-color: #ffffff !important;
-        -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
+        -webkit-text-fill-color: #0f172a !important;
+        -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
         transition: background-color 5000s ease-in-out 0s;
     }
     
     .toggle-password {
         position: absolute;
-        right: 20px;
+        right: 18px;
         top: 50%;
         transform: translateY(-50%);
         cursor: pointer;
-        opacity: 0.5;
+        opacity: 0.6;
         z-index: 10;
         height: 24px;
         display: flex;
         align-items: center;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
-    .toggle-password:hover { opacity: 1; transform: translateY(-50%) scale(1.1); }
-    .toggle-password svg { width: 22px; height: 22px; fill: #ffffff; transition: fill 0.3s; }
+    .toggle-password:hover { opacity: 1; transform: translateY(-50%) scale(1.08); }
+    .toggle-password svg { width: 22px; height: 22px; fill: #475569; transition: fill 0.3s; }
     
     .forgot-pass {
         display: block;
         text-align: right;
         margin-top: -8px;
-        margin-bottom: 22px;
-        font-size: 14px;
-        color: var(--primary-light);
-        font-weight: 650;
+        margin-bottom: 24px;
+        font-size: 13.5px;
+        color: var(--primary);
+        font-weight: 700;
         text-decoration: none;
-        transition: all 0.3s;
-        opacity: 0.9;
+        transition: all 0.2s;
     }
     .forgot-pass:hover { 
-        color: #ffffff; 
-        opacity: 1;
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+        color: var(--primary-light); 
+        text-decoration: underline;
     }
     
     .login-container button {
         width: 100%;
-        padding: 14px;
-        background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+        padding: 15px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         border: none;
-        border-radius: 16px;
+        border-radius: 12px;
         color: #ffffff;
         font-weight: 750;
         font-size: 15px;
         letter-spacing: 0.5px;
         cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         margin-top: 10px;
-        box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.6);
+        box-shadow: 0 8px 20px -6px rgba(16, 67, 159, 0.4);
         position: relative;
         overflow: hidden;
     }
@@ -371,31 +332,30 @@ render_form:
         content: '';
         position: absolute;
         top: 0; left: -100%; width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: all 0.5s ease;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+        transition: all 0.6s ease;
     }
     .login-container button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.8);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 25px -4px rgba(16, 67, 159, 0.5);
     }
     .login-container button:hover::after {
         left: 100%;
     }
     .login-container button:active {
         transform: translateY(1px);
-        box-shadow: 0 5px 10px -2px rgba(79, 70, 229, 0.6);
+        box-shadow: 0 4px 10px -2px rgba(16, 67, 159, 0.4);
     }
     
     .error-msg {
-        background: rgba(239, 68, 68, 0.15);
-        color: #fca5a5;
-        padding: 14px 20px;
-        border-radius: 12px;
+        background: rgba(239, 68, 68, 0.08);
+        color: #b91c1c;
+        padding: 12px 16px;
+        border-radius: 10px;
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
         margin-top: 24px;
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        backdrop-filter: blur(8px);
+        border: 1px solid rgba(239, 68, 68, 0.16);
         animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
     }
     
@@ -408,9 +368,8 @@ render_form:
 </style>
 </head>
 <body class="login-page">
-<div class="login-watermark"></div>
 <div class="login-container">
-    <img src="/asset/img/miss_logo.png" alt="Logo" width="90">
+    <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-width: 190px; width: 100%; height: auto; margin-bottom: 20px; display: inline-block;">
     <h2>Welcome Back</h2>
     <p class="subtitle">Sign in to your dashboard</p>
     
@@ -431,7 +390,7 @@ render_form:
         <button type="submit" name="login">Sign In</button>
     </form>
     
-    <?php if (!empty($idle_notice)) echo "<p class='error-msg' style='background:rgba(59,130,246,0.2);color:#bfdbfe;border-color:rgba(59,130,246,0.4);'>$idle_notice</p>"; ?>
+    <?php if (!empty($idle_notice)) echo "<p class='error-msg' style='background:rgba(59,130,246,0.08);color:#1e40af;border-color:rgba(59,130,246,0.16);'>$idle_notice</p>"; ?>
     <?php if (!empty($error)) echo "<p class='error-msg'>$error</p>"; ?>
 </div>
 

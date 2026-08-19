@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 include(__DIR__ . "/includes/config.php");
 
 // Redirect to login if not authenticated
@@ -90,19 +90,33 @@ if ($staff_id) {
   <link rel="stylesheet" href="/asset/css/style.css?v=<?php echo $style_version; ?>">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+        --primary:        #10439f; /* TDS Brand Blue */
+        --primary-light:  #2563eb;
+        --primary-dark:   #1d4ed8;
+        --primary-glow:   rgba(16, 67, 159, 0.15);
+        --bg:             #f8fafc;
+        --surface:        #ffffff;
+        --border:         #e2e8f0;
+        --radius-lg:      20px;
+        --radius-xl:      24px;
+        --shadow:         0 10px 25px -5px rgba(16, 67, 159, 0.05), 0 8px 16px -6px rgba(0,0,0,0.03);
+        --shadow-lg:      0 20px 40px -15px rgba(16, 67, 159, 0.1), 0 0 0 1px rgba(0,0,0,0.02);
+    }
+    
     body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); overflow-x: hidden; }
     html, body { max-width: 100vw; overflow-x: hidden; }
     .dashboard-page .content { box-sizing: border-box; padding: 20px; min-width: 0; }
     .dashboard-page .content > * { max-width: 100%; min-width: 0; }
 
     .dashboard-header {
-        background: linear-gradient(135deg, #1e293b, #334155);
-        color: white; padding: clamp(20px, 4vw, 40px); border-radius: clamp(16px, 3vw, 24px);
-        margin-bottom: clamp(16px, 3vw, 30px);
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow: hidden;
+        background: linear-gradient(135deg, #10439f 0%, #1e293b 100%);
+        color: white; padding: clamp(24px, 4vw, 40px); border-radius: clamp(16px, 3vw, 24px);
+        margin-bottom: clamp(20px, 3vw, 30px);
+        box-shadow: 0 20px 35px -5px rgba(16, 67, 159, 0.2); position: relative; overflow: hidden;
     }
     .dashboard-header h2 { font-size: clamp(1.25rem, 4vw, 2rem); font-weight: 800; margin: 0 0 8px; line-height: 1.2; }
-    .dashboard-header p { margin: 0; font-size: clamp(0.85rem, 2.5vw, 1rem); opacity: 0.9; }
+    .dashboard-header p { margin: 0; font-size: clamp(0.85rem, 2.5vw, 1rem); opacity: 0.95; }
 
     .clocking-card {
         background: white; padding: clamp(16px, 4vw, 30px); border-radius: clamp(16px, 3vw, 24px);
@@ -116,7 +130,11 @@ if ($staff_id) {
         border-radius: 50%; overflow: hidden; background: #000;
         aspect-ratio: 1 / 1; position: relative; border: 6px solid #e2e8f0;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        transition: border-color 0.3s ease;
+        transition: all 0.3s ease;
+    }
+    #camera-container.active-scan {
+        border-color: #10b981;
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.2), 0 10px 30px rgba(0, 0, 0, 0.15);
     }
     #video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
     #canvas { display: none; }
@@ -135,7 +153,7 @@ if ($staff_id) {
         padding: clamp(14px, 3vw, 18px) clamp(24px, 6vw, 50px);
         font-size: clamp(0.95rem, 2.8vw, 1.125rem); font-weight: 700;
         border-radius: 16px; cursor: pointer; transition: all 0.3s var(--ease);
-        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 10px 20px rgba(16, 67, 159, 0.3);
         width: 100%; max-width: 360px;
     }
     .clock-btn.out { background: #ef4444; box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3); }
@@ -166,7 +184,7 @@ if ($staff_id) {
     .search-input {
         width: 100%; padding: 16px 20px 16px 52px; box-sizing: border-box;
         background: white;
-        border: 2.5px solid #4f46e5;
+        border: 2.5px solid var(--primary);
         border-radius: 18px; font-size: 16px; font-weight: 600;
         margin-bottom: 24px;
         box-shadow: 0 4px 20px rgba(79,70,229,0.18), 0 1px 4px rgba(0,0,0,0.07);
@@ -217,7 +235,7 @@ if ($staff_id) {
     .branch-score-card::before {
         content: '';
         position: absolute; top: 0; left: 0; right: 0; height: 4px;
-        background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        background: linear-gradient(90deg, var(--primary), var(--primary-light));
         border-radius: 18px 18px 0 0;
     }
     .branch-score-card.no-branch::before {
@@ -285,7 +303,7 @@ if ($staff_id) {
     }
     .broadcast-send-btn {
         padding: 12px 24px; border: none; border-radius: 12px;
-        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
         color: white; font-weight: 800; font-size: 14px;
         cursor: pointer; white-space: nowrap;
         box-shadow: 0 4px 14px rgba(124,58,237,0.35);
@@ -318,7 +336,7 @@ if ($staff_id) {
     .att-log-toggle:hover { background: #f5f3ff; }
     .att-log-toggle-icon {
         width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
         color: white; font-size: 22px;
         display: flex; align-items: center; justify-content: center;
         box-shadow: 0 6px 16px rgba(79,70,229,0.28);
@@ -340,7 +358,7 @@ if ($staff_id) {
     .att-log-badge.red    { background: #fee2e2; color: #991b1b; }
     .att-log-chevron {
         width: 32px; height: 32px; border-radius: 10px;
-        background: #eef2ff; color: #4f46e5;
+        background: rgba(16, 67, 159, 0.06); color: var(--primary);
         display: flex; align-items: center; justify-content: center;
         font-size: 16px; flex-shrink: 0;
         transition: transform 0.3s ease;
@@ -359,7 +377,7 @@ if ($staff_id) {
     /* ── Admin Notification Toast ── */
     .admin-notif-toast {
         position: fixed; bottom: 28px; right: 28px; z-index: 99998;
-        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
         color: white; border-radius: 18px;
         padding: 18px 22px; max-width: 380px;
         box-shadow: 0 16px 40px rgba(79,70,229,0.35);
@@ -657,20 +675,21 @@ if ($staff_id) {
     .dashboard-modal-list li:last-child {
         border-bottom: none;
     }
-    
+
     /* ── Animated Scorecards CSS ── */
     .premium-scorecard {
         position: relative;
         overflow: hidden;
         color: white;
-        padding: 24px;
+        padding: 26px 24px;
         border-radius: 24px;
-        box-shadow: 0 15px 35px -5px rgba(0,0,0,0.2);
+        box-shadow: 0 12px 30px -10px rgba(15, 23, 42, 0.15);
         display: flex;
         flex-direction: column;
         justify-content: center;
         z-index: 1;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.12);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .premium-scorecard:hover {
         transform: translateY(-5px) scale(1.02);
@@ -699,6 +718,7 @@ if ($staff_id) {
         0% { background-position: 100% 0; }
         100% { background-position: 0 0; }
     }
+
     .premium-scorecard.purple { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
     .premium-scorecard.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
     .premium-scorecard.orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
@@ -773,7 +793,7 @@ if ($staff_id) {
 
     <!-- Live Time & Date Widgets -->
     <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 30px;">
-        <div class="widget-card time-widget" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 24px 30px; border-radius: 24px; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div class="widget-card time-widget" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 24px 30px; border-radius: 24px; box-shadow: 0 15px 30px -5px rgba(16, 67, 159, 0.3); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
             <div style="position: absolute; bottom: -40px; left: 10px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
             
@@ -951,7 +971,7 @@ if ($staff_id) {
     
     <div class="recent-table" style="margin-top: 30px;">
         <h3 style="display:flex;align-items:center;gap:10px;">
-            <div style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);">🕒</div>
+            <div style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(16, 67, 159, 0.2);">🕒</div>
             Your Recent Attendance
         </h3>
         
@@ -1425,7 +1445,7 @@ if ($staff_id) {
                     <div style="flex:1;min-width:200px;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
                             <strong style="font-size:15px;color:#1e293b;"><?php echo htmlspecialchars($fw['full_name']); ?></strong>
-                            <span style="font-size:11px;font-weight:700;background:#eef2ff;color:#4f46e5;padding:2px 8px;border-radius:99px;"><?php echo htmlspecialchars($fw['branch'] ?: 'No Branch'); ?></span>
+                            <span style="font-size:11px;font-weight:700;background:rgba(16,67,159,0.06);color:#10439f;padding:2px 8px;border-radius:99px;"><?php echo htmlspecialchars($fw['branch'] ?: 'No Branch'); ?></span>
                             <span style="font-size:11px;font-weight:700;background:<?php echo $fw['is_read'] ? '#f0fdf4' : '#fef2f2'; ?>;color:<?php echo $fw['is_read'] ? '#166534' : '#ef4444'; ?>;padding:2px 8px;border-radius:99px;"><?php echo $fw['is_read'] ? 'READ' : 'UNREAD'; ?></span>
                         </div>
                         <p style="margin:0;color:#334155;font-size:14px;line-height:1.6;"><?php echo nl2br(htmlspecialchars($fw['comment'])); ?></p>
@@ -1533,7 +1553,7 @@ if ($staff_id) {
                 <!-- Table -->
                 <div class="table-scroll" style="border-radius:16px;overflow:hidden;border:1px solid #e0e7ff;">
                 <table id="attendanceTable" class="responsive-table">
-                    <thead style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
+                    <thead style="background:linear-gradient(135deg, var(--primary), var(--primary-light));">
                         <tr>
                             <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Staff Name</th>
                             <th style="color:white;padding:14px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Staff ID</th>
@@ -1566,7 +1586,7 @@ if ($staff_id) {
                             if ($row['photo']) echo "<img src='{$row['photo']}' class='staff-thumb'>";
                             echo "<strong>".htmlspecialchars($row['full_name'])."</strong></td>";
                             echo "<td data-label='Staff ID' style='padding:12px 16px;'><code style='background:#f1f5f9;padding:2px 7px;border-radius:6px;font-size:13px;'>".htmlspecialchars($row['staff_id'])."</code></td>";
-                            echo "<td data-label='Branch' style='padding:12px 16px;'><span style='background:#eef2ff;color:#4f46e5;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;'>{$branch_disp}</span></td>";
+                            echo "<td data-label='Branch' style='padding:12px 16px;'><span style='background:rgba(16,67,159,0.06);color:#10439f;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;'>{$branch_disp}</span></td>";
                             echo "<td data-label='Clock In' style='padding:12px 16px;font-size:13px;'>".date('M j, g:i A', strtotime($row['clock_in']))."</td>";
                             $clockOutLabel = '<span style="color:#94a3b8;">—</span>';
                             if (!empty($row['clock_out'])) {
@@ -1630,10 +1650,10 @@ if ($staff_id) {
                     datasets: [{
                         label: 'Staff Present',
                         data: <?php echo json_encode($chart_data); ?>,
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderColor: '#10439f',
+                        backgroundColor: 'rgba(16, 67, 159, 0.1)',
                         borderWidth: 3,
-                        pointBackgroundColor: '#4f46e5',
+                        pointBackgroundColor: '#10439f',
                         pointBorderColor: '#fff',
                         pointRadius: 5,
                         fill: true,
@@ -2174,7 +2194,7 @@ if ($staff_id) {
                         <div style="flex:1;min-width:200px;">
                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
                                 <strong style="font-size:15px;color:#1e293b;">${fw.full_name || 'Unknown'}</strong>
-                                <span style="font-size:11px;font-weight:700;background:#eef2ff;color:#4f46e5;padding:2px 8px;border-radius:99px;">${fw.branch || 'No Branch'}</span>
+                                <span style="font-size:11px;font-weight:700;background:rgba(16,67,159,0.06);color:#10439f;padding:2px 8px;border-radius:99px;">${fw.branch || 'No Branch'}</span>
                                 <span style="font-size:11px;font-weight:700;background:${fw.is_read == 1 ? '#f0fdf4' : '#fef2f2'};color:${fw.is_read == 1 ? '#166534' : '#ef4444'};padding:2px 8px;border-radius:99px;">${fw.is_read == 1 ? 'READ' : 'UNREAD'}</span>
                             </div>
                             <p style="margin:0;color:#334155;font-size:14px;line-height:1.6;">${fw.comment.replace(/\n/g,'<br>')}</p>
