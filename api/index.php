@@ -171,7 +171,7 @@ body {
 .panel-left .logo-wrap img {
     max-width: 200px;
     width: 100%;
-    filter: brightness(0) invert(1);
+    display: block;
 }
 
 .panel-left h1 {
@@ -433,7 +433,7 @@ input:-webkit-autofill:focus {
 <div class="panel-left">
     <div class="brand-content">
         <div class="logo-wrap">
-            <img src="/asset/img/tds_logo.png" alt="TDS Logo">
+            <img src="/asset/img/tds_logo.png" alt="TDS Logo" onerror="this.parentElement.innerHTML='<div style=\'color:white;font-size:22px;font-weight:800;letter-spacing:1px;\'>TDS HITECH</div>'">
         </div>
         <h1>Smart Attendance <span>Management</span> System</h1>
         <p class="tagline">Track, manage, and analyse your workforce attendance with real-time precision and enterprise-grade security.</p>

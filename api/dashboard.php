@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include(__DIR__ . "/includes/config.php");
 
 // Redirect to login if not authenticated
@@ -681,50 +681,112 @@ if ($staff_id) {
         position: relative;
         overflow: hidden;
         color: white;
-        padding: 26px 24px;
-        border-radius: 24px;
-        box-shadow: 0 12px 30px -10px rgba(15, 23, 42, 0.15);
+        padding: 24px 22px 22px;
+        border-radius: 20px;
+        box-shadow: 0 10px 36px -8px rgba(15, 23, 42, 0.22);
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
+        min-height: 130px;
         z-index: 1;
-        border: 1px solid rgba(255,255,255,0.12);
-        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255,255,255,0.15);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: default;
     }
     .premium-scorecard:hover {
-        transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 20px 40px -5px rgba(0,0,0,0.3);
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 24px 48px -8px rgba(0,0,0,0.32);
     }
+    /* Glossy top-left shine */
     .premium-scorecard::before {
         content: '';
         position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
-        z-index: -1;
+        top: -30px; left: -30px;
+        width: 130px; height: 130px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        z-index: 0;
+        pointer-events: none;
+    }
+    /* Bottom right circle decoration */
+    .premium-scorecard::after {
+        content: '';
+        position: absolute;
+        bottom: -25px; right: -20px;
+        width: 100px; height: 100px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        z-index: 0;
+        pointer-events: none;
     }
     .premium-scorecard .animated-graph {
         position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 60px;
-        z-index: -1;
-        opacity: 0.3;
+        bottom: 0; left: 0; right: 0;
+        height: 52px;
+        z-index: 0;
+        opacity: 0.18;
         background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,20 L0,10 C10,15 20,5 30,10 C40,15 50,2 60,10 C70,18 80,8 90,12 C95,14 100,10 100,10 L100,20 Z" fill="white"/></svg>');
         background-size: 200% 100%;
-        animation: wave-animation 4s linear infinite;
+        animation: wave-animation 5s linear infinite;
     }
     @keyframes wave-animation {
-        0% { background-position: 100% 0; }
+        0%   { background-position: 100% 0; }
         100% { background-position: 0 0; }
     }
 
-    .premium-scorecard.purple { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
-    .premium-scorecard.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-    .premium-scorecard.orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-    .premium-scorecard.pink { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); }
-    .premium-scorecard.blue { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-    .premium-scorecard.red { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+    /* Card top row: icon + label */
+    .scorecard-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+        z-index: 2;
+        margin-bottom: 12px;
+    }
+    .scorecard-icon {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .scorecard-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.9px;
+        opacity: 0.88;
+        line-height: 1.3;
+    }
+    /* Big value */
+    .scorecard-value {
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: -1px;
+        line-height: 1;
+        position: relative;
+        z-index: 2;
+    }
+    /* Sub-caption */
+    .scorecard-sub {
+        font-size: 11.5px;
+        opacity: 0.7;
+        font-weight: 600;
+        margin-top: 4px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .premium-scorecard.purple { background: linear-gradient(140deg, #8b5cf6 0%, #6d28d9 100%); }
+    .premium-scorecard.green  { background: linear-gradient(140deg, #10b981 0%, #047857 100%); }
+    .premium-scorecard.orange { background: linear-gradient(140deg, #f59e0b 0%, #b45309 100%); }
+    .premium-scorecard.pink   { background: linear-gradient(140deg, #ec4899 0%, #9d174d 100%); }
+    .premium-scorecard.blue   { background: linear-gradient(140deg, #3b82f6 0%, #1e40af 100%); }
+    .premium-scorecard.red    { background: linear-gradient(140deg, #ef4444 0%, #991b1b 100%); }
+    .premium-scorecard.teal   { background: linear-gradient(140deg, #14b8a6 0%, #0f766e 100%); }
+
     
     /* ── Accordion CSS ── */
     .accordion-btn {
@@ -1285,55 +1347,68 @@ if ($staff_id) {
         }
     }
     ?>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px;">
         <div class="premium-scorecard blue clickable-card" onclick="openDashboardDetailsModal('total_staff')">
             <div class="animated-graph"></div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">👥</span> Total Staff
+            <div class="scorecard-top">
+                <div class="scorecard-icon">👥</div>
+                <div class="scorecard-label">Total Staff</div>
             </div>
-            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$total_staff; ?>">0</div>
+            <div class="scorecard-value animate-number" data-target="<?php echo (int)$total_staff; ?>">0</div>
+            <div class="scorecard-sub">Click to view all staff</div>
         </div>
-        
+
         <div class="premium-scorecard green clickable-card" onclick="openDashboardDetailsModal('present_today')">
-            <div class="animated-graph" style="animation-delay: -1s;"></div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">✅</span> Present Today
+            <div class="animated-graph" style="animation-delay:-1s"></div>
+            <div class="scorecard-top">
+                <div class="scorecard-icon">✅</div>
+                <div class="scorecard-label">Present Today</div>
             </div>
-            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$present_today; ?>">0</div>
+            <div class="scorecard-value animate-number" data-target="<?php echo (int)$present_today; ?>">0</div>
+            <div class="scorecard-sub">Clocked in today</div>
         </div>
-        
+
         <div class="premium-scorecard red clickable-card" onclick="openDashboardDetailsModal('absent_today')">
-            <div class="animated-graph" style="animation-delay: -2s;"></div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">❌</span> Absent Today
+            <div class="animated-graph" style="animation-delay:-2s"></div>
+            <div class="scorecard-top">
+                <div class="scorecard-icon">❌</div>
+                <div class="scorecard-label">Absent Today</div>
             </div>
-            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$absent_today; ?>">0</div>
+            <div class="scorecard-value animate-number" data-target="<?php echo (int)$absent_today; ?>">0</div>
+            <div class="scorecard-sub">Not yet clocked in</div>
         </div>
-        
+
         <div class="premium-scorecard orange clickable-card" onclick="openDashboardDetailsModal('total_branches')">
-            <div class="animated-graph" style="animation-delay: -0.5s;"></div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">🏢</span> Total Branches
+            <div class="animated-graph" style="animation-delay:-0.5s"></div>
+            <div class="scorecard-top">
+                <div class="scorecard-icon">🏢</div>
+                <div class="scorecard-label">Total Branches</div>
             </div>
-            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo count($branch_scores); ?>">0</div>
+            <div class="scorecard-value animate-number" data-target="<?php echo count($branch_scores); ?>">0</div>
+            <div class="scorecard-sub">Active office locations</div>
         </div>
-        
+
         <div class="premium-scorecard purple">
-            <div class="animated-graph" style="animation-delay: -1.5s;"></div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⏱️</span> Total Hours Today
+            <div class="animated-graph" style="animation-delay:-1.5s"></div>
+            <div class="scorecard-top">
+                <div class="scorecard-icon">⏱️</div>
+                <div class="scorecard-label">Total Hours Today</div>
             </div>
-            <div style="font-size: 28px; font-weight: 800;" class="animate-hours" data-target="<?php echo (float)$admin_th_today; ?>">0min</div>
+            <div class="scorecard-value animate-hours" data-target="<?php echo (float)$admin_th_today; ?>">0min</div>
+            <div class="scorecard-sub">Collective work hours</div>
         </div>
-        
-        <div class="premium-scorecard <?php echo $missed_yest > 0 ? 'pink' : 'green'; ?>">
-            <div class="animated-graph" style="animation-delay: -2.5s;"></div>
-            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                <span style="background: rgba(255,255,255,0.2); padding: 4px; border-radius: 8px;">⚠️</span> Missed Clock-Out (Yest.)
+
+        <div class="premium-scorecard <?php echo $missed_yest > 0 ? 'pink' : 'teal'; ?>">
+            <div class="animated-graph" style="animation-delay:-2.5s"></div>
+            <div class="scorecard-top">
+                <div class="scorecard-icon">⚠️</div>
+                <div class="scorecard-label">Missed Clock-Out (Yest.)</div>
             </div>
-            <div style="font-size: 28px; font-weight: 800;" class="animate-number" data-target="<?php echo (int)$missed_yest; ?>">0</div>
+            <div class="scorecard-value animate-number" data-target="<?php echo (int)$missed_yest; ?>">0</div>
+            <div class="scorecard-sub"><?php echo $missed_yest > 0 ? 'Needs attention' : 'All clear yesterday'; ?></div>
         </div>
     </div>
+
 
     <!-- Chart.js Visualization -->
     <div style="background: white; border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border);">
