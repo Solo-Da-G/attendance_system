@@ -1302,3 +1302,338 @@ body.login-page {
 
   a[href]::after { content: "" !important; }
 }
+
+/* ============================================================
+   MODERN DASHBOARD UI SYSTEM — Scorecards, Scoreboard, Billboard
+   ============================================================ */
+
+/* ---------- Premium Scorecards ---------- */
+.premium-scorecard {
+  position: relative;
+  overflow: hidden;
+  color: white;
+  padding: 24px 22px 22px;
+  border-radius: 24px;
+  box-shadow: 0 14px 35px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(255,255,255,0.15) inset;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+  z-index: 1;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  cursor: default;
+}
+
+.premium-scorecard:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 24px 50px -10px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(255,255,255,0.3) inset;
+}
+
+/* Glossy ambient highlights */
+.premium-scorecard::before {
+  content: '';
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.premium-scorecard::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; right: -25px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.premium-scorecard .animated-graph {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 54px;
+  z-index: 0;
+  opacity: 0.22;
+  background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,20 L0,10 C10,15 20,5 30,10 C40,15 50,2 60,10 C70,18 80,8 90,12 C95,14 100,10 100,10 L100,20 Z" fill="white"/></svg>');
+  background-size: 200% 100%;
+  animation: wave-animation 6s linear infinite;
+}
+
+@keyframes wave-animation {
+  0%   { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.scorecard-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 12px;
+}
+
+.scorecard-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.scorecard-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.92;
+  line-height: 1.3;
+}
+
+.scorecard-value {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.scorecard-sub {
+  font-size: 12px;
+  opacity: 0.8;
+  font-weight: 600;
+  margin-top: 6px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Card color gradients */
+.premium-scorecard.purple { background: linear-gradient(140deg, #8b5cf6 0%, #6d28d9 100%); }
+.premium-scorecard.green  { background: linear-gradient(140deg, #10b981 0%, #047857 100%); }
+.premium-scorecard.orange { background: linear-gradient(140deg, #f59e0b 0%, #b45309 100%); }
+.premium-scorecard.pink   { background: linear-gradient(140deg, #ec4899 0%, #9d174d 100%); }
+.premium-scorecard.blue   { background: linear-gradient(140deg, #2563eb 0%, #1e40af 100%); }
+.premium-scorecard.red    { background: linear-gradient(140deg, #ef4444 0%, #991b1b 100%); }
+.premium-scorecard.teal   { background: linear-gradient(140deg, #14b8a6 0%, #0f766e 100%); }
+
+/* ---------- Branch Scoreboard (Rigid Grid Layout) ---------- */
+.scorecard-section {
+  margin-bottom: 36px;
+}
+
+.scorecard-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scorecard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.scorecard-grid::-webkit-scrollbar { width: 6px; }
+.scorecard-grid::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 99px; }
+
+.branch-score-card {
+  background: #ffffff;
+  border: 1px solid #e0e7ff;
+  border-radius: 20px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s;
+}
+
+.branch-score-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.16);
+  border-color: #c7d2fe;
+}
+
+.branch-score-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, var(--primary), #2563eb, #8b5cf6);
+  border-radius: 20px 20px 0 0;
+}
+
+.branch-score-card.no-branch::before {
+  background: linear-gradient(90deg, #94a3b8, #64748b);
+}
+
+.branch-score-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.branch-score-name {
+  font-weight: 800;
+  font-size: 15px;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.branch-score-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.branch-stat {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.branch-stat:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.branch-stat-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.branch-stat-value {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.branch-stat-value.in-val  { color: #10b981; }
+.branch-stat-value.out-val { color: #2563eb; }
+.branch-stat-value.wk-val  { color: #8b5cf6; }
+
+.branch-stat-sub {
+  font-size: 10.5px;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ---------- Billboard Broadcast Console ---------- */
+.broadcast-panel {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%);
+  border: 1.5px solid #c4b5fd;
+  border-radius: 26px;
+  padding: 26px 30px;
+  margin-bottom: 32px;
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.broadcast-panel h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #4c1d95;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.broadcast-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.broadcast-target {
+  flex: 0 0 240px;
+  min-width: 170px;
+  padding: 14px 18px;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #ffffff;
+  color: #4c1d95;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.06);
+  transition: all 0.2s ease;
+}
+
+.broadcast-msg {
+  flex: 1;
+  min-width: 220px;
+  padding: 14px 18px;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #ffffff;
+  outline: none;
+  resize: vertical;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.06);
+  transition: all 0.2s ease;
+}
+
+.broadcast-msg:focus, .broadcast-target:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+}
+
+.broadcast-send-btn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.broadcast-send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.45);
+}
+
+.broadcast-send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+

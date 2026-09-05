@@ -246,22 +246,89 @@ body {
 
 /* ── RIGHT PANEL ── */
 .panel-right {
-    flex: 0.9;
+    flex: 1.1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 40px;
-    background: #f8faff;
+    padding: 50px 40px;
+    background: radial-gradient(circle at 80% 20%, #eef2ff 0%, #f8faff 60%, #f1f5f9 100%);
     min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-container-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    max-width: 900px;
+    width: 100%;
+    z-index: 2;
+}
+
+.login-mascot-box {
+    flex: 0.9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    text-align: center;
+}
+
+.login-mascot-img-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    filter: drop-shadow(0 20px 30px rgba(16, 67, 159, 0.18));
+    animation: floatMascot 4s ease-in-out infinite;
+}
+
+@keyframes floatMascot {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.login-mascot-img-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 24px;
+}
+
+.mascot-pill-badge {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(16, 67, 159, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 99px;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #10439f;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    animation: badgePulse 3s ease-in-out infinite alternate;
+}
+.mascot-pill-badge.top-right { top: 10px; right: -20px; }
+.mascot-pill-badge.bottom-left { bottom: 20px; left: -20px; animation-delay: 1.5s; }
+
+@keyframes badgePulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
 }
 
 .login-card {
     background: #ffffff;
-    border-radius: 24px;
+    border-radius: 28px;
     padding: 44px 40px;
     width: 100%;
-    max-width: 400px;
-    box-shadow: 0 10px 50px -12px rgba(16, 67, 159, 0.15), 0 0 0 1px rgba(16,67,159,0.06);
+    max-width: 420px;
+    flex: 1;
+    box-shadow: 0 20px 60px -15px rgba(16, 67, 159, 0.15), 0 0 0 1px rgba(16,67,159,0.06);
     animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 @keyframes slideIn {
@@ -418,12 +485,27 @@ input:-webkit-autofill:focus {
 }
 
 /* Responsive */
+@media (max-width: 992px) {
+    .login-container-wrapper {
+        flex-direction: column-reverse;
+        gap: 30px;
+    }
+    .login-mascot-box {
+        margin-top: 10px;
+    }
+    .login-mascot-img-wrap {
+        max-width: 220px;
+    }
+    .mascot-pill-badge.top-right { top: 0px; right: -10px; font-size: 11px; }
+    .mascot-pill-badge.bottom-left { bottom: 0px; left: -10px; font-size: 11px; }
+}
+
 @media (max-width: 768px) {
     body { flex-direction: column; }
     .panel-left { min-height: auto; padding: 40px 24px; }
     .panel-left .features { display: none; }
-    .panel-right { padding: 30px 20px; }
-    .login-card { padding: 32px 24px; }
+    .panel-right { padding: 35px 20px; }
+    .login-card { padding: 32px 24px; max-width: 100%; }
 }
 </style>
 </head>
@@ -465,44 +547,55 @@ input:-webkit-autofill:focus {
     <div class="wave"></div>
 </div>
 
-<!-- RIGHT PANEL: Login Form -->
+<!-- RIGHT PANEL: Login Form & Mascot -->
 <div class="panel-right">
-    <div class="login-card">
-        <div class="card-header">
-            <div class="greeting-badge">🏢 TDS HITECH SOLUTIONS</div>
-            <h2>Welcome Back 👋</h2>
-            <p>Sign in to access your dashboard</p>
+    <div class="login-container-wrapper">
+        <div class="login-card">
+            <div class="card-header">
+                <div class="greeting-badge">🏢 TDS HITECH SOLUTIONS</div>
+                <h2>Welcome Back 👋</h2>
+                <p>Sign in to access your dashboard</p>
+            </div>
+
+            <form method="POST" action="index.php" autocomplete="off">
+                <label class="input-label" for="username">Username or Staff ID</label>
+                <div class="input-group">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </span>
+                    <input type="text" id="username" name="username" placeholder="Enter username or staff ID" required>
+                </div>
+
+                <label class="input-label" for="passwordField">Password</label>
+                <div class="input-group">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </span>
+                    <input type="password" id="passwordField" name="password" placeholder="Enter your password" required>
+                    <div class="toggle-password" onclick="togglePass()">
+                        <svg id="eyeIcon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    </div>
+                </div>
+
+                <div class="form-footer">
+                    <a href="forgot_password.php" class="forgot-pass">Forgot Password?</a>
+                </div>
+
+                <button type="submit" name="login" class="btn-login">Sign In →</button>
+            </form>
+
+            <?php if (!empty($idle_notice)) echo "<p class='error-msg' style='background:rgba(59,130,246,0.08);color:#1e40af;border-color:rgba(59,130,246,0.16);'>⏱ $idle_notice</p>"; ?>
+            <?php if (!empty($error)) echo "<p class='error-msg'>⚠ $error</p>"; ?>
         </div>
 
-        <form method="POST" action="index.php" autocomplete="off">
-            <label class="input-label" for="username">Username or Staff ID</label>
-            <div class="input-group">
-                <span class="input-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </span>
-                <input type="text" id="username" name="username" placeholder="Enter username or staff ID" required>
+        <!-- 3D Mascot Character with Clock -->
+        <div class="login-mascot-box">
+            <div class="login-mascot-img-wrap">
+                <div class="mascot-pill-badge top-right">⏱️ Always On Time</div>
+                <img src="/asset/img/cartoon_person_clock.png" alt="Smart Attendance Clock Character">
+                <div class="mascot-pill-badge bottom-left">🔒 Real-time Verification</div>
             </div>
-
-            <label class="input-label" for="passwordField">Password</label>
-            <div class="input-group">
-                <span class="input-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </span>
-                <input type="password" id="passwordField" name="password" placeholder="Enter your password" required>
-                <div class="toggle-password" onclick="togglePass()">
-                    <svg id="eyeIcon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                </div>
-            </div>
-
-            <div class="form-footer">
-                <a href="forgot_password.php" class="forgot-pass">Forgot Password?</a>
-            </div>
-
-            <button type="submit" name="login" class="btn-login">Sign In →</button>
-        </form>
-
-        <?php if (!empty($idle_notice)) echo "<p class='error-msg' style='background:rgba(59,130,246,0.08);color:#1e40af;border-color:rgba(59,130,246,0.16);'>⏱ $idle_notice</p>"; ?>
-        <?php if (!empty($error)) echo "<p class='error-msg'>⚠ $error</p>"; ?>
+        </div>
     </div>
 </div>
 

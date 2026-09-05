@@ -1416,21 +1416,31 @@ if ($staff_id) {
         <canvas id="attendanceChart" height="80"></canvas>
     </div>
 
-    <!-- ── Branch Scorecard ── -->
+    <!-- ── Branch Scoreboard (Rigid Grid Layout) ── -->
     <div class="scorecard-section">
         <div class="scorecard-title">
-            🏆 Branch Attendance Scorecard
-            <span style="font-size:12px;font-weight:600;color:#6366f1;background:#eef2ff;padding:4px 10px;border-radius:99px;">
-                <?php echo count($branch_scores); ?> branch<?php echo count($branch_scores) !== 1 ? 'es' : ''; ?>
+            🏆 Branch Attendance Scoreboard
+            <span style="font-size:12px;font-weight:700;color:#4f46e5;background:#eef2ff;padding:5px 12px;border-radius:99px;border:1px solid #c7d2fe;">
+                ⚡ <?php echo count($branch_scores); ?> Active Location<?php echo count($branch_scores) !== 1 ? 's' : ''; ?>
             </span>
         </div>
         <div class="scorecard-grid" id="scorecardGrid">
-        <?php foreach ($branch_scores as $bs): ?>
+        <?php 
+        $rank = 1;
+        foreach ($branch_scores as $bs): 
+            $rank_badge = $rank === 1 ? '🥇 #1 Top' : ($rank === 2 ? '🥈 #2' : ($rank === 3 ? '🥉 #3' : '#'.$rank));
+        ?>
             <div class="branch-score-card <?php echo $bs['key'] === '__NO_BRANCH__' ? 'no-branch' : ''; ?>"
                  data-branch="<?php echo htmlspecialchars(strtoupper($bs['name'])); ?>">
-                <div class="branch-score-name" title="<?php echo htmlspecialchars($bs['name']); ?>">
-                    <?php echo htmlspecialchars($bs['name']); ?>
+                <div class="branch-score-header">
+                    <div class="branch-score-name" title="<?php echo htmlspecialchars($bs['name']); ?>">
+                        <span>🏢</span> <?php echo htmlspecialchars($bs['name']); ?>
+                    </div>
+                    <span style="font-size:11px;font-weight:800;background:rgba(16,67,159,0.08);color:#10439f;padding:3px 10px;border-radius:99px;">
+                        <?php echo $rank_badge; ?>
+                    </span>
                 </div>
+
                 <div class="branch-score-stats">
                     <div class="branch-stat clickable-card" onclick="openDashboardDetailsModal('branch_today_in', '<?php echo addslashes($bs['key']); ?>')">
                         <div class="branch-stat-label">Today In</div>
@@ -1454,13 +1464,25 @@ if ($staff_id) {
                     </div>
                 </div>
             </div>
-        <?php endforeach; ?>
+        <?php 
+        $rank++;
+        endforeach; 
+        ?>
         </div>
     </div>
 
     <!-- ── Admin Broadcast Message ── -->
+    <!-- ── Admin Broadcast Billboard Panel ── -->
     <div class="broadcast-panel">
-        <h3>📢 Send Notification to Staff</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <h3 style="margin:0;">📢 Command Broadcast Billboard</h3>
+            <span style="font-size:11.5px;font-weight:700;background:rgba(124,58,237,0.12);color:#6d28d9;padding:4px 12px;border-radius:99px;">
+                📡 Instant Notification System
+            </span>
+        </div>
+        <p style="font-size:13px;color:#5b21b6;margin-top:-6px;margin-bottom:16px;font-weight:600;">
+            Broadcast real-time announcements to staff terminals across all branches.
+        </p>
         <div class="broadcast-row">
             <select id="broadcastTarget" class="broadcast-target">
                 <option value="all">📣 Everyone (All Staff)</option>
@@ -1471,9 +1493,9 @@ if ($staff_id) {
                 <?php endforeach; ?>
             </select>
             <textarea id="broadcastMsg" class="broadcast-msg" rows="2"
-                placeholder="Type your message here… it will pop up as a notification for the selected staff."></textarea>
+                placeholder="Type broadcast message here… it will pop up on active staff screens immediately."></textarea>
             <button class="broadcast-send-btn" id="broadcastSendBtn" onclick="sendBroadcast()">
-                🚀 Send Now
+                🚀 Send Broadcast
             </button>
         </div>
         <div id="broadcastStatus" class="broadcast-status"></div>
