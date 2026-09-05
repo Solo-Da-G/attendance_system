@@ -1307,66 +1307,45 @@ body.login-page {
    MODERN DASHBOARD UI SYSTEM — Scorecards, Scoreboard, Billboard
    ============================================================ */
 
-/* ---------- Premium Scorecards ---------- */
+/* ---------- Professional Corporate Scorecards ---------- */
 .premium-scorecard {
   position: relative;
-  overflow: hidden;
-  color: white;
-  padding: 24px 22px 22px;
-  border-radius: 24px;
-  box-shadow: 0 14px 35px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(255,255,255,0.15) inset;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 22px 20px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 140px;
+  min-height: 130px;
   z-index: 1;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
-  cursor: default;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
 .premium-scorecard:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 24px 50px -10px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(255,255,255,0.3) inset;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
 }
 
-/* Glossy ambient highlights */
 .premium-scorecard::before {
   content: '';
   position: absolute;
-  top: -40px; left: -40px;
-  width: 140px; height: 140px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 70%);
-  z-index: 0;
-  pointer-events: none;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: #94a3b8;
+  border-radius: 18px 18px 0 0;
 }
 
-.premium-scorecard::after {
-  content: '';
-  position: absolute;
-  bottom: -30px; right: -25px;
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%);
-  z-index: 0;
-  pointer-events: none;
-}
-
-.premium-scorecard .animated-graph {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 54px;
-  z-index: 0;
-  opacity: 0.22;
-  background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,20 L0,10 C10,15 20,5 30,10 C40,15 50,2 60,10 C70,18 80,8 90,12 C95,14 100,10 100,10 L100,20 Z" fill="white"/></svg>');
-  background-size: 200% 100%;
-  animation: wave-animation 6s linear infinite;
-}
-
-@keyframes wave-animation {
-  0%   { background-position: 100% 0; }
-  100% { background-position: 0 0; }
-}
+.premium-scorecard.blue::before   { background: #2563eb; }
+.premium-scorecard.green::before  { background: #10b981; }
+.premium-scorecard.red::before    { background: #ef4444; }
+.premium-scorecard.orange::before { background: #f59e0b; }
+.premium-scorecard.purple::before { background: #8b5cf6; }
+.premium-scorecard.teal::before   { background: #14b8a6; }
+.premium-scorecard.pink::before   { background: #ec4899; }
 
 .scorecard-top {
   display: flex;
@@ -1378,52 +1357,46 @@ body.login-page {
 }
 
 .scorecard-icon {
-  width: 42px; height: 42px;
+  width: 40px; height: 40px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(8px);
+  background: #f1f5f9;
   display: flex; align-items: center; justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  border: 1px solid #e2e8f0;
 }
+
+.premium-scorecard.blue .scorecard-icon   { background: #dbeafe; border-color: #bfdbfe; }
+.premium-scorecard.green .scorecard-icon  { background: #dcfce7; border-color: #bbf7d0; }
+.premium-scorecard.red .scorecard-icon    { background: #fee2e2; border-color: #fecaca; }
+.premium-scorecard.orange .scorecard-icon { background: #fef3c7; border-color: #fde68a; }
+.premium-scorecard.purple .scorecard-icon { background: #f3e8ff; border-color: #e9d5ff; }
+.premium-scorecard.teal .scorecard-icon   { background: #ccfbf1; border-color: #99f6e4; }
+.premium-scorecard.pink .scorecard-icon   { background: #fce7f3; border-color: #fbcfe8; }
 
 .scorecard-label {
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  opacity: 0.92;
+  letter-spacing: 0.8px;
+  color: #475569;
   line-height: 1.3;
 }
 
 .scorecard-value {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 900;
-  letter-spacing: -1px;
-  line-height: 1;
-  position: relative;
-  z-index: 2;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  color: #0f172a;
+  margin: 4px 0 6px;
 }
 
 .scorecard-sub {
   font-size: 12px;
-  opacity: 0.8;
+  color: #64748b;
   font-weight: 600;
-  margin-top: 6px;
-  position: relative;
-  z-index: 2;
 }
-
-/* Card color gradients */
-.premium-scorecard.purple { background: linear-gradient(140deg, #8b5cf6 0%, #6d28d9 100%); }
-.premium-scorecard.green  { background: linear-gradient(140deg, #10b981 0%, #047857 100%); }
-.premium-scorecard.orange { background: linear-gradient(140deg, #f59e0b 0%, #b45309 100%); }
-.premium-scorecard.pink   { background: linear-gradient(140deg, #ec4899 0%, #9d174d 100%); }
-.premium-scorecard.blue   { background: linear-gradient(140deg, #2563eb 0%, #1e40af 100%); }
-.premium-scorecard.red    { background: linear-gradient(140deg, #ef4444 0%, #991b1b 100%); }
-.premium-scorecard.teal   { background: linear-gradient(140deg, #14b8a6 0%, #0f766e 100%); }
 
 /* ---------- Branch Scoreboard (Rigid Grid Layout) ---------- */
 .scorecard-section {
