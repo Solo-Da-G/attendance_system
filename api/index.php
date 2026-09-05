@@ -116,132 +116,202 @@ body {
 
 /* ── LEFT PANEL ── */
 .panel-left {
-    flex: 1.1;
-    background: linear-gradient(145deg, #0a1f5c 0%, var(--primary) 50%, #1e3a8a 100%);
+    flex: 1.25;
+    background: linear-gradient(145deg, #020617 0%, #0a1f5c 38%, #10439f 75%, #1e1b4b 100%);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 60px 50px;
+    padding: 60px 54px;
     position: relative;
     overflow: hidden;
     min-height: 100vh;
 }
 
-/* Animated background circles */
+/* Dynamic background glowing circles & mesh grid */
 .panel-left::before {
     content: '';
     position: absolute;
-    width: 500px; height: 500px;
+    width: 600px; height: 600px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(249,168,37,0.25) 0%, transparent 70%);
-    top: -150px; right: -150px;
+    background: radial-gradient(circle, rgba(249,168,37,0.22) 0%, transparent 68%);
+    top: -200px; right: -200px;
     animation: pulse 8s ease-in-out infinite;
+    pointer-events: none;
 }
 .panel-left::after {
     content: '';
     position: absolute;
-    width: 400px; height: 400px;
+    width: 500px; height: 500px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(37,99,235,0.3) 0%, transparent 70%);
-    bottom: -100px; left: -100px;
-    animation: pulse 10s ease-in-out infinite reverse;
+    background: radial-gradient(circle, rgba(37,99,235,0.28) 0%, transparent 70%);
+    bottom: -150px; left: -150px;
+    animation: pulse 11s ease-in-out infinite reverse;
+    pointer-events: none;
 }
+
+.mesh-grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 28px 28px;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
 @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 0.8; }
-    50%       { transform: scale(1.15); opacity: 1; }
+    50%       { transform: scale(1.18); opacity: 1; }
 }
 
 .panel-left .brand-content {
     position: relative;
     z-index: 2;
     text-align: center;
-    max-width: 400px;
+    max-width: 440px;
+    width: 100%;
 }
+
+.enterprise-top-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    padding: 6px 16px;
+    border-radius: 99px;
+    color: #fbbf24;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
 .panel-left .logo-wrap {
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 20px;
-    padding: 20px 32px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 22px;
+    padding: 20px 36px;
     display: inline-block;
-    margin-bottom: 40px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    margin-bottom: 32px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.panel-left .logo-wrap:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
 }
 .panel-left .logo-wrap img {
-    max-width: 200px;
+    max-width: 210px;
     width: 100%;
     display: block;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
 }
 
 .panel-left h1 {
     color: #ffffff;
-    font-size: 30px;
+    font-size: 32px;
     font-weight: 800;
-    line-height: 1.3;
+    line-height: 1.25;
     margin-bottom: 16px;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.6px;
 }
-.panel-left h1 span {
-    color: var(--accent-yellow);
+.panel-left h1 span.gradient-text {
+    background: linear-gradient(135deg, #fde047 0%, #f59e0b 60%, #fbbf24 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 .panel-left p.tagline {
-    color: rgba(255,255,255,0.75);
-    font-size: 15.5px;
+    color: rgba(255,255,255,0.85);
+    font-size: 15px;
     font-weight: 500;
-    line-height: 1.7;
-    margin-bottom: 44px;
+    line-height: 1.65;
+    margin-bottom: 36px;
 }
 
-/* Feature bullets */
+/* Feature bullet cards */
 .features {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     text-align: left;
+    margin-bottom: 36px;
 }
 .feature-item {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 14px;
-    padding: 14px 18px;
-    backdrop-filter: blur(6px);
-    transition: background 0.3s;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 16px;
+    padding: 14px 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
 }
 .feature-item:hover {
-    background: rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.32);
+    transform: translateX(6px);
 }
 .feature-icon {
-    width: 40px; height: 40px;
-    border-radius: 10px;
+    width: 44px; height: 44px;
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
     flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.25);
 }
-.feature-icon.blue  { background: rgba(37,99,235,0.35); }
-.feature-icon.red   { background: rgba(229,57,53,0.35); }
-.feature-icon.gold  { background: rgba(249,168,37,0.35); }
+.feature-icon.blue  { background: linear-gradient(135deg, rgba(37,99,235,0.45), rgba(59,130,246,0.25)); }
+.feature-icon.gold  { background: linear-gradient(135deg, rgba(245,158,11,0.45), rgba(251,191,36,0.25)); }
+.feature-icon.red   { background: linear-gradient(135deg, rgba(239,68,68,0.45), rgba(244,63,94,0.25)); }
 .feature-text strong {
     display: block;
-    color: #fff;
-    font-size: 14px;
+    color: #ffffff;
+    font-size: 14.5px;
     font-weight: 700;
+    margin-bottom: 2px;
 }
 .feature-text span {
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.72);
     font-size: 13px;
+    font-weight: 500;
 }
 
-/* Wave bottom decoration */
-.panel-left .wave {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 80px;
-    background: rgba(255,255,255,0.04);
-    clip-path: ellipse(110% 100% at 50% 100%);
+/* Trust Ribbon Stats */
+.trust-ribbon {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    padding: 14px 16px;
+    backdrop-filter: blur(10px);
+    width: 100%;
+}
+.trust-stat {
+    text-align: center;
+}
+.trust-stat-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fbbf24;
+    line-height: 1.2;
+}
+.trust-stat-lbl {
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
 }
 
 /* ── RIGHT PANEL ── */
@@ -511,13 +581,18 @@ input:-webkit-autofill:focus {
 </head>
 <body>
 
-<!-- LEFT PANEL: Branding -->
+<!-- LEFT PANEL: Branding & Features -->
 <div class="panel-left">
+    <div class="mesh-grid-bg"></div>
     <div class="brand-content">
-        <div class="logo-wrap">
-            <img src="/asset/img/tds_logo.png" alt="TDS Logo" onerror="this.parentElement.innerHTML='<div style=\'color:white;font-size:22px;font-weight:800;letter-spacing:1px;\'>TDS HITECH</div>'">
+        <div class="enterprise-top-badge">
+            <span>✨</span> TDS Enterprise Attendance System
         </div>
-        <h1>Smart Attendance <span>Management</span> System</h1>
+        <br>
+        <div class="logo-wrap">
+            <img src="/asset/img/tds_logo.png" alt="TDS Logo" onerror="this.parentElement.innerHTML='<div style=\'color:white;font-size:24px;font-weight:900;letter-spacing:1.5px;\'>TDS HITECH</div>'">
+        </div>
+        <h1>Smart Attendance <span class="gradient-text">Management</span> System</h1>
         <p class="tagline">Track, manage, and analyse your workforce attendance with real-time precision and enterprise-grade security.</p>
 
         <div class="features">
@@ -543,8 +618,22 @@ input:-webkit-autofill:focus {
                 </div>
             </div>
         </div>
+
+        <div class="trust-ribbon">
+            <div class="trust-stat">
+                <div class="trust-stat-val">99.9%</div>
+                <div class="trust-stat-lbl">Accuracy</div>
+            </div>
+            <div class="trust-stat">
+                <div class="trust-stat-val">Real-Time</div>
+                <div class="trust-stat-lbl">GPS & Face</div>
+            </div>
+            <div class="trust-stat">
+                <div class="trust-stat-val">256-bit</div>
+                <div class="trust-stat-lbl">Encrypted</div>
+            </div>
+        </div>
     </div>
-    <div class="wave"></div>
 </div>
 
 <!-- RIGHT PANEL: Login Form & Mascot -->
