@@ -76,106 +76,239 @@ if (isset($_POST['update_password']) && $valid_token) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Set New Password — Attendance System</title>
-    <link rel="stylesheet" href="/asset/css/style.css">
+    <title>Set New Password — TDS Attendance System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #10439f;
             --primary-light: #2563eb;
             --primary-glow: rgba(16, 67, 159, 0.15);
         }
-        body.login-page {
-            background: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #020617 0%, #0b193d 50%, #0f2c69 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 24px 16px;
+            position: relative;
+            overflow-x: hidden;
         }
-        .login-container {
+        body::before {
+            content: '';
+            position: absolute;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%);
+            top: -150px; right: -150px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: absolute;
+            width: 450px; height: 450px;
+            background: radial-gradient(circle, rgba(249,168,37,0.15) 0%, transparent 70%);
+            bottom: -150px; left: -150px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .reset-card {
             background: #ffffff;
-            padding: 40px 36px;
-            border-radius: 24px;
+            padding: 44px 36px;
+            border-radius: 28px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             text-align: center;
-            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
-            box-sizing: border-box;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2;
+            animation: fadeIn 0.4s ease both;
         }
-        .login-container h2 { color: #0f172a; margin-bottom: 10px; font-weight: 800; font-size: 26px; }
-        .login-container p { color: #475569; font-size: 14.5px; margin-bottom: 24px; }
-        .login-container input {
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .logo-wrap {
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .logo-wrap img {
+            max-width: 190px;
             width: 100%;
-            padding: 15px 18px;
-            background-color: #f8fafc !important;
-            border: 1.5px solid #e2e8f0 !important;
-            border-radius: 12px;
-            color: #0f172a !important;
+            height: auto;
+            display: block;
+        }
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 67, 159, 0.08);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+            padding: 5px 14px;
+            border-radius: 99px;
+            margin-bottom: 12px;
+            letter-spacing: 0.3px;
+        }
+        .reset-card h2 {
+            color: #0f172a;
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .reset-card p.subtitle {
+            color: #64748b;
+            font-size: 14.5px;
+            margin-bottom: 24px;
+            line-height: 1.55;
+            font-weight: 500;
+        }
+        .input-group {
+            position: relative;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+        .input-label {
+            display: block;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            pointer-events: none;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            background-color: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            color: #0f172a;
             font-size: 15px;
-            font-weight: 550;
-            margin-bottom: 16px;
-            box-sizing: border-box;
+            font-weight: 600;
             font-family: inherit;
+            transition: all 0.25s ease;
         }
-        .login-container input:focus {
+        .input-group input:focus {
             outline: none;
-            background-color: #ffffff !important;
-            border-color: var(--primary) !important;
-            box-shadow: 0 0 0 4px var(--primary-glow);
+            background-color: #ffffff;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
         }
-        .login-container input::placeholder { color: #94a3b8 !important; }
-
-        /* Force Autofill colors */
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover, 
-        input:-webkit-autofill:focus {
-            -webkit-text-fill-color: #0f172a !important;
-            -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
-            transition: background-color 5000s ease-in-out 0s;
-        }
-        .login-container button {
+        .btn-submit {
             width: 100%;
             padding: 15px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             color: #ffffff;
-            font-weight: 750;
-            font-size: 15px;
+            font-weight: 800;
+            font-size: 15.5px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
             margin-top: 10px;
-            box-shadow: 0 8px 20px -6px rgba(16, 67, 159, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 24px -4px rgba(16, 67, 159, 0.4);
         }
-        .login-container button:hover {
+        .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px -4px rgba(16, 67, 159, 0.5);
+            box-shadow: 0 12px 28px -4px rgba(16, 67, 159, 0.5);
         }
-        .msg-success { color: #166534; font-size: 14px; margin-bottom: 20px; background: rgba(22, 101, 52, 0.08); padding: 15px; border-radius: 12px; border: 1px solid rgba(22, 101, 52, 0.16); font-weight: 600; }
-        .msg-error { color: #b91c1c; font-size: 14px; margin-bottom: 20px; background: rgba(185, 28, 28, 0.08); padding: 15px; border-radius: 12px; border: 1px solid rgba(185, 28, 28, 0.16); font-weight: 600; }
+        .btn-submit:active { transform: translateY(1px); }
+        .alert-msg {
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 22px;
+            text-align: left;
+        }
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .alert-error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 24px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--primary-light); text-decoration: underline; }
     </style>
 </head>
-<body class="login-page">
+<body>
 
-<div class="login-container">
-    <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-width: 180px; width: 100%; height: auto; margin-bottom: 20px; display: inline-block;">
-    <h2>New Password</h2>
+<div class="reset-card">
+    <div class="logo-wrap">
+        <img src="/asset/img/tds_logo.png" alt="TDS Logo" onerror="this.parentElement.innerHTML='<h2 style=\'color:#10439f;font-weight:900;\'>TDS HITECH</h2>'">
+    </div>
+    <div class="badge-pill">🔑 Set New Password</div>
+    <h2>Set New Password</h2>
     
-    <?php if ($message): ?>
-        <div class="msg-<?php echo $msg_type; ?>"><?php echo $message; ?></div>
+    <?php if (!empty($message)): ?>
+        <div class="alert-msg alert-<?php echo $msg_type; ?>"><?php echo $message; ?></div>
     <?php endif; ?>
 
     <?php if ($valid_token): ?>
-        <p>Please enter and confirm your new secure password.</p>
-        <form method="POST">
-            <input type="password" name="new_password" placeholder="New Password" required>
-            <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-            <button type="submit" name="update_password">Reset Password</button>
+        <p class="subtitle">Please enter and confirm your new secure password below.</p>
+        <form method="POST" autocomplete="off">
+            <div class="input-group">
+                <label class="input-label" for="new_password">New Password</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </span>
+                    <input type="password" id="new_password" name="new_password" placeholder="Minimum 6 characters" required minlength="6">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label" for="confirm_password">Confirm New Password</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </span>
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Repeat your new password" required minlength="6">
+                </div>
+            </div>
+
+            <button type="submit" name="update_password" class="btn-submit">Update Password →</button>
         </form>
     <?php else: ?>
-        <div style="margin-top:20px;">
-            <a href="index.php" style="color:var(--primary); font-weight:600; text-decoration:none;">Go to Login Page</a>
+        <div>
+            <a href="index.php" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Return to Login Page
+            </a>
         </div>
     <?php endif; ?>
 </div>
