@@ -103,10 +103,9 @@ render_form:
     --primary: #10439f;
     --primary-light: #2563eb;
     --primary-dark: #0c327a;
-    --primary-glow: rgba(16, 67, 159, 0.18);
+    --primary-glow: rgba(16, 67, 159, 0.25);
     --text-main: #0f172a;
     --text-muted: #64748b;
-    --bg-page: #f8fafc;
     --border-color: #e2e8f0;
 }
 
@@ -114,169 +113,291 @@ body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     min-height: 100vh;
     display: flex;
-    background: var(--bg-page);
+    background: #060d1f;
     color: var(--text-main);
     overflow-x: hidden;
 }
 
-/* ── LEFT SHOWCASE PANEL ── */
+/* ── LEFT SHOWCASE PANEL WITH 3D SLIDER ── */
 .panel-left {
-    flex: 1.15;
-    background: linear-gradient(145deg, #020617 0%, #081536 35%, #0f2c69 75%, #172554 100%);
+    flex: 1.25;
+    background: linear-gradient(150deg, #020617 0%, #071538 40%, #0c2d6f 80%, #172554 100%);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 60px 56px;
+    padding: 40px 48px;
     position: relative;
     overflow: hidden;
     min-height: 100vh;
     color: #ffffff;
 }
 
-/* Ambient Lighting Elements */
+/* Ambient Floating Glow Spheres */
 .panel-left::before {
     content: '';
     position: absolute;
-    width: 600px; height: 600px;
+    width: 650px; height: 650px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(37,99,235,0.22) 0%, transparent 68%);
-    top: -180px; right: -180px;
+    background: radial-gradient(circle, rgba(37,99,235,0.28) 0%, transparent 68%);
+    top: -200px; right: -200px;
     pointer-events: none;
     animation: orbPulse 10s ease-in-out infinite alternate;
 }
 .panel-left::after {
     content: '';
     position: absolute;
-    width: 500px; height: 500px;
+    width: 550px; height: 550px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(249,168,37,0.14) 0%, transparent 70%);
-    bottom: -150px; left: -150px;
+    background: radial-gradient(circle, rgba(249,168,37,0.18) 0%, transparent 70%);
+    bottom: -180px; left: -180px;
     pointer-events: none;
     animation: orbPulse 12s ease-in-out infinite alternate-reverse;
 }
 @keyframes orbPulse {
     0% { transform: scale(1); opacity: 0.7; }
-    100% { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1.15); opacity: 1; }
 }
 
 .mesh-overlay {
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1.2px, transparent 1.2px);
-    background-size: 26px 26px;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.2px, transparent 1.2px);
+    background-size: 28px 28px;
     pointer-events: none;
 }
 
 .showcase-header {
     position: relative;
-    z-index: 2;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
-.brand-badge {
+.brand-capsule {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.10);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    padding: 6px 16px;
-    border-radius: 99px;
-    color: #fde047;
-    font-size: 11.5px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    backdrop-filter: blur(10px);
-}
-
-.logo-box {
+    gap: 12px;
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 20px;
-    padding: 16px 28px;
-    display: inline-flex;
-    align-items: center;
-    margin-top: 24px;
+    border-radius: 99px;
+    padding: 8px 18px 8px 12px;
     backdrop-filter: blur(14px);
-    box-shadow: 0 16px 36px rgba(0,0,0,0.25);
-    transition: transform 0.3s ease;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
 }
-.logo-box:hover { transform: translateY(-2px); }
-.logo-box img {
-    max-width: 190px;
+
+.brand-logo-img {
+    height: 32px;
+    width: auto;
+    display: block;
+    background: #ffffff;
+    border-radius: 99px;
+    padding: 3px 8px;
+}
+
+.brand-text-label {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.version-pill {
+    background: rgba(250, 204, 21, 0.15);
+    border: 1px solid rgba(250, 204, 21, 0.35);
+    color: #fde047;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 99px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+/* ── 3D SLIDER CAROUSEL SECTION ── */
+.slider-container {
+    position: relative;
+    z-index: 5;
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     width: 100%;
-    height: auto;
+    min-height: 480px;
+}
+
+.slide-track {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    text-align: center;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    z-index: 4;
+}
+
+/* Image Showcase Box */
+.slide-visual-card {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    border-radius: 28px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.45), 0 0 40px rgba(37, 99, 235, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: transform 0.4s ease;
+}
+
+.slide-visual-card:hover {
+    transform: translateY(-4px) scale(1.02);
+}
+
+.slide-visual-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: block;
 }
 
-.showcase-body {
-    position: relative;
-    z-index: 2;
-    margin: 40px 0;
-    max-width: 520px;
+.slide-visual-card img.transparent-char {
+    object-fit: contain;
+    padding: 10px;
+    filter: drop-shadow(0 15px 25px rgba(0,0,0,0.35));
 }
-.showcase-body h1 {
-    font-size: clamp(28px, 3.2vw, 38px);
+
+/* Slide Badge */
+.slide-badge {
+    position: absolute;
+    bottom: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    color: #38bdf8;
+    font-size: 11.5px;
     font-weight: 800;
-    line-height: 1.25;
-    letter-spacing: -0.8px;
-    margin-bottom: 16px;
+    padding: 5px 14px;
+    border-radius: 99px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
-.showcase-body h1 span.gradient-highlight {
+
+/* Slide Text Details */
+.slide-title {
+    font-size: clamp(24px, 2.5vw, 30px);
+    font-weight: 800;
+    letter-spacing: -0.6px;
+    line-height: 1.25;
+    margin-bottom: 8px;
+    color: #ffffff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.slide-title span.highlight {
     background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 50%, #facc15 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
-.showcase-body p.tagline {
-    color: rgba(255, 255, 255, 0.82);
-    font-size: 15.5px;
-    line-height: 1.6;
+
+.slide-desc {
+    font-size: 14.5px;
+    color: #cbd5e1;
+    max-width: 440px;
+    line-height: 1.55;
     font-weight: 500;
-    margin-bottom: 32px;
 }
 
-.feature-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-.feature-card {
+/* ── CAROUSEL CONTROLS & DOTS ── */
+.carousel-nav-wrap {
     display: flex;
     align-items: center;
     gap: 16px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 16px;
-    padding: 14px 18px;
+    margin-top: 14px;
+    z-index: 10;
+}
+
+.nav-arrow-btn {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: white;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     backdrop-filter: blur(10px);
     transition: all 0.25s ease;
 }
-.feature-card:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateX(6px);
+.nav-arrow-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
 }
-.feature-icon-wrap {
-    width: 42px; height: 42px;
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+
+.carousel-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
-.feature-title { font-size: 14px; font-weight: 700; color: #ffffff; }
-.feature-desc { font-size: 12.5px; color: rgba(255, 255, 255, 0.7); font-weight: 500; }
+
+.carousel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    transition: all 0.35s ease;
+}
+
+.carousel-dot.active {
+    width: 28px;
+    background: linear-gradient(90deg, #38bdf8, #facc15);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
 
 .showcase-footer {
     position: relative;
-    z-index: 2;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
     font-size: 12.5px;
-    color: rgba(255, 255, 255, 0.65);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
 }
 
 /* ── RIGHT AUTH PANEL ── */
@@ -285,19 +406,19 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 48px 32px;
-    background: radial-gradient(circle at top right, #eef4ff 0%, #f8fafc 50%, #ffffff 100%);
+    padding: 40px 32px;
+    background: radial-gradient(circle at top right, #f1f5f9 0%, #e2e8f0 40%, #f8fafc 100%);
     min-height: 100vh;
     position: relative;
 }
 
 .auth-card {
     background: #ffffff;
-    border-radius: 26px;
-    padding: 48px 42px;
+    border-radius: 28px;
+    padding: 44px 40px;
     width: 100%;
-    max-width: 450px;
-    box-shadow: 0 20px 50px -12px rgba(16, 67, 159, 0.14), 0 0 0 1px rgba(16, 67, 159, 0.05);
+    max-width: 440px;
+    box-shadow: 0 24px 60px -15px rgba(16, 67, 159, 0.18), 0 0 0 1px rgba(16, 67, 159, 0.06);
     position: relative;
     z-index: 2;
     animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -308,7 +429,7 @@ body {
 }
 
 .auth-header {
-    margin-bottom: 28px;
+    margin-bottom: 24px;
 }
 .auth-badge {
     display: inline-flex;
@@ -320,19 +441,19 @@ body {
     font-weight: 800;
     padding: 4px 12px;
     border-radius: 99px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     letter-spacing: 0.4px;
 }
 .auth-header h2 {
     color: #0f172a;
-    font-size: 27px;
+    font-size: 26px;
     font-weight: 800;
     letter-spacing: -0.6px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 .auth-header p {
     color: var(--text-muted);
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 500;
 }
 
@@ -343,7 +464,7 @@ body {
     background: #f1f5f9;
     border-radius: 12px;
     padding: 8px 12px;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
     font-size: 12px;
     color: #475569;
     font-weight: 600;
@@ -359,7 +480,7 @@ body {
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     text-align: left;
 }
 .form-label {
@@ -367,7 +488,7 @@ body {
     color: #334155;
     font-size: 13px;
     font-weight: 700;
-    margin-bottom: 7px;
+    margin-bottom: 6px;
 }
 .input-wrap {
     position: relative;
@@ -386,12 +507,12 @@ body {
 }
 .input-wrap input {
     width: 100%;
-    padding: 14px 16px 14px 44px;
+    padding: 13px 16px 13px 44px;
     background: #f8fafc;
     border: 1.5px solid #e2e8f0;
     border-radius: 14px;
     color: #0f172a;
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 600;
     font-family: inherit;
     transition: all 0.25s ease;
@@ -429,8 +550,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    margin-top: -6px;
-    margin-bottom: 24px;
+    margin-top: -4px;
+    margin-bottom: 22px;
 }
 .forgot-password-link {
     font-size: 13px;
@@ -452,7 +573,7 @@ body {
     border-radius: 14px;
     color: #ffffff;
     font-weight: 800;
-    font-size: 15.5px;
+    font-size: 15px;
     letter-spacing: 0.3px;
     cursor: pointer;
     font-family: inherit;
@@ -472,10 +593,10 @@ body {
 .btn-signin:active { transform: translateY(1px); }
 
 .notice-box {
-    margin-top: 20px;
-    padding: 13px 16px;
+    margin-top: 18px;
+    padding: 12px 16px;
     border-radius: 12px;
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -500,82 +621,141 @@ body {
 }
 
 .auth-footer-help {
-    margin-top: 28px;
-    font-size: 12.5px;
+    margin-top: 24px;
+    font-size: 12px;
     color: #94a3b8;
     text-align: center;
     line-height: 1.5;
 }
 
 /* ── RESPONSIVE BREAKPOINTS ── */
-@media (max-width: 960px) {
+@media (max-width: 990px) {
     body { flex-direction: column; }
     .panel-left {
         min-height: auto;
-        padding: 44px 28px;
+        padding: 36px 24px;
     }
-    .feature-grid { display: none; }
+    .slide-visual-card {
+        width: 200px;
+        height: 200px;
+    }
+    .slider-container {
+        min-height: 380px;
+    }
+    .slide-track {
+        height: 360px;
+    }
     .showcase-footer { display: none; }
     .panel-right {
-        padding: 40px 20px 60px;
+        padding: 36px 20px 60px;
     }
 }
 @media (max-width: 480px) {
     .auth-card {
-        padding: 32px 22px;
+        padding: 30px 20px;
         border-radius: 20px;
     }
-    .auth-header h2 { font-size: 23px; }
+    .auth-header h2 { font-size: 22px; }
+    .slide-visual-card {
+        width: 170px;
+        height: 170px;
+    }
+    .slide-title { font-size: 20px; }
+    .slide-desc { font-size: 13px; }
 }
 </style>
 </head>
 <body>
 
-<!-- LEFT PANEL: Enterprise Brand Showcase -->
+<!-- LEFT PANEL: Enterprise 3D Carousel Showcase -->
 <div class="panel-left">
     <div class="mesh-overlay"></div>
     
+    <!-- Top Header -->
     <div class="showcase-header">
-        <div class="brand-badge">
-            <span>✨</span> TDS Enterprise Workforce
+        <div class="brand-capsule">
+            <img src="/asset/img/tds_logo.png" alt="TDS Logo" class="brand-logo-img" onerror="this.style.display='none'">
+            <span class="brand-text-label">TDS ENTERPRISE</span>
         </div>
-        <br>
-        <div class="logo-box">
-            <img src="/asset/img/tds_logo.png" alt="TDS Logo" onerror="this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:900;font-size:22px;letter-spacing:1px;\'>TDS HITECH</span>'">
-        </div>
-    </div>
-
-    <div class="showcase-body">
-        <h1>Smart Attendance &amp; <span class="gradient-highlight">Workforce Portal</span></h1>
-        <p class="tagline">Streamline staff tracking with geofenced clocking, AI facial verification, and real-time attendance analytics.</p>
-
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon-wrap">📍</div>
-                <div>
-                    <div class="feature-title">GPS Geofencing Precision</div>
-                    <div class="feature-desc">Accurate branch boundary location verification</div>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-wrap">👤</div>
-                <div>
-                    <div class="feature-title">Facial Biometric Verification</div>
-                    <div class="feature-desc">AI-powered anti-spoof selfie validation</div>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-wrap">📊</div>
-                <div>
-                    <div class="feature-title">Real-Time Centralized Analytics</div>
-                    <div class="feature-desc">Instant punch logs, audit trails &amp; sync reports</div>
-                </div>
-            </div>
+        <div class="version-pill">
+            <span>✨ Smart Portal 2.0</span>
         </div>
     </div>
 
+    <!-- 3D Interactive Carousel Section -->
+    <div class="slider-container" id="carouselWrapper">
+        <div class="slide-track">
+            
+            <!-- SLIDE 1: Punctuality & Time Clock Character -->
+            <div class="carousel-slide active" data-slide="0">
+                <div class="slide-visual-card">
+                    <img src="/asset/img/cartoon_person_clock.png" alt="Smart Punctuality" class="transparent-char">
+                    <div class="slide-badge">
+                        <span>⏰</span> 100% On-Time Precision
+                    </div>
+                </div>
+                <h2 class="slide-title">Smart Attendance &amp; <span class="highlight">Punctuality</span></h2>
+                <p class="slide-desc">Real-time automated shift clocking with live on-time tracking, break logs, and dynamic hour calculations.</p>
+            </div>
+
+            <!-- SLIDE 2: AI Face Biometric Scanner -->
+            <div class="carousel-slide" data-slide="1">
+                <div class="slide-visual-card">
+                    <img src="/asset/img/slide_facial_3d.jpg" alt="AI Facial Biometrics">
+                    <div class="slide-badge">
+                        <span>👤</span> AI Anti-Spoof Face Match
+                    </div>
+                </div>
+                <h2 class="slide-title">AI Facial <span class="highlight">Verification</span></h2>
+                <p class="slide-desc">Instant touchless attendance verification powered by intelligent 128D facial embeddings and anti-spoof checks.</p>
+            </div>
+
+            <!-- SLIDE 3: GPS Geofencing Location -->
+            <div class="carousel-slide" data-slide="2">
+                <div class="slide-visual-card">
+                    <img src="/asset/img/slide_geofence_3d.jpg" alt="GPS Geofencing">
+                    <div class="slide-badge">
+                        <span>📍</span> Branch GPS Boundary
+                    </div>
+                </div>
+                <h2 class="slide-title">GPS Branch <span class="highlight">Geofencing</span></h2>
+                <p class="slide-desc">Accurate branch boundary detection ensures staff clock-in occurs exclusively within authorized office zones.</p>
+            </div>
+
+            <!-- SLIDE 4: Multi-Modal Biometrics (Fingerprint & ZKTeco) -->
+            <div class="carousel-slide" data-slide="3">
+                <div class="slide-visual-card">
+                    <img src="/asset/img/slide_thumbprint_3d.jpg" alt="Thumbprint Biometrics">
+                    <div class="slide-badge">
+                        <span>🛡️</span> Multi-Device Sync
+                    </div>
+                </div>
+                <h2 class="slide-title">Multi-Modal <span class="highlight">Biometrics</span></h2>
+                <p class="slide-desc">Seamlessly clock in with Android &amp; PC thumbprints, Passkeys, and standalone ZKTeco biometric terminals.</p>
+            </div>
+
+        </div>
+
+        <!-- Carousel Navigation & Dots -->
+        <div class="carousel-nav-wrap">
+            <button class="nav-arrow-btn" onclick="prevSlide()" aria-label="Previous Slide">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="carousel-dots" id="carouselDots">
+                <div class="carousel-dot active" onclick="goToSlide(0)"></div>
+                <div class="carousel-dot" onclick="goToSlide(1)"></div>
+                <div class="carousel-dot" onclick="goToSlide(2)"></div>
+                <div class="carousel-dot" onclick="goToSlide(3)"></div>
+            </div>
+            <button class="nav-arrow-btn" onclick="nextSlide()" aria-label="Next Slide">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Showcase Footer -->
     <div class="showcase-footer">
-        <span>🔒 256-Bit Encrypted &amp; FIDO2 Ready</span>
+        <span>🔒 256-Bit SSL Encrypted &amp; FIDO2 Ready</span>
         <span>&copy; <?php echo date('Y'); ?> TDS Hitech Solutions</span>
     </div>
 </div>
@@ -584,14 +764,14 @@ body {
 <div class="panel-right">
     <div class="auth-card">
         <div class="auth-header">
-            <div class="auth-badge">🏢 TDS Attendance Portal</div>
+            <div class="auth-badge">🏢 Attendance Workspace</div>
             <h2>Welcome Back 👋</h2>
             <p>Please enter your credentials to sign in.</p>
         </div>
 
         <div class="role-hint-pill">
             <span>Staff or Administrator Login</span>
-            <span class="badge-light">Secure</span>
+            <span class="badge-light">Secure Access</span>
         </div>
 
         <form method="POST" action="index.php" autocomplete="off" id="loginForm">
@@ -643,12 +823,13 @@ body {
         <?php endif; ?>
 
         <div class="auth-footer-help">
-            Having trouble signing in? Please contact your organization IT administrator.
+            Having trouble signing in? Contact your system administrator for assistance.
         </div>
     </div>
 </div>
 
 <script>
+// Password Visibility Toggle
 function togglePass() {
     const field = document.getElementById('passwordField');
     const icon = document.getElementById('eyeIcon');
@@ -662,6 +843,88 @@ function togglePass() {
         icon.style.stroke = 'currentColor';
     }
 }
+
+// 3D Carousel Slider Logic
+let currentSlideIndex = 0;
+const slides = document.querySelectorAll('.carousel-slide');
+const dots = document.querySelectorAll('.carousel-dot');
+const totalSlides = slides.length;
+let slideInterval = null;
+
+function showSlide(index) {
+    if (index < 0) index = totalSlides - 1;
+    if (index >= totalSlides) index = 0;
+    currentSlideIndex = index;
+
+    slides.forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === currentSlideIndex);
+    });
+
+    dots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === currentSlideIndex);
+    });
+}
+
+function nextSlide() {
+    showSlide(currentSlideIndex + 1);
+}
+
+function prevSlide() {
+    showSlide(currentSlideIndex - 1);
+}
+
+function goToSlide(index) {
+    showSlide(index);
+    resetAutoPlay();
+}
+
+function startAutoPlay() {
+    slideInterval = setInterval(nextSlide, 4800);
+}
+
+function stopAutoPlay() {
+    if (slideInterval) clearInterval(slideInterval);
+}
+
+function resetAutoPlay() {
+    stopAutoPlay();
+    startAutoPlay();
+}
+
+// Event Listeners for Hover and Auto-Play
+const wrapper = document.getElementById('carouselWrapper');
+if (wrapper) {
+    wrapper.addEventListener('mouseenter', stopAutoPlay);
+    wrapper.addEventListener('mouseleave', startAutoPlay);
+}
+
+// Touch swipe support for mobile
+let touchStartX = 0;
+let touchEndX = 0;
+if (wrapper) {
+    wrapper.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, { passive: true });
+}
+
+function handleSwipe() {
+    if (touchEndX < touchStartX - 40) {
+        nextSlide();
+        resetAutoPlay();
+    }
+    if (touchEndX > touchStartX + 40) {
+        prevSlide();
+        resetAutoPlay();
+    }
+}
+
+// Start rotation on page load
+startAutoPlay();
 </script>
 </body>
 </html>

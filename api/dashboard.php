@@ -41,6 +41,17 @@ $style_version = @filemtime(dirname(__DIR__) . "/asset/css/style.css") ?: time()
 $face_api_version = @filemtime(dirname(__DIR__) . "/asset/js/face-api.min.js") ?: time();
 $clock_face_version = @filemtime(dirname(__DIR__) . "/asset/js/clock-face.js") ?: time();
 $idle_logout_version = @filemtime(dirname(__DIR__) . "/asset/js/idle-logout.js") ?: time();
+
+// Determine greeting based on hour of the day
+$current_hour = (int)date('H');
+if ($current_hour < 12) {
+    $greeting = "Good morning";
+} elseif ($current_hour < 17) {
+    $greeting = "Good afternoon";
+} else {
+    $greeting = "Good evening";
+}
+
 $th = 0;
 $th_today = 0;
 $th_yest = 0;
@@ -115,7 +126,7 @@ if ($staff_id) {
     /* Executive Top Header */
     .dashboard-header {
         background: linear-gradient(135deg, #020617 0%, #0b193d 45%, #10439f 100%);
-        color: white; padding: clamp(20px, 3.5vw, 32px); border-radius: 22px;
+        color: #ffffff; padding: clamp(20px, 3.5vw, 32px); border-radius: 22px;
         margin-bottom: 24px;
         box-shadow: 0 16px 36px -6px rgba(16, 67, 159, 0.25);
         position: relative; overflow: hidden;
@@ -125,8 +136,8 @@ if ($staff_id) {
         border-radius: 50%; background: radial-gradient(circle, rgba(37,99,235,0.25), transparent 70%);
         pointer-events: none;
     }
-    .dashboard-header h2 { font-size: clamp(1.35rem, 3.5vw, 1.85rem); font-weight: 800; margin: 0 0 6px; letter-spacing: -0.5px; }
-    .dashboard-header p { margin: 0; font-size: clamp(0.85rem, 2vw, 0.95rem); opacity: 0.88; font-weight: 500; }
+    .dashboard-header h2 { font-size: clamp(1.4rem, 3.5vw, 1.95rem); font-weight: 800; margin: 0 0 6px; letter-spacing: -0.5px; color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.35); }
+    .dashboard-header p { margin: 0; font-size: clamp(0.95rem, 2vw, 1.05rem); color: #f1f5f9 !important; font-weight: 600; opacity: 1 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4); letter-spacing: 0.2px; }
 
     /* Cards & Containers */
     .clocking-card, .widget-card, .recent-table, .att-log-panel, .broadcast-panel {
