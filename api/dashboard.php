@@ -174,6 +174,60 @@ if ($staff_id) {
         100% { transform: scale(0.96); opacity: 0.6; }
     }
 
+    /* Biometric Verification Tabs */
+    .verification-tabs {
+        display: flex; gap: 8px; justify-content: center;
+        background: var(--surface-alt); padding: 6px; border-radius: 16px;
+        margin: 0 auto 22px; max-width: 380px; border: 1px solid var(--border);
+    }
+    .ver-tab-btn {
+        flex: 1; padding: 10px 14px; border: none; border-radius: 12px;
+        background: transparent; font-weight: 700; font-size: 13.5px;
+        color: var(--text-muted); cursor: pointer; transition: all 0.25s ease;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        font-family: inherit;
+    }
+    .ver-tab-btn.active {
+        background: var(--surface); color: var(--primary);
+        box-shadow: 0 4px 12px rgba(16, 67, 159, 0.12);
+        font-weight: 800;
+    }
+
+    /* Thumbprint Scanner Portal */
+    #thumbprint-portal {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 6px 0 16px;
+    }
+    .fingerprint-touch-card {
+        width: 140px; height: 140px; border-radius: 50%;
+        background: linear-gradient(145deg, #020617, #0b193d, #10439f);
+        border: 4px solid #3b82f6;
+        box-shadow: 0 10px 30px rgba(16, 67, 159, 0.35), 0 0 25px rgba(59, 130, 246, 0.35);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; position: relative; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        margin: 10px auto 18px;
+    }
+    .fingerprint-touch-card:hover {
+        transform: scale(1.06);
+        box-shadow: 0 14px 36px rgba(16, 67, 159, 0.45), 0 0 35px rgba(59, 130, 246, 0.55);
+        border-color: #60a5fa;
+    }
+    .fingerprint-touch-card.scanning {
+        animation: bioRipple 1.4s infinite;
+        border-color: #10b981;
+    }
+    @keyframes bioRipple {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+        70% { box-shadow: 0 0 0 25px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .bio-fingerprint-svg {
+        width: 68px; height: 68px; fill: none; stroke: #93c5fd; stroke-width: 1.8;
+        filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.6));
+        transition: stroke 0.3s;
+    }
+    .fingerprint-touch-card:hover .bio-fingerprint-svg { stroke: #ffffff; }
+
     /* Action Buttons */
     #clockControls { display: flex; justify-content: center; width: 100%; margin-top: 6px; }
     .clock-btn {
@@ -505,13 +559,42 @@ if ($staff_id) {
     <?php endif; ?>
     
     <div class="clocking-card">
-        <h3 style="text-align:center;">📸 Face Verification & Clock In/Out</h3>
-        <p style="text-align:center;color:var(--text-muted);margin-bottom:20px;">Look at the camera and click the button below</p>
-        <div id="camera-container">
-            <video id="video" autoplay playsinline></video>
-            <div id="scanningOverlay" class="scanning-overlay"></div>
-            <canvas id="canvas" width="640" height="480"></canvas>
+        <!-- Multi-Modal Biometric Verification Tabs -->
+        <div class="verification-tabs">
+            <button type="button" class="ver-tab-btn active" id="tabFaceBtn" onclick="switchClockMode('face')">
+                <span>📸</span> Face Scan
+            </button>
+            <button type="button" class="ver-tab-btn" id="tabBioBtn" onclick="switchClockMode('thumbprint')">
+                <span>👆</span> Thumbprint
+            </button>
         </div>
+
+        <!-- 1. FACE VERIFICATION SECTION -->
+        <div id="faceSection">
+            <h3 style="text-align:center;">📸 Face Verification &amp; Clock In/Out</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:20px;">Look at the camera and click the button below</p>
+            <div id="camera-container">
+                <video id="video" autoplay playsinline></video>
+                <div id="scanningOverlay" class="scanning-overlay"></div>
+                <canvas id="canvas" width="640" height="480"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. THUMBPRINT / BIOMETRIC SECTION -->
+        <div id="thumbprintSection" style="display:none;">
+            <h3 style="text-align:center;">👆 Biometric Thumbprint Clocking</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:12px;">Touch your Android fingerprint sensor or Windows Hello scanner</p>
+            
+            <div id="thumbprint-portal">
+                <div class="fingerprint-touch-card" id="bioTouchCard" onclick="handleBioTouch()" title="Click or touch sensor">
+                    <svg class="bio-fingerprint-svg" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2a9 9 0 0 0-9 9c0 3.2 1.7 6.1 4.3 7.7M12 2a9 9 0 0 1 9 9c0 3.2-1.7 6.1-4.3 7.7M12 6a5 5 0 0 0-5 5c0 1.8 1 3.4 2.5 4.3M12 6a5 5 0 0 1 5 5c0 1.8-1 3.4-2.5 4.3M12 10a1 1 0 0 0-1 1c0 .4.2.7.5.9M12 10a1 1 0 0 1 1 1c0 .4-.2.7-.5.9M12 14v4M9 21h6" />
+                    </svg>
+                </div>
+                <div id="bioDeviceStatus" style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px;text-align:center;">Checking fingerprint sensor…</div>
+            </div>
+        </div>
+
         <div id="apiResult" style="text-align:center;"></div>
 
         <?php
@@ -562,20 +645,33 @@ if ($staff_id) {
             <?php if ($past_7pm): ?>
                 <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
                     style="background:#64748b;box-shadow:none;">⏰ Clock-in/out disabled after 7:00 PM</button>
+                <button id="bioClockBtn" class="clock-btn" style="display:none;background:#64748b;box-shadow:none;" disabled>⏰ Disabled after 7:00 PM</button>
             <?php elseif ($attendance_done): ?>
                 <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
                     style="background:#64748b;box-shadow:none;">✅ Attendance completed for today</button>
+                <button id="bioClockBtn" class="clock-btn" style="display:none;background:#64748b;box-shadow:none;" disabled>✅ Attendance completed today</button>
             <?php elseif ($can_clock_out): ?>
                 <button id="clockBtn" class="clock-btn out" disabled onclick="processClocking('clock_out')">Verify &amp; Clock Out</button>
+                <button id="bioClockBtn" class="clock-btn out" style="display:none;" onclick="processBiometricClock()">👆 Touch Sensor to Clock Out</button>
             <?php elseif ($can_clock_in): ?>
                 <button id="clockBtn" class="clock-btn" disabled onclick="processClocking('clock_in')">Verify &amp; Clock In</button>
+                <button id="bioClockBtn" class="clock-btn" style="display:none;" onclick="processBiometricClock()">👆 Touch Sensor to Clock In</button>
             <?php else: ?>
                 <button id="clockBtn" class="clock-btn" disabled data-prevent-enable="true"
                     style="background:#64748b;box-shadow:none;">Attendance unavailable for today</button>
+                <button id="bioClockBtn" class="clock-btn" style="display:none;background:#64748b;box-shadow:none;" disabled>Attendance unavailable</button>
             <?php endif; ?>
         </div>
+        
+        <!-- Registration button for biometric when in thumbprint tab -->
+        <div id="bioRegControl" style="display:none;margin-top:10px;text-align:center;">
+            <button type="button" class="geo-register-btn" onclick="registerCurrentDevice()" style="background:linear-gradient(135deg,#2563eb,#10439f);">
+                ✨ Register This Device's Thumbprint
+            </button>
+        </div>
+
         <!-- Daily attendance status -->
-        <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:10px;font-weight:600;">
+        <p style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:12px;font-weight:600;">
             📊 Daily attendance: <strong style="color:var(--primary);"><?php echo $total_sessions > 0 ? ($currently_in ? 'Clocked in' : 'Completed') : 'Not started'; ?></strong>
             <?php if($past_7pm): ?>&nbsp;· <span style="color:#ef4444;font-weight:700;">⏰ After 7 PM</span><?php endif; ?>
         </p>
@@ -2349,7 +2445,133 @@ if ($staff_id) {
         if (s > 0) str += ` ${s}sec`;
         return str.trim();
     }
+</script>
 
+<script src="/asset/js/biometric.js?v=<?php echo time(); ?>"></script>
+<script>
+let currentClockMode = 'face';
+let bioEnrolled = false;
+
+function switchClockMode(mode) {
+    currentClockMode = mode;
+    const tabFace = document.getElementById('tabFaceBtn');
+    const tabBio = document.getElementById('tabBioBtn');
+    const faceSec = document.getElementById('faceSection');
+    const bioSec = document.getElementById('thumbprintSection');
+    const faceBtn = document.getElementById('clockBtn');
+    const bioBtn = document.getElementById('bioClockBtn');
+    const bioReg = document.getElementById('bioRegControl');
+    const faceStatus = document.getElementById('faceStatus');
+
+    if (mode === 'face') {
+        if (tabFace) tabFace.classList.add('active');
+        if (tabBio) tabBio.classList.remove('active');
+        if (faceSec) faceSec.style.display = 'block';
+        if (bioSec) bioSec.style.display = 'none';
+        if (faceBtn) faceBtn.style.display = 'block';
+        if (bioBtn) bioBtn.style.display = 'none';
+        if (bioReg) bioReg.style.display = 'none';
+        if (faceStatus) faceStatus.style.display = 'block';
+    } else {
+        if (tabFace) tabFace.classList.remove('active');
+        if (tabBio) tabBio.classList.add('active');
+        if (faceSec) faceSec.style.display = 'none';
+        if (bioSec) bioSec.style.display = 'block';
+        if (faceBtn) faceBtn.style.display = 'none';
+        if (bioBtn) bioBtn.style.display = 'block';
+        if (faceStatus) faceStatus.style.display = 'none';
+        checkBiometrics();
+    }
+}
+
+async function checkBiometrics() {
+    const statusText = document.getElementById('bioDeviceStatus');
+    const bioReg = document.getElementById('bioRegControl');
+    const bioBtn = document.getElementById('bioClockBtn');
+
+    try {
+        const supported = await TDSBiometric.isSupported();
+        if (!supported) {
+            if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">⚠️ Biometric sensor not supported on this browser. Use Chrome/Edge/Safari on Android or PC.</span>';
+            return;
+        }
+
+        const res = await TDSBiometric.getStatus();
+        if (res.status === 'success' && res.enrolled) {
+            bioEnrolled = true;
+            if (statusText) statusText.innerHTML = `<span style="color:#10b981;">✅ Sensor Ready (${res.count} registered device${res.count > 1 ? 's' : ''}). Touch sensor to clock.</span>`;
+            if (bioReg) bioReg.style.display = 'none';
+            if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = false;
+        } else {
+            bioEnrolled = false;
+            if (statusText) statusText.innerHTML = '<span style="color:#2563eb;">ℹ️ No thumbprint enrolled on this account yet. Click below to register this device.</span>';
+            if (bioReg) bioReg.style.display = 'block';
+            if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = true;
+        }
+    } catch (e) {
+        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">Status: ' + e.message + '</span>';
+    }
+}
+
+async function handleBioTouch() {
+    if (!bioEnrolled) {
+        registerCurrentDevice();
+    } else {
+        processBiometricClock();
+    }
+}
+
+async function registerCurrentDevice() {
+    const statusText = document.getElementById('bioDeviceStatus');
+    const bioCard = document.getElementById('bioTouchCard');
+    if (statusText) statusText.innerHTML = '🔄 Prompting fingerprint sensor… Please touch your scanner.';
+    if (bioCard) bioCard.classList.add('scanning');
+
+    try {
+        const res = await TDSBiometric.register();
+        if (bioCard) bioCard.classList.remove('scanning');
+        alert('🎉 Success: ' + (res.message || 'Fingerprint enrolled!'));
+        checkBiometrics();
+    } catch (err) {
+        if (bioCard) bioCard.classList.remove('scanning');
+        alert('❌ Registration failed: ' + err.message);
+        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">' + err.message + '</span>';
+    }
+}
+
+async function processBiometricClock() {
+    const statusText = document.getElementById('bioDeviceStatus');
+    const bioCard = document.getElementById('bioTouchCard');
+    const bioBtn = document.getElementById('bioClockBtn');
+    const resultBox = document.getElementById('apiResult');
+
+    if (bioCard) bioCard.classList.add('scanning');
+    if (bioBtn) {
+        bioBtn.disabled = true;
+        bioBtn.innerHTML = 'Verifying fingerprint &amp; GPS…';
+    }
+    if (statusText) statusText.innerHTML = '👆 <strong>Touch your fingerprint sensor now…</strong>';
+
+    try {
+        const res = await TDSBiometric.clock();
+        if (bioCard) bioCard.classList.remove('scanning');
+        if (statusText) statusText.innerHTML = '<span style="color:#10b981;">' + res.message + '</span>';
+        if (resultBox) {
+            resultBox.innerHTML = '<div style="background:#f0fdf4;color:#166534;border:1.5px solid #22c55e;padding:14px;border-radius:14px;margin-top:14px;font-weight:700;">🎉 ' + res.message + '</div>';
+        }
+        setTimeout(() => location.reload(), 1400);
+    } catch (err) {
+        if (bioCard) bioCard.classList.remove('scanning');
+        if (bioBtn) {
+            bioBtn.disabled = false;
+            bioBtn.innerHTML = '👆 Touch Sensor to Clock';
+        }
+        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">' + err.message + '</span>';
+        if (resultBox) {
+            resultBox.innerHTML = '<div style="background:#fef2f2;color:#991b1b;border:1.5px solid #ef4444;padding:12px;border-radius:12px;margin-top:14px;font-weight:600;">❌ ' + err.message + '</div>';
+        }
+    }
+}
 </script>
 
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>
