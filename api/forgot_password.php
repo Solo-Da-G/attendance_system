@@ -24,7 +24,7 @@ function sendEmail($toEmail, $toName, $subject, $textBody, $htmlBody)
         return ['ok' => false, 'error' => 'BREVO_API_KEY not configured and standard mail service unavailable.'];
     }
 
-    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: $_ENV['BREVO_FROM_EMAIL'] ?? $_SERVER['BREVO_FROM_EMAIL'] ?? 'no-reply@attendance.system';
+    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: $_ENV['BREVO_FROM_EMAIL'] ?? $_SERVER['BREVO_FROM_EMAIL'] ?? 'solyno04@gmail.com';
     $fromName  = getenv('BREVO_FROM_NAME') ?: $_ENV['BREVO_FROM_NAME'] ?? $_SERVER['BREVO_FROM_NAME'] ?? 'TDS Attendance System';
 
     $postData = [
@@ -179,7 +179,8 @@ if (isset($_POST['reset_request'])) {
                     $message = "✅ A password reset link has been sent to your email address (<strong>" . htmlspecialchars($email) . "</strong>). Please check your inbox and spam folder.";
                     $msg_type = "success";
                 } else {
-                    $message = "⚠️ We were unable to deliver the email. Please ensure your email configuration is set up or contact your system administrator.";
+                    $err_detail = htmlspecialchars($send['error'] ?? 'Unknown error');
+                    $message = "⚠️ We were unable to deliver the email.<br><small style='font-size:12px;opacity:0.85;display:block;margin-top:6px;'>Reason: {$err_detail}</small>";
                     $msg_type = "error";
                 }
             } else {
