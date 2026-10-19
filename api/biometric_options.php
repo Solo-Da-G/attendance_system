@@ -1,18 +1,12 @@
 <?php
 /**
  * WEBAUTHN BIOMETRIC OPTIONS
- * Generates cryptographic challenges for registration and authentication
+ * Generates cryptographic challenges for registration, clocking, and login
  */
 include(__DIR__ . "/includes/config.php");
 
 header('Content-Type: application/json');
 
-if (empty($_SESSION['staff_id'])) {
-    echo json_encode(["status" => "error", "message" => "Unauthorized. Please log in as a staff member."]);
-    exit;
-}
-
-$staff_id = $_SESSION['staff_id'];
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 // Ensure biometrics table exists
@@ -32,6 +26,88 @@ $conn->query("CREATE TABLE IF NOT EXISTS `staff_biometrics` (
 function base64url_encode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
+
+// -------------------------------------------------------------
+// 0. LOGIN OPTIONS (Public - no active session required)
+// -------------------------------------------------------------
+if ($action === 'login_options') {
+    $identifier = trim($_GET['identifier'] ?? $_POST['identifier'] ?? '');
+    
+    $challenge = random_bytes(32);
+    $_SESSION['webauthn_login_challenge'] = base64url_encode($challenge);
+
+    $allowCredentials = [];
+
+    if (!empty($identifier)) {
+        // Find credentials for this staff_id, email, or username
+        $stmt = $conn->prepare("
+            SELECT b.credential_id 
+            FROM staff_biometrics b 
+            JOIN staff s ON b.staff_id = s.staff_id 
+            WHERE s.staff_id = ? OR s.email = ?
+        ");
+        if ($stmt) {
+            $stmt->bind_param("ss", $identifier, $identifier);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            while ($row = $res->fetch_assoc()) {
+                $allowCredentials[] = [
+                    "type" => "public-key",
+                    "id" => $row['credential_id'],
+                    "transports" => ["internal"]
+                ];
+            }
+            $stmt->close();
+        }
+
+        if (empty($allowCredentials)) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "No fingerprint registered for this account yet. Please sign in with password first and register your fingerprint in the dashboard."
+            ]);
+            exit;
+        }
+    } else {
+        // Global credentials lookup across all registered staff
+        $res = $conn->query("SELECT credential_id FROM staff_biometrics LIMIT 50");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $allowCredentials[] = [
+                    "type" => "public-key",
+                    "id" => $row['credential_id'],
+                    "transports" => ["internal"]
+                ];
+            }
+        }
+    }
+
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    if (str_contains($host, ':')) {
+        $host = explode(':', $host)[0];
+    }
+
+    $response = [
+        "status" => "success",
+        "challenge" => base64url_encode($challenge),
+        "rpId" => $host,
+        "allowCredentials" => $allowCredentials,
+        "userVerification" => "required",
+        "timeout" => 60000
+    ];
+
+    echo json_encode($response);
+    exit;
+}
+
+// -------------------------------------------------------------
+// Authenticated actions below require active staff session
+// -------------------------------------------------------------
+if (empty($_SESSION['staff_id'])) {
+    echo json_encode(["status" => "error", "message" => "Unauthorized. Please log in as a staff member."]);
+    exit;
+}
+
+$staff_id = $_SESSION['staff_id'];
 
 // -------------------------------------------------------------
 // 1. REGISTRATION OPTIONS

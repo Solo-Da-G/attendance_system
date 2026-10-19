@@ -213,7 +213,9 @@ const TDSBiometric = (function () {
         isSupported,
         getStatus,
         register,
-        clock
+        clock,
+        base64UrlToBuffer,
+        bufferToBase64Url
     };
 })();
 window.TDSBiometric = TDSBiometric;

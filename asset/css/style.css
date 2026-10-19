@@ -1651,13 +1651,14 @@ body.login-page {
 }
 
 .mobile-header-logo {
-  height: 32px;
+  height: 42px;
   width: auto;
-  max-width: 100px;
+  max-width: 120px;
   object-fit: contain;
   background: #ffffff;
-  border-radius: 8px;
-  padding: 2px 6px;
+  border-radius: 10px;
+  padding: 3px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .mobile-header-title {
@@ -1992,20 +1993,143 @@ body.login-page {
 }
 
 /* ============================================================
-   DARK MODE ADJUSTMENTS FOR MOBILE UI
+   GLOBAL & COMPREHENSIVE DARK MODE SYSTEM
    ============================================================ */
+body.dark-mode {
+  --bg: #090d16;
+  --surface: #0f172a;
+  --surface-alt: #1e293b;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .content,
+body.dark-mode .main-content,
+body.dark-mode .dashboard-page,
+body.dark-mode .app-page {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .card,
+body.dark-mode .widget-card,
+body.dark-mode .table-card,
+body.dark-mode .clocking-card,
+body.dark-mode .geo-box,
+body.dark-mode .branch-card,
+body.dark-mode .password-hint,
+body.dark-mode .auth-card,
+body.dark-mode .modal-content,
+body.dark-mode .recent-table {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+body.dark-mode table {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode thead th {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode tbody tr {
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-mode tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+body.dark-mode tbody td {
+  color: #e2e8f0 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.dark-mode input::placeholder {
+  color: #64748b !important;
+}
+
+body.dark-mode .coordinates,
+body.dark-mode .helper-text {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .tab-btn {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .tab-btn.active {
+  color: #38bdf8 !important;
+  border-bottom-color: #38bdf8 !important;
+}
+
 body.dark-mode .mobile-app-header {
-  background: rgba(2, 6, 23, 0.96);
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  background: rgba(2, 6, 23, 0.96) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 body.dark-mode .mobile-bottom-nav {
-  background: rgba(2, 6, 23, 0.97);
-  border-top-color: rgba(255, 255, 255, 0.05);
+  background: rgba(2, 6, 23, 0.97) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 body.dark-mode .bottom-nav-item.clock-highlight .clock-circle {
   box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45), 0 0 0 4px #020617;
 }
+
+/* Modern Thick Vector Icons */
+.t-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.t-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 2.3;
+  stroke: currentColor;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.b-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.3;
+  stroke: currentColor;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-item .t-icon {
+  margin-right: 2px;
+}
+
 
 

@@ -1786,7 +1786,14 @@ if ($staff_id) {
                 cameraContainer.style.borderColor = '#10b981';
                 showApiSuccess(data.message);
                 btn.innerHTML = 'Verified!';
-                setTimeout(() => location.reload(), 1200);
+                if (window.TDSAudio) {
+                    if (action === 'clock_out' || (data.message && data.message.toLowerCase().includes('out'))) {
+                        TDSAudio.playClockOut();
+                    } else {
+                        TDSAudio.playClockIn();
+                    }
+                }
+                setTimeout(() => location.reload(), 1400);
             } else {
                 let errMsg = data.message || 'Verification failed.';
                 if (data.debug && data.debug.dist) {
@@ -2565,8 +2572,16 @@ async function processBiometricClock() {
         if (resultBox) {
             resultBox.innerHTML = '<div style="background:#f0fdf4;color:#166534;border:1.5px solid #22c55e;padding:14px;border-radius:14px;margin-top:14px;font-weight:700;">🎉 ' + res.message + '</div>';
         }
+        if (window.TDSAudio) {
+            if (res.action === 'clock_out' || (res.message && res.message.toLowerCase().includes('out'))) {
+                TDSAudio.playClockOut();
+            } else {
+                TDSAudio.playClockIn();
+            }
+        }
         setTimeout(() => location.reload(), 1400);
     } catch (err) {
+        if (window.TDSAudio) TDSAudio.playError();
         if (bioCard) bioCard.classList.remove('scanning');
         if (bioBtn) {
             bioBtn.disabled = false;

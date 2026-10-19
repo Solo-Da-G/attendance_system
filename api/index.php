@@ -92,12 +92,12 @@ render_form:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="TDS Attendance">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/asset/img/tds_logo.png">
+<meta name="theme-color" content="#060d1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TDS Attendance">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/asset/img/tds_logo.png">
 <title>Sign In — TDS Attendance Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -109,47 +109,50 @@ render_form:
     --primary: #10439f;
     --primary-light: #2563eb;
     --primary-dark: #0c327a;
-    --primary-glow: rgba(16, 67, 159, 0.25);
+    --primary-glow: rgba(16, 67, 159, 0.28);
     --text-main: #0f172a;
     --text-muted: #64748b;
     --border-color: #e2e8f0;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     min-height: 100vh;
-    display: flex;
     background: #060d1f;
     color: var(--text-main);
     overflow-x: hidden;
 }
 
-/* ── LEFT SHOWCASE PANEL WITH 3D SLIDER ── */
-.panel-left {
-    flex: 1.25;
-    background: linear-gradient(150deg, #020617 0%, #071538 40%, #0c2d6f 80%, #172554 100%);
+/* ── SECTION 1: FULL VIEWPORT HERO LANDING SHOWCASE ── */
+.landing-hero {
+    min-height: 100vh;
+    width: 100%;
+    background: linear-gradient(155deg, #020617 0%, #071538 35%, #0c2d6f 75%, #172554 100%);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 40px 48px;
+    padding: 32px 40px 24px;
     position: relative;
     overflow: hidden;
-    min-height: 100vh;
     color: #ffffff;
 }
 
 /* Ambient Floating Glow Spheres */
-.panel-left::before {
+.landing-hero::before {
     content: '';
     position: absolute;
     width: 650px; height: 650px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(37,99,235,0.28) 0%, transparent 68%);
+    background: radial-gradient(circle, rgba(37,99,235,0.32) 0%, transparent 68%);
     top: -200px; right: -200px;
     pointer-events: none;
     animation: orbPulse 10s ease-in-out infinite alternate;
 }
-.panel-left::after {
+.landing-hero::after {
     content: '';
     position: absolute;
     width: 550px; height: 550px;
@@ -167,7 +170,7 @@ body {
 .mesh-overlay {
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.2px, transparent 1.2px);
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.2px, transparent 1.2px);
     background-size: 28px 28px;
     pointer-events: none;
 }
@@ -180,65 +183,98 @@ body {
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .brand-capsule {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.24);
     border-radius: 99px;
-    padding: 8px 18px 8px 12px;
+    padding: 8px 20px 8px 12px;
     backdrop-filter: blur(14px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
 
+/* Enlarged TDS Logo */
 .brand-logo-img {
-    height: 32px;
+    height: 44px;
     width: auto;
     display: block;
     background: #ffffff;
-    border-radius: 99px;
-    padding: 3px 8px;
+    border-radius: 12px;
+    padding: 3px 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .brand-text-label {
-    font-size: 13.5px;
+    font-size: 15px;
     font-weight: 800;
     color: #ffffff;
     letter-spacing: 0.5px;
+}
+
+.showcase-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .version-pill {
     background: rgba(250, 204, 21, 0.15);
     border: 1px solid rgba(250, 204, 21, 0.35);
     color: #fde047;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 800;
-    padding: 4px 12px;
+    padding: 6px 14px;
     border-radius: 99px;
     letter-spacing: 0.8px;
     text-transform: uppercase;
+}
+
+.direct-signin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.25s ease;
+}
+.direct-signin-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
 }
 
 /* ── 3D SLIDER CAROUSEL SECTION ── */
 .slider-container {
     position: relative;
     z-index: 5;
-    margin: 20px 0;
+    margin: 20px auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
+    max-width: 900px;
     min-height: 480px;
 }
 
 .slide-track {
     position: relative;
     width: 100%;
-    max-width: 520px;
+    max-width: 580px;
     height: 420px;
     display: flex;
     align-items: center;
@@ -271,21 +307,21 @@ body {
     position: relative;
     width: 250px;
     height: 250px;
-    border-radius: 28px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
-    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    border-radius: 32px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+    border: 2px solid rgba(255, 255, 255, 0.28);
     backdrop-filter: blur(16px);
-    box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.45), 0 0 40px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.5), 0 0 40px rgba(37, 99, 235, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
     overflow: hidden;
     transition: transform 0.4s ease;
 }
 
 .slide-visual-card:hover {
-    transform: translateY(-4px) scale(1.02);
+    transform: translateY(-4px) scale(1.03);
 }
 
 .slide-visual-card img {
@@ -297,19 +333,18 @@ body {
 
 .slide-visual-card img.transparent-char {
     object-fit: contain;
-    padding: 10px;
+    padding: 12px;
     filter: drop-shadow(0 15px 25px rgba(0,0,0,0.35));
 }
 
-/* Slide Badge */
 .slide-badge {
     position: absolute;
     bottom: 12px;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.88);
     border: 1px solid rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(10px);
     color: #38bdf8;
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 800;
     padding: 5px 14px;
     border-radius: 99px;
@@ -319,9 +354,8 @@ body {
     box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
-/* Slide Text Details */
 .slide-title {
-    font-size: clamp(24px, 2.5vw, 30px);
+    font-size: clamp(24px, 3vw, 34px);
     font-weight: 800;
     letter-spacing: -0.6px;
     line-height: 1.25;
@@ -337,39 +371,49 @@ body {
 }
 
 .slide-desc {
-    font-size: 14.5px;
+    font-size: 15px;
     color: #cbd5e1;
-    max-width: 440px;
-    line-height: 1.55;
+    max-width: 480px;
+    line-height: 1.6;
     font-weight: 500;
 }
 
-/* ── CAROUSEL CONTROLS & DOTS ── */
+/* ── CAROUSEL CONTROLS & THICK MODERN ARROW BUTTONS ── */
 .carousel-nav-wrap {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-top: 14px;
+    gap: 18px;
+    margin-top: 18px;
     z-index: 10;
 }
 
 .nav-arrow-btn {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: white;
-    width: 38px;
-    height: 38px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     backdrop-filter: blur(10px);
-    transition: all 0.25s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.nav-arrow-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.8;
 }
 .nav-arrow-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.28);
+    transform: scale(1.12);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+.nav-arrow-btn:active {
+    transform: scale(0.96);
 }
 
 .carousel-dots {
@@ -382,135 +426,194 @@ body {
     width: 10px;
     height: 10px;
     border-radius: 99px;
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.3);
     cursor: pointer;
     transition: all 0.35s ease;
 }
 
 .carousel-dot.active {
-    width: 28px;
+    width: 32px;
     background: linear-gradient(90deg, #38bdf8, #facc15);
-    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
 }
 
-.showcase-footer {
+/* ── VERTICAL MOTION CALL-TO-ACTION (LANDING TO LOGIN) ── */
+.landing-slide-down-cta {
     position: relative;
     z-index: 10;
+    margin: 10px auto 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding-top: 18px;
-    border-top: 1px solid rgba(255, 255, 255, 0.14);
-    font-size: 12.5px;
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    color: #ffffff;
+    padding: 10px 24px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+}
+.landing-slide-down-cta:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-/* ── RIGHT AUTH PANEL ── */
-.panel-right {
-    flex: 1;
+.cta-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 40px 32px;
-    background: radial-gradient(circle at top right, #f1f5f9 0%, #e2e8f0 40%, #f8fafc 100%);
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.bounce-arrow-icon {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.8;
+    animation: bounceDown 1.8s infinite;
+}
+@keyframes bounceDown {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(6px); }
+    60% { transform: translateY(3px); }
+}
+
+/* ── SECTION 2: LOGIN WORKSPACE ── */
+.login-section {
     min-height: 100vh;
+    width: 100%;
+    background: radial-gradient(ellipse at 50% 30%, #0c204d 0%, #060d1f 65%, #020617 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px 80px;
     position: relative;
 }
 
 .auth-card {
-    background: #ffffff;
-    border-radius: 28px;
-    padding: 44px 40px;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 26px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.2);
     width: 100%;
-    max-width: 440px;
-    box-shadow: 0 24px 60px -15px rgba(16, 67, 159, 0.18), 0 0 0 1px rgba(16, 67, 159, 0.06);
+    max-width: 460px;
+    padding: 38px 36px;
     position: relative;
-    z-index: 2;
-    animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    backdrop-filter: blur(20px);
 }
-@keyframes cardAppear {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: translateY(0); }
+
+/* Centered Top Logo Card on Auth Card */
+.auth-brand-logo-box {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+.auth-brand-logo-box img {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 4px 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
 }
 
 .auth-header {
+    text-align: center;
     margin-bottom: 24px;
 }
+
 .auth-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba(16, 67, 159, 0.08);
-    color: var(--primary);
+    background: #eff6ff;
+    color: var(--primary-light);
     font-size: 11.5px;
     font-weight: 800;
-    padding: 4px 12px;
+    padding: 5px 12px;
     border-radius: 99px;
-    margin-bottom: 10px;
-    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
 }
+
 .auth-header h2 {
-    color: #0f172a;
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 800;
-    letter-spacing: -0.6px;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
     margin-bottom: 4px;
 }
+
 .auth-header p {
-    color: var(--text-muted);
     font-size: 14px;
-    font-weight: 500;
+    color: var(--text-muted);
 }
 
 .role-hint-pill {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #475569;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #f1f5f9;
-    border-radius: 12px;
-    padding: 8px 12px;
     margin-bottom: 20px;
-    font-size: 12px;
-    color: #475569;
-    font-weight: 600;
 }
-.role-hint-pill span.badge-light {
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
+
+.badge-light {
+    background: #e0f2fe;
+    color: #0284c7;
+    font-size: 11px;
     padding: 2px 8px;
     border-radius: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--primary);
+    font-weight: 800;
 }
 
 .form-group {
     margin-bottom: 18px;
-    text-align: left;
 }
+
 .form-label {
     display: block;
-    color: #334155;
     font-size: 13px;
     font-weight: 700;
-    margin-bottom: 6px;
+    color: #334155;
+    margin-bottom: 7px;
 }
+
 .input-wrap {
     position: relative;
     display: flex;
     align-items: center;
 }
+
 .input-wrap .input-icon {
     position: absolute;
-    left: 15px;
+    left: 14px;
     color: #94a3b8;
     pointer-events: none;
     display: flex;
     align-items: center;
-    font-size: 18px;
+    width: 20px;
+    height: 20px;
     transition: color 0.2s ease;
 }
+.input-wrap .input-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke-width: 2.3;
+}
+
 .input-wrap input {
     width: 100%;
     padding: 13px 16px 13px 44px;
@@ -550,6 +653,11 @@ body {
     border-radius: 6px;
     transition: color 0.2s;
 }
+.toggle-password-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.3;
+}
 .toggle-password-btn:hover { color: #334155; }
 
 .form-actions-row {
@@ -557,7 +665,7 @@ body {
     align-items: center;
     justify-content: flex-end;
     margin-top: -4px;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
 }
 .forgot-password-link {
     font-size: 13px;
@@ -589,8 +697,11 @@ body {
     gap: 8px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 8px 24px -4px rgba(16, 67, 159, 0.4);
-    position: relative;
-    overflow: hidden;
+}
+.btn-signin svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.6;
 }
 .btn-signin:hover {
     transform: translateY(-2px);
@@ -598,9 +709,95 @@ body {
 }
 .btn-signin:active { transform: translateY(1px); }
 
+/* ── BIOMETRIC FINGERPRINT LOGIN BUTTON & DIVIDER ── */
+.bio-login-separator {
+    display: flex;
+    align-items: center;
+    margin: 20px 0 16px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+.bio-login-separator::before,
+.bio-login-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+.bio-login-separator span {
+    padding: 0 12px;
+}
+
+.btn-biometric-signin {
+    width: 100%;
+    padding: 13px 18px;
+    background: #0f172a;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
+}
+.btn-biometric-signin .bio-fp-icon {
+    display: flex;
+    align-items: center;
+    color: #38bdf8;
+}
+.btn-biometric-signin:hover {
+    background: #1e293b;
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+}
+.btn-biometric-signin:active { transform: translateY(1px); }
+.btn-biometric-signin:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.biometric-feedback-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    line-height: 1.4;
+}
+.biometric-feedback-box.info {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+.biometric-feedback-box.success {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+.biometric-feedback-box.error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
 .notice-box {
-    margin-top: 18px;
-    padding: 12px 16px;
+    margin-top: 16px;
+    padding: 12px 14px;
     border-radius: 12px;
     font-size: 13px;
     font-weight: 600;
@@ -627,66 +824,89 @@ body {
 }
 
 .auth-footer-help {
-    margin-top: 24px;
+    margin-top: 20px;
     font-size: 12px;
     color: #94a3b8;
     text-align: center;
     line-height: 1.5;
 }
 
-/* ── RESPONSIVE BREAKPOINTS ── */
-@media (max-width: 990px) {
-    body { flex-direction: column; }
-    .panel-left {
-        min-height: auto;
-        padding: 36px 24px;
+.back-to-showcase-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    color: #94a3b8;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.back-to-showcase-btn:hover {
+    color: #ffffff;
+}
+
+/* ── RESPONSIVE STYLES ── */
+@media (max-width: 600px) {
+    .landing-hero {
+        padding: 24px 20px 20px;
+    }
+    .brand-capsule {
+        padding: 6px 14px 6px 10px;
+    }
+    .brand-logo-img {
+        height: 36px;
+    }
+    .brand-text-label {
+        font-size: 13px;
     }
     .slide-visual-card {
-        width: 200px;
-        height: 200px;
+        width: 190px;
+        height: 190px;
+        border-radius: 24px;
     }
     .slider-container {
-        min-height: 380px;
+        min-height: 390px;
     }
     .slide-track {
-        height: 360px;
+        height: 350px;
     }
-    .showcase-footer { display: none; }
-    .panel-right {
-        padding: 36px 20px 60px;
+    .slide-title {
+        font-size: 22px;
     }
-}
-@media (max-width: 480px) {
+    .slide-desc {
+        font-size: 13.5px;
+    }
     .auth-card {
         padding: 30px 20px;
-        border-radius: 20px;
+        border-radius: 22px;
     }
-    .auth-header h2 { font-size: 22px; }
-    .slide-visual-card {
-        width: 170px;
-        height: 170px;
-    }
-    .slide-title { font-size: 20px; }
-    .slide-desc { font-size: 13px; }
 }
 </style>
 </head>
 <body>
 
-<!-- LEFT PANEL: Enterprise 3D Carousel Showcase -->
-<div class="panel-left">
+<!-- SECTION 1: FULL VIEWPORT HERO LANDING SHOWCASE -->
+<section class="landing-hero" id="landingHero">
     <div class="mesh-overlay"></div>
     
     <!-- Top Header -->
-    <div class="showcase-header">
+    <header class="showcase-header">
         <div class="brand-capsule">
             <img src="/asset/img/tds_logo.png" alt="TDS Logo" class="brand-logo-img" onerror="this.style.display='none'">
             <span class="brand-text-label">TDS ENTERPRISE</span>
         </div>
-        <div class="version-pill">
-            <span>✨ Smart Portal 2.0</span>
+        <div class="showcase-header-right">
+            <div class="version-pill">
+                <span>✨ Smart Portal 2.0</span>
+            </div>
+            <a href="#loginSection" class="direct-signin-btn" onclick="scrollToLogin(event)">
+                <span>Sign In</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
         </div>
-    </div>
+    </header>
 
     <!-- 3D Interactive Carousel Section -->
     <div class="slider-container" id="carouselWrapper">
@@ -742,10 +962,10 @@ body {
 
         </div>
 
-        <!-- Carousel Navigation & Dots -->
+        <!-- Carousel Navigation & Thick Modern Arrows -->
         <div class="carousel-nav-wrap">
             <button class="nav-arrow-btn" onclick="prevSlide()" aria-label="Previous Slide">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <div class="carousel-dots" id="carouselDots">
                 <div class="carousel-dot active" onclick="goToSlide(0)"></div>
@@ -754,21 +974,30 @@ body {
                 <div class="carousel-dot" onclick="goToSlide(3)"></div>
             </div>
             <button class="nav-arrow-btn" onclick="nextSlide()" aria-label="Next Slide">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
         </div>
     </div>
 
-    <!-- Bottom Showcase Footer -->
-    <div class="showcase-footer">
-        <span>🔒 256-Bit SSL Encrypted &amp; FIDO2 Ready</span>
-        <span>&copy; <?php echo date('Y'); ?> TDS Hitech Solutions</span>
-    </div>
-</div>
+    <!-- Vertical Motional Slide Trigger Button -->
+    <a href="#loginSection" class="landing-slide-down-cta" onclick="scrollToLogin(event)" id="slideDownTrigger">
+        <div class="cta-row">
+            <span>Proceed to Sign In</span>
+            <svg class="bounce-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </div>
+    </a>
+</section>
 
-<!-- RIGHT PANEL: Login Form -->
-<div class="panel-right">
+<!-- SECTION 2: LOGIN WORKSPACE -->
+<section class="login-section" id="loginSection">
     <div class="auth-card">
+        <!-- Enlarged TDS Brand Logo -->
+        <div class="auth-brand-logo-box">
+            <img src="/asset/img/tds_logo.png" alt="TDS Logo">
+        </div>
+
         <div class="auth-header">
             <div class="auth-badge">🏢 Attendance Workspace</div>
             <h2>Welcome Back 👋</h2>
@@ -776,8 +1005,8 @@ body {
         </div>
 
         <div class="role-hint-pill">
-            <span>Staff or Administrator Login</span>
-            <span class="badge-light">Secure Access</span>
+            <span>Staff or Administrator Access</span>
+            <span class="badge-light">Secure Portal</span>
         </div>
 
         <form method="POST" action="index.php" autocomplete="off" id="loginForm">
@@ -785,7 +1014,7 @@ body {
                 <label class="form-label" for="username">Username or Staff ID</label>
                 <div class="input-wrap">
                     <span class="input-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </span>
                     <input type="text" id="username" name="username" placeholder="e.g. TDS-001 or admin" required autofocus>
                 </div>
@@ -795,11 +1024,11 @@ body {
                 <label class="form-label" for="passwordField">Password</label>
                 <div class="input-wrap">
                     <span class="input-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
                     </span>
                     <input type="password" id="passwordField" name="password" placeholder="Enter your password" required>
                     <button type="button" class="toggle-password-btn" onclick="togglePass()" aria-label="Toggle password visibility">
-                        <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
                 </div>
             </div>
@@ -810,9 +1039,30 @@ body {
 
             <button type="submit" name="login" class="btn-signin" id="submitBtn">
                 <span>Sign In to Dashboard</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
         </form>
+
+        <!-- Device Biometric Fingerprint Login Option -->
+        <div class="bio-login-separator">
+            <span>OR AUTHENTICATE SECURELY</span>
+        </div>
+        <button type="button" class="btn-biometric-signin" id="btnBiometricLogin" onclick="handleBiometricLogin()">
+            <span class="bio-fp-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                    <path d="M2 16h.01"/>
+                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+                    <path d="M5.5 13.5a8 8 0 0 1 1.5-4.5"/>
+                    <path d="M12 2a10 10 0 0 0-9 12"/>
+                    <path d="M12 22a10 10 0 0 1-5-1.5"/>
+                </svg>
+            </span>
+            <span>Sign In with Device Fingerprint / Sensor</span>
+        </button>
+        <div id="biometricFeedback" class="biometric-feedback-box" style="display:none;"></div>
 
         <?php if (!empty($idle_notice)): ?>
             <div class="notice-box notice-idle">
@@ -832,9 +1082,48 @@ body {
             Having trouble signing in? Contact your system administrator for assistance.
         </div>
     </div>
-</div>
+
+    <a href="#landingHero" class="back-to-showcase-btn" onclick="scrollToShowcase(event)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        <span>Back to Feature Showcase</span>
+    </a>
+</section>
+
+<!-- Audio & Biometric Scripts -->
+<script src="/asset/js/attendance-audio.js"></script>
+<script src="/asset/js/biometric.js"></script>
 
 <script>
+// Smooth Motional Slide Controller
+function scrollToLogin(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const target = document.getElementById('loginSection');
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function scrollToShowcase(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const target = document.getElementById('landingHero');
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// Automated Vertical Motional Slide on Entry
+window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasError = document.querySelector('.notice-error');
+    const isRedirect = urlParams.has('reason') || urlParams.has('logged_out') || hasError;
+
+    // If returning from error or logout, slide down quickly; otherwise give a 1.2s showcase reveal then slide down smoothly!
+    const delay = isRedirect ? 100 : 1200;
+    setTimeout(() => {
+        scrollToLogin();
+    }, delay);
+});
+
 // Password Visibility Toggle
 function togglePass() {
     const field = document.getElementById('passwordField');
@@ -847,6 +1136,94 @@ function togglePass() {
         field.type = 'password';
         icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
         icon.style.stroke = 'currentColor';
+    }
+}
+
+// Device Biometric / Fingerprint Login Handler
+async function handleBiometricLogin() {
+    const fb = document.getElementById('biometricFeedback');
+    const btn = document.getElementById('btnBiometricLogin');
+    const usernameInput = document.getElementById('username');
+    const identifier = usernameInput ? usernameInput.value.trim() : '';
+
+    if (fb) {
+        fb.style.display = 'flex';
+        fb.className = 'biometric-feedback-box info';
+        fb.innerHTML = '👆 <strong>Touch your device fingerprint sensor now…</strong>';
+    }
+    if (btn) btn.disabled = true;
+
+    try {
+        if (!window.TDSBiometric) {
+            throw new Error("Biometric module not ready. Please refresh.");
+        }
+        const supported = await TDSBiometric.isSupported();
+        if (!supported) {
+            throw new Error("Your browser or device does not have a registered fingerprint/biometric sensor.");
+        }
+
+        // 1. Get login challenge & options
+        const optUrl = '/api/biometric_options.php?action=login_options' + (identifier ? '&identifier=' + encodeURIComponent(identifier) : '');
+        const optRes = await fetch(optUrl);
+        const options = await optRes.json();
+
+        if (options.status !== 'success') {
+            throw new Error(options.message || 'Could not start biometric authentication.');
+        }
+
+        const allowCreds = (options.allowCredentials || []).map(c => ({
+            type: 'public-key',
+            id: TDSBiometric.base64UrlToBuffer(c.id),
+            transports: c.transports
+        }));
+
+        const getOptions = {
+            challenge: TDSBiometric.base64UrlToBuffer(options.challenge),
+            rpId: options.rpId,
+            allowCredentials: allowCreds,
+            userVerification: options.userVerification || 'required',
+            timeout: options.timeout || 60000
+        };
+
+        const assertion = await navigator.credentials.get({ publicKey: getOptions });
+        if (!assertion) {
+            throw new Error("Biometric verification cancelled.");
+        }
+
+        // 2. Post assertion to biometric_login.php
+        const payload = {
+            credential_id: assertion.id,
+            clientDataJSON: TDSBiometric.bufferToBase64Url(assertion.response.clientDataJSON),
+            authenticatorData: TDSBiometric.bufferToBase64Url(assertion.response.authenticatorData),
+            signature: TDSBiometric.bufferToBase64Url(assertion.response.signature)
+        };
+
+        const loginRes = await fetch('/api/biometric_login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await loginRes.json();
+        if (result.status === 'success') {
+            if (window.TDSAudio) TDSAudio.playSuccess();
+            if (fb) {
+                fb.className = 'biometric-feedback-box success';
+                fb.innerHTML = '✅ ' + result.message;
+            }
+            setTimeout(() => {
+                window.location.href = result.redirect || 'dashboard.php';
+            }, 800);
+        } else {
+            throw new Error(result.message || 'Biometric verification rejected.');
+        }
+    } catch (err) {
+        if (window.TDSAudio) TDSAudio.playError();
+        if (fb) {
+            fb.className = 'biometric-feedback-box error';
+            fb.innerHTML = '❌ ' + err.message;
+        }
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -897,14 +1274,12 @@ function resetAutoPlay() {
     startAutoPlay();
 }
 
-// Event Listeners for Hover and Auto-Play
 const wrapper = document.getElementById('carouselWrapper');
 if (wrapper) {
     wrapper.addEventListener('mouseenter', stopAutoPlay);
     wrapper.addEventListener('mouseleave', startAutoPlay);
 }
 
-// Touch swipe support for mobile
 let touchStartX = 0;
 let touchEndX = 0;
 if (wrapper) {
@@ -914,22 +1289,17 @@ if (wrapper) {
 
     wrapper.addEventListener('touchend', e => {
         touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
+        if (touchEndX < touchStartX - 40) {
+            nextSlide();
+            resetAutoPlay();
+        }
+        if (touchEndX > touchStartX + 40) {
+            prevSlide();
+            resetAutoPlay();
+        }
     }, { passive: true });
 }
 
-function handleSwipe() {
-    if (touchEndX < touchStartX - 40) {
-        nextSlide();
-        resetAutoPlay();
-    }
-    if (touchEndX > touchStartX + 40) {
-        prevSlide();
-        resetAutoPlay();
-    }
-}
-
-// Start rotation on page load
 startAutoPlay();
 </script>
 </body>

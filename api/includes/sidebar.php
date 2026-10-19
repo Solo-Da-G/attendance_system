@@ -1,16 +1,16 @@
-﻿<?php
+<?php
 $current_page = basename($_SERVER['PHP_SELF']);
 $is_staff = isset($_SESSION['staff_id']) && !isset($_SESSION['admin_id']);
 $is_admin = isset($_SESSION['admin_id']);
 $user_display_name = $_SESSION['admin'] ?? ($_SESSION['staff_name'] ?? ($is_staff ? 'Staff Member' : 'Admin'));
 $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 ?>
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ──────────────────────────────────────────────────────────── -->
 <!-- MOBILE APP TOP HEADER (Only on screens <= 768px)               -->
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ──────────────────────────────────────────────────────────── -->
 <header class="mobile-app-header" id="mobileAppHeader">
     <div class="mobile-header-left">
-        <a href="dashboard.php" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+        <a href="dashboard.php" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
             <img src="/asset/img/tds_logo.png" alt="TDS Logo" class="mobile-header-logo">
             <div>
                 <div class="mobile-header-title">TDS Attendance</div>
@@ -19,27 +19,35 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         </a>
     </div>
     <div class="mobile-header-actions">
-        <button class="mobile-header-btn" id="mobileThemeToggle" type="button" title="Toggle Theme" aria-label="Toggle Theme">🌙</button>
-        <button class="mobile-header-btn" id="mobileDrawerOpenBtn" type="button" title="Open Navigation Menu" aria-label="Open Navigation Menu">☰</button>
+        <button class="mobile-header-btn" id="mobileThemeToggle" type="button" title="Toggle Theme" aria-label="Toggle Theme">
+            <span class="t-icon" id="mobileThemeIcon">
+                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </span>
+        </button>
+        <button class="mobile-header-btn" id="mobileDrawerOpenBtn" type="button" title="Open Navigation Menu" aria-label="Open Navigation Menu">
+            <span class="t-icon">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </span>
+        </button>
     </div>
 </header>
 
 <!-- Dark Overlay Backdrop for Mobile Drawer -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ──────────────────────────────────────────────────────────── -->
 <!-- APP SIDEBAR / MOBILE DRAWER                                    -->
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ──────────────────────────────────────────────────────────── -->
 <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
     <!-- Desktop Brand Logo -->
-    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 16px; padding: 14px 12px; margin: 0 20px 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
-        <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 44px; max-width: 100%; width: auto; object-fit: contain; display: block;">
+    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; margin: 0 18px 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.22); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
+        <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 56px; max-width: 100%; width: auto; object-fit: contain; display: block;">
     </div>
 
     <!-- Mobile Drawer Header (User Avatar + Close Button) -->
     <div class="sidebar-drawer-header">
         <div class="sidebar-drawer-user">
-            <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 18px; box-shadow: 0 4px 12px rgba(79,70,229,0.3);">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 18px; box-shadow: 0 4px 14px rgba(79,70,229,0.35);">
                 <?php echo strtoupper(substr($user_display_name, 0, 1)); ?>
             </div>
             <div>
@@ -53,65 +61,95 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
     <nav class="sidebar-nav" aria-label="Navigation Menu">
         <?php if ($is_staff): ?>
             <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">ðŸ </span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                </span>
                 <span class="nav-text">Dashboard</span>
             </a>
             <a href="my_attendance.php" class="nav-item <?php echo $current_page == 'my_attendance.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">🕒</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+                </span>
                 <span class="nav-text">My Attendance</span>
             </a>
             <a href="my_report.php" class="nav-item <?php echo $current_page == 'my_report.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">📊</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </span>
                 <span class="nav-text">My Report</span>
             </a>
             <a href="my_profile.php" class="nav-item <?php echo $current_page == 'my_profile.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">👤</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
                 <span class="nav-text">My Profile</span>
             </a>
             <a href="change_staff_password.php" class="nav-item <?php echo $current_page == 'change_staff_password.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">ðŸ”’</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+                </span>
                 <span class="nav-text">Change Password</span>
             </a>
         <?php elseif ($is_admin): ?>
             <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">📊</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                </span>
                 <span class="nav-text">Dashboard</span>
             </a>
             <a href="employees.php" class="nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">👥</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-3-3.87"/><path d="M7 21v-2a4 4 0 0 1 3-3.87"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><circle cx="17" cy="7" r="4"/></svg>
+                </span>
                 <span class="nav-text">Employees</span>
             </a>
             <a href="attendance.php" class="nav-item <?php echo $current_page == 'attendance.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">📋</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                </span>
                 <span class="nav-text">Attendance Logs</span>
             </a>
             <a href="reports.php" class="nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">📈</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><polyline points="3 8 9 2 15 8"/></svg>
+                </span>
                 <span class="nav-text">Reports</span>
             </a>
             <a href="manage_branches.php" class="nav-item <?php echo $current_page == 'manage_branches.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">ðŸ“</span>
-                <span class="nav-text">Branches & Geofencing</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </span>
+                <span class="nav-text">Branches &amp; Geofencing</span>
             </a>
             <a href="device_settings.php" class="nav-item <?php echo $current_page == 'device_settings.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">ðŸ“¡</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </span>
                 <span class="nav-text">Devices</span>
             </a>
             <a href="user.php" class="nav-item <?php echo $current_page == 'user.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">ðŸ‘‘</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="3"/></svg>
+                </span>
                 <span class="nav-text">Users</span>
             </a>
             <a href="recycle_bin.php" class="nav-item <?php echo $current_page == 'recycle_bin.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">🗑️ï¸</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </span>
                 <span class="nav-text">Recycle Bin</span>
             </a>
             <div class="nav-divider"></div>
             <a href="settings.php" class="nav-item <?php echo $current_page == 'settings.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">⚙️ï¸</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </span>
                 <span class="nav-text">System Settings</span>
             </a>
             <a href="change_password.php" class="nav-item <?php echo $current_page == 'change_password.php' ? 'active' : ''; ?>" data-mobile-nav-link>
-                <span class="nav-icon">ðŸ”’</span>
+                <span class="t-icon nav-icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+                </span>
                 <span class="nav-text">Change Password</span>
             </a>
         <?php endif; ?>
@@ -119,65 +157,95 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         <div class="nav-footer">
             <div class="nav-divider"></div>
             <a href="#" class="nav-item" id="darkModeToggle">
-                <span class="nav-icon">🌙</span>
-                <span class="nav-text">Dark Mode</span>
+                <span class="t-icon nav-icon" id="sidebarThemeIcon">
+                    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </span>
+                <span class="nav-text" id="sidebarThemeText">Dark Mode</span>
             </a>
-            <a href="/api/logout.php" class="nav-item" data-mobile-nav-link style="background: rgba(220, 38, 38, 0.12); color: #ef4444 !important; margin-top: 10px; font-weight: 700;">
-                <span class="nav-icon">🚪</span>
+            <a href="/api/logout.php" class="nav-item nav-logout" data-mobile-nav-link style="background: rgba(239, 68, 68, 0.12); color: #f87171 !important; margin-top: 10px; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.22); border-radius: 12px;">
+                <span class="t-icon nav-icon" style="color: #ef4444;">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </span>
                 <span class="nav-text">Logout</span>
             </a>
         </div>
     </nav>
 </aside>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ──────────────────────────────────────────────────────────── -->
 <!-- NATIVE MOBILE BOTTOM NAVIGATION BAR                            -->
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ──────────────────────────────────────────────────────────── -->
 <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Navigation">
     <?php if ($is_staff): ?>
         <a href="dashboard.php" class="bottom-nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
-            <div class="b-icon">ðŸ </div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+            </div>
             <span>Home</span>
         </a>
         <a href="my_attendance.php" class="bottom-nav-item <?php echo $current_page == 'my_attendance.php' ? 'active' : ''; ?>">
-            <div class="b-icon">🕒</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+            </div>
             <span>Attendance</span>
         </a>
-        <a href="dashboard.php#clockingArea" class="bottom-nav-item clock-highlight" id="mobileQuickClockBtn">
-            <div class="clock-circle">âš¡</div>
+        <a href="dashboard.php#clockSection" class="bottom-nav-item clock-highlight">
+            <div class="clock-circle" title="Punch Clock" aria-label="Punch Clock">
+                <svg viewBox="0 0 24 24" width="26" height="26" stroke="#ffffff" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
             <span>Clock In</span>
         </a>
         <a href="my_report.php" class="bottom-nav-item <?php echo $current_page == 'my_report.php' ? 'active' : ''; ?>">
-            <div class="b-icon">📊</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
             <span>Report</span>
         </a>
         <a href="javascript:void(0)" class="bottom-nav-item" id="mobileMoreBtn">
-            <div class="b-icon">☰</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </div>
             <span>More</span>
         </a>
     <?php elseif ($is_admin): ?>
         <a href="dashboard.php" class="bottom-nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
-            <div class="b-icon">📊</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+            </div>
             <span>Home</span>
         </a>
         <a href="employees.php" class="bottom-nav-item <?php echo $current_page == 'employees.php' ? 'active' : ''; ?>">
-            <div class="b-icon">👥</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-3-3.87"/><path d="M7 21v-2a4 4 0 0 1 3-3.87"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><circle cx="17" cy="7" r="4"/></svg>
+            </div>
             <span>Staff</span>
         </a>
         <a href="attendance.php" class="bottom-nav-item <?php echo $current_page == 'attendance.php' ? 'active' : ''; ?>">
-            <div class="b-icon">📋</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+            </div>
             <span>Logs</span>
         </a>
         <a href="reports.php" class="bottom-nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
-            <div class="b-icon">📈</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><polyline points="3 8 9 2 15 8"/></svg>
+            </div>
             <span>Reports</span>
         </a>
         <a href="javascript:void(0)" class="bottom-nav-item" id="mobileMoreBtn">
-            <div class="b-icon">☰</div>
+            <div class="b-icon">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </div>
             <span>More</span>
         </a>
     <?php endif; ?>
 </nav>
+
+<!-- Audio Feedback Engine -->
+<script src="/asset/js/attendance-audio.js" defer></script>
 
 <script>
 (function () {
@@ -231,38 +299,41 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         if (e.key === 'Escape') closeDrawer();
     });
 
-    // Dark Mode Controller
+    // Dark Mode Controller with SVG Icons & Smooth Transition
     const themeToggles = [
         document.getElementById('darkModeToggle'),
         document.getElementById('mobileThemeToggle')
     ];
 
+    const sunSvg = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+    const moonSvg = '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
     function applyTheme(isDark) {
         if (isDark) {
             document.body.classList.add('dark-mode');
-            themeToggles.forEach(btn => {
-                if (!btn) return;
-                const icon = btn.querySelector('.nav-icon') || btn;
-                const text = btn.querySelector('.nav-text');
-                if (icon) icon.textContent = '☀️ï¸';
-                if (text) text.textContent = 'Light Mode';
-            });
+            const sideIcon = document.getElementById('sidebarThemeIcon');
+            const sideText = document.getElementById('sidebarThemeText');
+            const mobIcon = document.getElementById('mobileThemeIcon');
+            if (sideIcon) sideIcon.innerHTML = sunSvg;
+            if (sideText) sideText.textContent = 'Light Mode';
+            if (mobIcon) mobIcon.innerHTML = sunSvg;
         } else {
             document.body.classList.remove('dark-mode');
-            themeToggles.forEach(btn => {
-                if (!btn) return;
-                const icon = btn.querySelector('.nav-icon') || btn;
-                const text = btn.querySelector('.nav-text');
-                if (icon) icon.textContent = '🌙';
-                if (text) text.textContent = 'Dark Mode';
-            });
+            const sideIcon = document.getElementById('sidebarThemeIcon');
+            const sideText = document.getElementById('sidebarThemeText');
+            const mobIcon = document.getElementById('mobileThemeIcon');
+            if (sideIcon) sideIcon.innerHTML = moonSvg;
+            if (sideText) sideText.textContent = 'Dark Mode';
+            if (mobIcon) mobIcon.innerHTML = moonSvg;
         }
     }
 
-    // Initialize Theme
+    // Initialize Theme from localStorage or system preference
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         applyTheme(true);
+    } else {
+        applyTheme(false);
     }
 
     themeToggles.forEach(btn => {
