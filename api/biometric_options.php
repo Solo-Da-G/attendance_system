@@ -3,99 +3,117 @@
  * WEBAUTHN BIOMETRIC OPTIONS
  * Generates cryptographic challenges for registration, clocking, and login
  */
-include(__DIR__ . "/includes/config.php");
+ob_start();
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
+try {
+    include(__DIR__ . "/includes/config.php");
 
-// Ensure biometrics table exists
-$conn->query("CREATE TABLE IF NOT EXISTS `staff_biometrics` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `staff_id` VARCHAR(50) NOT NULL,
-    `credential_id` VARCHAR(255) NOT NULL,
-    `public_key` TEXT NOT NULL,
-    `device_name` VARCHAR(150) DEFAULT 'Mobile / PC Fingerprint',
-    `counter` INT DEFAULT 0,
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX(`staff_id`),
-    UNIQUE KEY `uniq_cred` (`credential_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-// Helper function to generate URL-safe Base64
-function base64url_encode($data) {
-    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
-}
+    // Ensure biometrics table exists
+    $conn->query("CREATE TABLE IF NOT EXISTS `staff_biometrics` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `staff_id` VARCHAR(50) NOT NULL,
+        `credential_id` VARCHAR(255) NOT NULL,
+        `public_key` TEXT NOT NULL,
+        `device_name` VARCHAR(150) DEFAULT 'Mobile / PC Fingerprint',
+        `counter` INT DEFAULT 0,
+        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX(`staff_id`),
+        UNIQUE KEY `uniq_cred` (`credential_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// -------------------------------------------------------------
-// 0. LOGIN OPTIONS (Public - no active session required)
-// -------------------------------------------------------------
-if ($action === 'login_options') {
-    $identifier = trim($_GET['identifier'] ?? $_POST['identifier'] ?? '');
-    
-    $challenge = random_bytes(32);
-    $_SESSION['webauthn_login_challenge'] = base64url_encode($challenge);
-
-    $allowCredentials = [];
-
-    if (!empty($identifier)) {
-        // Find credentials for this staff_id, email, or username
-        $stmt = $conn->prepare("
-            SELECT b.credential_id 
-            FROM staff_biometrics b 
-            JOIN staff s ON b.staff_id = s.staff_id 
-            WHERE s.staff_id = ? OR s.email = ?
-        ");
-        if ($stmt) {
-            $stmt->bind_param("ss", $identifier, $identifier);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            while ($row = $res->fetch_assoc()) {
-                $allowCredentials[] = [
-                    "type" => "public-key",
-                    "id" => $row['credential_id'],
-                    "transports" => ["internal"]
-                ];
-            }
-            $stmt->close();
-        }
-
-        if (empty($allowCredentials)) {
-            echo json_encode([
-                "status" => "error",
-                "message" => "No fingerprint registered for this account yet. Please sign in with password first and register your fingerprint in the dashboard."
-            ]);
-            exit;
-        }
-    } else {
-        // Global credentials lookup across all registered staff
-        $res = $conn->query("SELECT credential_id FROM staff_biometrics LIMIT 50");
-        if ($res) {
-            while ($row = $res->fetch_assoc()) {
-                $allowCredentials[] = [
-                    "type" => "public-key",
-                    "id" => $row['credential_id'],
-                    "transports" => ["internal"]
-                ];
-            }
-        }
+    // Helper function to generate URL-safe Base64
+    function base64url_encode($data) {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    if (str_contains($host, ':')) {
-        $host = explode(':', $host)[0];
+    // -------------------------------------------------------------
+    // 0. LOGIN OPTIONS (Public - no active session required)
+    // -------------------------------------------------------------
+    if ($action === 'login_options') {
+        $identifier = trim($_GET['identifier'] ?? $_POST['identifier'] ?? '');
+        
+        $challenge = random_bytes(32);
+        $_SESSION['webauthn_login_challenge'] = base64url_encode($challenge);
+
+        $allowCredentials = [];
+
+        if (!empty($identifier)) {
+            // Find credentials for this staff_id, email, or username
+            $stmt = $conn->prepare("
+                SELECT b.credential_id 
+                FROM staff_biometrics b 
+                JOIN staff s ON b.staff_id = s.staff_id 
+                WHERE s.staff_id = ? OR s.email = ?
+            ");
+            if ($stmt) {
+                $stmt->bind_param("ss", $identifier, $identifier);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                while ($row = $res->fetch_assoc()) {
+                    $allowCredentials[] = [
+                        "type" => "public-key",
+                        "id" => $row['credential_id'],
+                        "transports" => ["internal"]
+                    ];
+                }
+                $stmt->close();
+            }
+
+            if (empty($allowCredentials)) {
+                ob_clean();
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "No fingerprint registered for this account yet. Please sign in with password first and register your fingerprint in the dashboard."
+                ]);
+                exit;
+            }
+        } else {
+            // Global credentials lookup across all registered staff
+            $res = $conn->query("SELECT credential_id FROM staff_biometrics LIMIT 50");
+            if ($res) {
+                while ($row = $res->fetch_assoc()) {
+                    $allowCredentials[] = [
+                        "type" => "public-key",
+                        "id" => $row['credential_id'],
+                        "transports" => ["internal"]
+                    ];
+                }
+            }
+            if (empty($allowCredentials)) {
+                ob_clean();
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "No registered fingerprints found. Please sign in with your password first and register your fingerprint in the dashboard."
+                ]);
+                exit;
+            }
+        }
+
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        if (str_contains($host, ':')) {
+            $host = explode(':', $host)[0];
+        }
+
+        $response = [
+            "status" => "success",
+            "challenge" => base64url_encode($challenge),
+            "rpId" => $host,
+            "allowCredentials" => $allowCredentials,
+            "userVerification" => "required",
+            "timeout" => 60000
+        ];
+
+        ob_clean();
+        echo json_encode($response);
+        exit;
     }
-
-    $response = [
-        "status" => "success",
-        "challenge" => base64url_encode($challenge),
-        "rpId" => $host,
-        "allowCredentials" => $allowCredentials,
-        "userVerification" => "required",
-        "timeout" => 60000
-    ];
-
-    echo json_encode($response);
+} catch (Throwable $e) {
+    ob_clean();
+    echo json_encode(["status" => "error", "message" => "Biometric options error: " . $e->getMessage()]);
     exit;
 }
 

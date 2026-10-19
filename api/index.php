@@ -486,99 +486,256 @@ body {
 .login-section {
     min-height: 100vh;
     width: 100%;
-    background: radial-gradient(ellipse at 50% 30%, #0c204d 0%, #060d1f 65%, #020617 100%);
+    background: radial-gradient(ellipse at 50% 20%, #0d2358 0%, #060d1f 60%, #020617 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px 80px;
+    padding: 50px 20px 70px;
     position: relative;
+    overflow: hidden;
+}
+
+.login-section::before {
+    content: '';
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, transparent 68%);
+    top: -100px;
+    pointer-events: none;
 }
 
 .auth-card {
     background: rgba(255, 255, 255, 0.98);
-    border-radius: 26px;
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.2);
+    border-radius: 28px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.25), 0 0 40px rgba(37, 99, 235, 0.15);
     width: 100%;
-    max-width: 460px;
-    padding: 38px 36px;
+    max-width: 470px;
+    padding: 38px 34px;
     position: relative;
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    z-index: 5;
 }
 
-/* Centered Top Logo Card on Auth Card */
+/* Centered Brand Logo Box */
 .auth-brand-logo-box {
     display: flex;
     justify-content: center;
     margin-bottom: 16px;
 }
 .auth-brand-logo-box img {
-    height: 48px;
+    height: 50px;
     width: auto;
     object-fit: contain;
     background: #ffffff;
-    border-radius: 12px;
-    padding: 4px 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 5px 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border: 1.5px solid #e2e8f0;
 }
 
 .auth-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 }
 
 .auth-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: #eff6ff;
-    color: var(--primary-light);
+    gap: 8px;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    color: #1d4ed8;
     font-size: 11.5px;
     font-weight: 800;
-    padding: 5px 12px;
+    padding: 6px 14px;
     border-radius: 99px;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 8px;
+    letter-spacing: 0.7px;
+    margin-bottom: 10px;
+    border: 1px solid #bfdbfe;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.auth-badge .live-dot {
+    width: 7px;
+    height: 7px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #10b981;
+    animation: livePulse 2s infinite ease-in-out;
+}
+@keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
 }
 
 .auth-header h2 {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 800;
     color: var(--text-main);
-    letter-spacing: -0.5px;
-    margin-bottom: 4px;
+    letter-spacing: -0.6px;
+    margin-bottom: 5px;
 }
 
 .auth-header p {
     font-size: 14px;
     color: var(--text-muted);
+    font-weight: 500;
 }
 
+/* Role Hint Pill */
 .role-hint-pill {
     background: #f8fafc;
     border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 8px 14px;
+    border-radius: 14px;
+    padding: 9px 15px;
     font-size: 12.5px;
     font-weight: 700;
     color: #475569;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .badge-light {
     background: #e0f2fe;
     color: #0284c7;
     font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 6px;
+    padding: 3px 9px;
+    border-radius: 8px;
     font-weight: 800;
 }
 
+/* ── HERO BIOMETRIC FINGERPRINT ONE-TOUCH BUTTON ── */
+.btn-biometric-hero {
+    width: 100%;
+    padding: 15px 18px;
+    background: linear-gradient(135deg, #09122c 0%, #11204d 55%, #1e3a8a 100%);
+    border: 2px solid rgba(56, 189, 248, 0.45);
+    border-radius: 18px;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-align: left;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 25px -5px rgba(16, 67, 159, 0.4), 0 0 20px rgba(56, 189, 248, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-biometric-hero::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.1) 50%, transparent 60%);
+    transform: rotate(25deg);
+    animation: sheenSweep 6s infinite;
+    pointer-events: none;
+}
+@keyframes sheenSweep {
+    0% { transform: translateX(-100%) rotate(25deg); }
+    22%, 100% { transform: translateX(100%) rotate(25deg); }
+}
+
+.btn-biometric-hero:hover {
+    transform: translateY(-2px);
+    border-color: #38bdf8;
+    box-shadow: 0 14px 30px -4px rgba(16, 67, 159, 0.55), 0 0 25px rgba(56, 189, 248, 0.35);
+}
+
+.btn-biometric-hero:active {
+    transform: scale(0.98);
+}
+
+.btn-biometric-hero:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.bio-hero-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1.5px solid rgba(56, 189, 248, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #38bdf8;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
+.bio-hero-icon-wrap svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2.3;
+}
+
+.bio-hero-text-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.bio-hero-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.2px;
+}
+
+.bio-hero-sub {
+    font-size: 12px;
+    color: #93c5fd;
+    font-weight: 500;
+}
+
+.bio-hero-badge {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: rgba(56, 189, 248, 0.22);
+    color: #7dd3fc;
+    padding: 4px 9px;
+    border-radius: 8px;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+}
+
+/* ── DIVIDER ── */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 22px 0 20px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+.auth-divider span {
+    padding: 0 14px;
+}
+
+/* ── FORM GROUPS & THICK INPUT CONTROLS ── */
 .form-group {
     margin-bottom: 18px;
 }
@@ -599,29 +756,30 @@ body {
 
 .input-wrap .input-icon {
     position: absolute;
-    left: 14px;
+    left: 15px;
     color: #94a3b8;
     pointer-events: none;
     display: flex;
     align-items: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     transition: color 0.2s ease;
 }
 .input-wrap .input-icon svg {
     width: 100%;
     height: 100%;
-    stroke-width: 2.3;
+    stroke-width: 2.4;
 }
 
 .input-wrap input {
     width: 100%;
-    padding: 13px 16px 13px 44px;
+    height: 52px;
+    padding: 0 16px 0 46px;
     background: #f8fafc;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
     color: #0f172a;
-    font-size: 14.5px;
+    font-size: 15px;
     font-weight: 600;
     font-family: inherit;
     transition: all 0.25s ease;
@@ -634,7 +792,7 @@ body {
     background: #ffffff;
     border-color: var(--primary-light);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16);
 }
 .input-wrap input:focus ~ .input-icon {
     color: var(--primary-light);
@@ -649,24 +807,43 @@ body {
     color: #94a3b8;
     display: flex;
     align-items: center;
-    padding: 4px;
-    border-radius: 6px;
+    padding: 6px;
+    border-radius: 8px;
     transition: color 0.2s;
 }
 .toggle-password-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 21px;
+    height: 21px;
     stroke-width: 2.3;
 }
 .toggle-password-btn:hover { color: #334155; }
 
-.form-actions-row {
+.form-options-row {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    margin-top: -4px;
-    margin-bottom: 20px;
+    justify-content: space-between;
+    margin-top: 4px;
+    margin-bottom: 22px;
+    font-size: 13px;
 }
+
+.remember-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+.remember-label input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: #2563eb;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
 .forgot-password-link {
     font-size: 13px;
     color: var(--primary-light);
@@ -679,128 +856,83 @@ body {
     text-decoration: underline;
 }
 
+/* ── PRIMARY SIGN-IN BUTTON ── */
 .btn-signin {
     width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    height: 54px;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
     border: none;
-    border-radius: 14px;
+    border-radius: 16px;
     color: #ffffff;
     font-weight: 800;
-    font-size: 15px;
-    letter-spacing: 0.3px;
+    font-size: 15.5px;
+    letter-spacing: 0.4px;
     cursor: pointer;
     font-family: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 8px 24px -4px rgba(16, 67, 159, 0.4);
+    gap: 10px;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 25px -4px rgba(16, 67, 159, 0.45), 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 .btn-signin svg {
-    width: 18px;
-    height: 18px;
+    width: 19px;
+    height: 19px;
     stroke-width: 2.6;
+    transition: transform 0.2s;
 }
 .btn-signin:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px -4px rgba(16, 67, 159, 0.5);
+    box-shadow: 0 14px 30px -4px rgba(16, 67, 159, 0.55), 0 6px 16px rgba(37, 99, 235, 0.35);
 }
-.btn-signin:active { transform: translateY(1px); }
-
-/* ── BIOMETRIC FINGERPRINT LOGIN BUTTON & DIVIDER ── */
-.bio-login-separator {
-    display: flex;
-    align-items: center;
-    margin: 20px 0 16px;
-    color: #94a3b8;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
+.btn-signin:hover svg {
+    transform: translateX(4px);
 }
-.bio-login-separator::before,
-.bio-login-separator::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1.5px solid #e2e8f0;
-}
-.bio-login-separator span {
-    padding: 0 12px;
+.btn-signin:active {
+    transform: scale(0.98);
 }
 
-.btn-biometric-signin {
-    width: 100%;
-    padding: 13px 18px;
-    background: #0f172a;
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
-    border-radius: 14px;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: 0.2px;
-    cursor: pointer;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
-}
-.btn-biometric-signin .bio-fp-icon {
-    display: flex;
-    align-items: center;
-    color: #38bdf8;
-}
-.btn-biometric-signin:hover {
-    background: #1e293b;
-    border-color: #38bdf8;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
-}
-.btn-biometric-signin:active { transform: translateY(1px); }
-.btn-biometric-signin:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-    transform: none;
-}
-
+/* ── BIOMETRIC FEEDBACK BOX & STATUS ALERTS ── */
 .biometric-feedback-box {
-    margin-top: 14px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 600;
+    margin-top: 16px;
+    padding: 13px 16px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     text-align: left;
     line-height: 1.4;
+    animation: fadeIn 0.25s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 .biometric-feedback-box.info {
     background: #eff6ff;
     color: #1e40af;
-    border: 1px solid #bfdbfe;
+    border: 1.5px solid #93c5fd;
 }
 .biometric-feedback-box.success {
     background: #f0fdf4;
     color: #166534;
-    border: 1px solid #86efac;
+    border: 1.5px solid #86efac;
 }
 .biometric-feedback-box.error {
     background: #fef2f2;
     color: #991b1b;
-    border: 1px solid #fecaca;
+    border: 1.5px solid #fca5a5;
 }
 
 .notice-box {
     margin-top: 16px;
-    padding: 12px 14px;
-    border-radius: 12px;
+    padding: 13px 16px;
+    border-radius: 14px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -809,13 +941,13 @@ body {
 .notice-error {
     background: #fef2f2;
     color: #b91c1c;
-    border: 1px solid #fecaca;
+    border: 1.5px solid #fecaca;
     animation: shake 0.35s ease both;
 }
 .notice-idle {
     background: #eff6ff;
     color: #1e40af;
-    border: 1px solid #bfdbfe;
+    border: 1.5px solid #bfdbfe;
 }
 @keyframes shake {
     10%, 90% { transform: translateX(-2px); }
@@ -823,8 +955,32 @@ body {
     50% { transform: translateX(4px); }
 }
 
+/* ── TRUST BADGES & FOOTER HELP ── */
+.auth-trust-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1.5px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+.trust-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 99px;
+}
+
 .auth-footer-help {
-    margin-top: 20px;
+    margin-top: 18px;
     font-size: 12px;
     color: #94a3b8;
     text-align: center;
@@ -834,32 +990,78 @@ body {
 .back-to-showcase-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    margin-top: 18px;
-    color: #94a3b8;
-    font-size: 12.5px;
+    gap: 8px;
+    margin-top: 20px;
+    color: #cbd5e1;
+    font-size: 13px;
     font-weight: 700;
     text-decoration: none;
     cursor: pointer;
-    transition: color 0.2s;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 8px 18px;
+    border-radius: 99px;
+    backdrop-filter: blur(10px);
+    transition: all 0.25s ease;
 }
 .back-to-showcase-btn:hover {
     color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
 }
 
-/* ── RESPONSIVE STYLES ── */
+/* ── RESPONSIVE MOBILE STYLES ── */
 @media (max-width: 600px) {
     .landing-hero {
-        padding: 24px 20px 20px;
+        padding: 20px 16px 16px;
     }
     .brand-capsule {
-        padding: 6px 14px 6px 10px;
+        padding: 6px 12px;
     }
     .brand-logo-img {
-        height: 36px;
+        height: 38px;
     }
-    .brand-text-label {
-        font-size: 13px;
+    .login-section {
+        padding: 24px 14px 44px;
+    }
+    .auth-card {
+        padding: 26px 18px;
+        border-radius: 24px;
+        box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.45);
+    }
+    .auth-brand-logo-box img {
+        height: 44px;
+    }
+    .auth-header h2 {
+        font-size: 22px;
+    }
+    .btn-biometric-hero {
+        padding: 13px 15px;
+        gap: 12px;
+    }
+    .bio-hero-icon-wrap {
+        width: 44px;
+        height: 44px;
+    }
+    .bio-hero-icon-wrap svg {
+        width: 25px;
+        height: 25px;
+    }
+    .bio-hero-title {
+        font-size: 14px;
+    }
+    .bio-hero-sub {
+        font-size: 11.5px;
+    }
+    .input-wrap input {
+        height: 50px;
+        font-size: 14.5px;
+        border-radius: 14px;
+    }
+    .btn-signin {
+        height: 50px;
+        font-size: 15px;
+        border-radius: 14px;
     }
     .slide-visual-card {
         width: 190px;
@@ -877,10 +1079,6 @@ body {
     }
     .slide-desc {
         font-size: 13.5px;
-    }
-    .auth-card {
-        padding: 30px 20px;
-        border-radius: 22px;
     }
 }
 </style>
@@ -999,14 +1197,40 @@ body {
         </div>
 
         <div class="auth-header">
-            <div class="auth-badge">🏢 Attendance Workspace</div>
+            <div class="auth-badge">
+                <span class="live-dot"></span>
+                <span>TDS Enterprise Smart Portal</span>
+            </div>
             <h2>Welcome Back 👋</h2>
-            <p>Please enter your credentials to sign in.</p>
+            <p>Select your preferred authentication method</p>
         </div>
 
-        <div class="role-hint-pill">
-            <span>Staff or Administrator Access</span>
-            <span class="badge-light">Secure Portal</span>
+        <!-- Hero Biometric Fingerprint Button (First-Class One-Touch Mobile Auth) -->
+        <button type="button" class="btn-biometric-hero" id="btnBiometricLogin" onclick="handleBiometricLogin()">
+            <div class="bio-hero-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                    <path d="M2 16h.01"/>
+                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+                    <path d="M5.5 13.5a8 8 0 0 1 1.5-4.5"/>
+                    <path d="M12 2a10 10 0 0 0-9 12"/>
+                    <path d="M12 22a10 10 0 0 1-5-1.5"/>
+                </svg>
+            </div>
+            <div class="bio-hero-text-wrap">
+                <span class="bio-hero-title">Quick Fingerprint Sign In</span>
+                <span class="bio-hero-sub">Touch device sensor for 1-tap entry</span>
+            </div>
+            <div class="bio-hero-badge">Instant</div>
+        </button>
+
+        <div id="biometricFeedback" class="biometric-feedback-box" style="display:none;"></div>
+
+        <!-- Separation Divider -->
+        <div class="auth-divider">
+            <span>OR SIGN IN WITH PASSWORD</span>
         </div>
 
         <form method="POST" action="index.php" autocomplete="off" id="loginForm">
@@ -1033,7 +1257,11 @@ body {
                 </div>
             </div>
 
-            <div class="form-actions-row">
+            <div class="form-options-row">
+                <label class="remember-label">
+                    <input type="checkbox" id="rememberMeCheck" checked>
+                    <span>Remember Staff ID</span>
+                </label>
                 <a href="forgot_password.php" class="forgot-password-link">Forgot Password?</a>
             </div>
 
@@ -1042,27 +1270,6 @@ body {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
         </form>
-
-        <!-- Device Biometric Fingerprint Login Option -->
-        <div class="bio-login-separator">
-            <span>OR AUTHENTICATE SECURELY</span>
-        </div>
-        <button type="button" class="btn-biometric-signin" id="btnBiometricLogin" onclick="handleBiometricLogin()">
-            <span class="bio-fp-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-                    <path d="M2 16h.01"/>
-                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-                    <path d="M5.5 13.5a8 8 0 0 1 1.5-4.5"/>
-                    <path d="M12 2a10 10 0 0 0-9 12"/>
-                    <path d="M12 22a10 10 0 0 1-5-1.5"/>
-                </svg>
-            </span>
-            <span>Sign In with Device Fingerprint / Sensor</span>
-        </button>
-        <div id="biometricFeedback" class="biometric-feedback-box" style="display:none;"></div>
 
         <?php if (!empty($idle_notice)): ?>
             <div class="notice-box notice-idle">
@@ -1077,6 +1284,13 @@ body {
                 <span><?php echo htmlspecialchars($error); ?></span>
             </div>
         <?php endif; ?>
+
+        <!-- Trust Badges Strip -->
+        <div class="auth-trust-strip">
+            <div class="trust-pill"><span>🔒</span> 256-Bit SSL</div>
+            <div class="trust-pill"><span>⚡</span> Instant Verify</div>
+            <div class="trust-pill"><span>🛡️</span> Device Guard</div>
+        </div>
 
         <div class="auth-footer-help">
             Having trouble signing in? Contact your system administrator for assistance.
@@ -1111,17 +1325,38 @@ function scrollToShowcase(e) {
     }
 }
 
-// Automated Vertical Motional Slide on Entry
+// Automated Vertical Motional Slide on Entry & Local Storage Staff ID recall
 window.addEventListener('load', () => {
+    // 1. Populate saved Staff ID
+    try {
+        const savedStaffId = localStorage.getItem('tds_saved_staff_id');
+        const usernameInput = document.getElementById('username');
+        if (savedStaffId && usernameInput && !usernameInput.value) {
+            usernameInput.value = savedStaffId;
+        }
+    } catch (e) {}
+
+    // 2. Vertical motional slide down
     const urlParams = new URLSearchParams(window.location.search);
     const hasError = document.querySelector('.notice-error');
     const isRedirect = urlParams.has('reason') || urlParams.has('logged_out') || hasError;
 
-    // If returning from error or logout, slide down quickly; otherwise give a 1.2s showcase reveal then slide down smoothly!
-    const delay = isRedirect ? 100 : 1200;
+    // Fast slide if user just logged out or had an error; otherwise 1.1s showcase reveal then slide smoothly
+    const delay = isRedirect ? 120 : 1100;
     setTimeout(() => {
         scrollToLogin();
     }, delay);
+});
+
+// Save Staff ID on form submission if remember checkbox is checked
+document.getElementById('loginForm')?.addEventListener('submit', function() {
+    const rememberCheck = document.getElementById('rememberMeCheck');
+    const usernameInput = document.getElementById('username');
+    if (usernameInput && (!rememberCheck || rememberCheck.checked)) {
+        try {
+            localStorage.setItem('tds_saved_staff_id', usernameInput.value.trim());
+        } catch (e) {}
+    }
 });
 
 // Password Visibility Toggle
@@ -1139,7 +1374,7 @@ function togglePass() {
     }
 }
 
-// Device Biometric / Fingerprint Login Handler
+// Device Biometric / Fingerprint Login Handler with hardened JSON resilience
 async function handleBiometricLogin() {
     const fb = document.getElementById('biometricFeedback');
     const btn = document.getElementById('btnBiometricLogin');
@@ -1155,7 +1390,7 @@ async function handleBiometricLogin() {
 
     try {
         if (!window.TDSBiometric) {
-            throw new Error("Biometric module not ready. Please refresh.");
+            throw new Error("Biometric module not ready. Please refresh the page.");
         }
         const supported = await TDSBiometric.isSupported();
         if (!supported) {
@@ -1165,10 +1400,17 @@ async function handleBiometricLogin() {
         // 1. Get login challenge & options
         const optUrl = '/api/biometric_options.php?action=login_options' + (identifier ? '&identifier=' + encodeURIComponent(identifier) : '');
         const optRes = await fetch(optUrl);
-        const options = await optRes.json();
+        const optText = await optRes.text();
+        let options;
+        try {
+            options = JSON.parse(optText);
+        } catch (e) {
+            console.error("Options response not JSON:", optText);
+            throw new Error("Could not initialize fingerprint scanner. Please sign in with password.");
+        }
 
-        if (options.status !== 'success') {
-            throw new Error(options.message || 'Could not start biometric authentication.');
+        if (!options || options.status !== 'success') {
+            throw new Error((options && options.message) ? options.message : 'Could not start biometric authentication.');
         }
 
         const allowCreds = (options.allowCredentials || []).map(c => ({
@@ -1190,6 +1432,10 @@ async function handleBiometricLogin() {
             throw new Error("Biometric verification cancelled.");
         }
 
+        if (fb) {
+            fb.innerHTML = '⚡ <strong>Verifying fingerprint sensor token…</strong>';
+        }
+
         // 2. Post assertion to biometric_login.php
         const payload = {
             credential_id: assertion.id,
@@ -1204,18 +1450,29 @@ async function handleBiometricLogin() {
             body: JSON.stringify(payload)
         });
 
-        const result = await loginRes.json();
-        if (result.status === 'success') {
+        const loginText = await loginRes.text();
+        let result;
+        try {
+            result = JSON.parse(loginText);
+        } catch (e) {
+            console.error("Login response not JSON:", loginText);
+            throw new Error("Server error during fingerprint verification. Please sign in with password.");
+        }
+
+        if (result && result.status === 'success') {
             if (window.TDSAudio) TDSAudio.playSuccess();
             if (fb) {
                 fb.className = 'biometric-feedback-box success';
                 fb.innerHTML = '✅ ' + result.message;
             }
+            if (result.staff_id) {
+                try { localStorage.setItem('tds_saved_staff_id', result.staff_id); } catch (e) {}
+            }
             setTimeout(() => {
                 window.location.href = result.redirect || 'dashboard.php';
-            }, 800);
+            }, 750);
         } else {
-            throw new Error(result.message || 'Biometric verification rejected.');
+            throw new Error((result && result.message) ? result.message : 'Biometric verification rejected.');
         }
     } catch (err) {
         if (window.TDSAudio) TDSAudio.playError();
