@@ -53,7 +53,13 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TDS Attendance">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/asset/img/tds_logo.png">
     <title>Manage Branches & Geofencing</title>
     <link rel="stylesheet" href="/asset/css/style.css">
     <style>
@@ -109,7 +115,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
 
     <!-- ADD BRANCH FORM -->
     <div class="geo-box">
-        <h3>âž• Add Office Branch</h3>
+        <h3>➕ Add Office Branch</h3>
         <p class="helper-text">To get coordinates, open Google Maps, right-click on your office, and copy the Latitude/Longitude.</p>
         
         <form method="POST">

@@ -74,7 +74,13 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
 <head>
     <title>User Management</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TDS Attendance">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/asset/img/tds_logo.png">
     <link rel="stylesheet" href="/asset/css/style.css">
     <style>
         .user-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
@@ -99,7 +105,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
     
     <div id="admin-tab" class="tab-content active">
         <form method="POST" style="margin-bottom:30px;">
-            <h3 style="margin-bottom:16px;font-size:18px;">âž• Add New Admin User</h3>
+            <h3 style="margin-bottom:16px;font-size:18px;">➕ Add New Admin User</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>
                     <label>Username</label>

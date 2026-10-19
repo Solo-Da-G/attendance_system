@@ -30,6 +30,14 @@
       "dest": "/asset/$1"
     },
     {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/sw.js"
+    },
+    {
       "src": "/(.*)\\.php",
       "dest": "/api/router.php"
     },
