@@ -1549,6 +1549,7 @@ if ($staff_id) {
             maximumAge: 120000
         }).then((pos) => {
             currentCoords = pos.coords;
+            window._lastCoordTime = Date.now();
             updateGeoStatusText(pos.coords);
             return pos;
         }).catch(() => null);
@@ -1556,6 +1557,14 @@ if ($staff_id) {
     }
 
     async function getBestPosition() {
+        // FAST PATH: If location was already warmed up on page load and is fresh (< 3 mins), return immediately (0ms)!
+        if (currentCoords && currentCoords.latitude && currentCoords.longitude) {
+            const age = Date.now() - (window._lastCoordTime || 0);
+            if (age < 180000) {
+                return { coords: currentCoords };
+            }
+        }
+
         try {
             const quick = await getPosition({
                 enableHighAccuracy: true,
@@ -1705,7 +1714,12 @@ if ($staff_id) {
         cameraContainer.style.borderColor = '#3b82f6';
         btn.disabled = true;
         const originalText = btn.innerHTML;
-        btn.innerHTML = 'Checking face & GPS…';
+        btn.innerHTML = 'Verifying face…';
+
+        // Pause background detection to dedicate 100% CPU to clocking
+        if (typeof ClockFace !== 'undefined' && ClockFace.stopLiveDetection) {
+            ClockFace.stopLiveDetection();
+        }
 
         let posResult;
         let faceResult;

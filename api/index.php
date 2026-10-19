@@ -1325,8 +1325,27 @@ function scrollToShowcase(e) {
     }
 }
 
+// Pre-fetch biometric challenge on page load so hardware sensor prompt appears instantly (<100ms)
+let preloadedBioOptions = null;
+
+async function prefetchBiometricOptions() {
+    try {
+        if (!window.TDSBiometric) return;
+        const savedStaffId = localStorage.getItem('tds_saved_staff_id') || '';
+        const optUrl = '/api/biometric_options.php?action=login_options' + (savedStaffId ? '&identifier=' + encodeURIComponent(savedStaffId) : '');
+        const res = await fetch(optUrl);
+        const text = await res.text();
+        const data = JSON.parse(text);
+        if (data && data.status === 'success') {
+            data.forIdentifier = savedStaffId;
+            preloadedBioOptions = data;
+        }
+    } catch (_) {}
+}
+
 // Automated Vertical Motional Slide on Entry & Local Storage Staff ID recall
 window.addEventListener('load', () => {
+    prefetchBiometricOptions();
     // 1. Populate saved Staff ID
     try {
         const savedStaffId = localStorage.getItem('tds_saved_staff_id');
@@ -1397,16 +1416,21 @@ async function handleBiometricLogin() {
             throw new Error("Your browser or device does not have a registered fingerprint/biometric sensor.");
         }
 
-        // 1. Get login challenge & options
-        const optUrl = '/api/biometric_options.php?action=login_options' + (identifier ? '&identifier=' + encodeURIComponent(identifier) : '');
-        const optRes = await fetch(optUrl);
-        const optText = await optRes.text();
-        let options;
-        try {
-            options = JSON.parse(optText);
-        } catch (e) {
-            console.error("Options response not JSON:", optText);
-            throw new Error("Could not initialize fingerprint scanner. Please sign in with password.");
+        // 1. Get login challenge & options (fast-track: use preloaded challenge for instant popup)
+        let options = null;
+        if (preloadedBioOptions && (!identifier || preloadedBioOptions.forIdentifier === identifier)) {
+            options = preloadedBioOptions;
+            preloadedBioOptions = null; // consume once
+        } else {
+            const optUrl = '/api/biometric_options.php?action=login_options' + (identifier ? '&identifier=' + encodeURIComponent(identifier) : '');
+            const optRes = await fetch(optUrl);
+            const optText = await optRes.text();
+            try {
+                options = JSON.parse(optText);
+            } catch (e) {
+                console.error("Options response not JSON:", optText);
+                throw new Error("Could not initialize fingerprint scanner. Please sign in with password.");
+            }
         }
 
         if (!options || options.status !== 'success') {

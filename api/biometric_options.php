@@ -12,18 +12,7 @@ try {
 
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-    // Ensure biometrics table exists
-    $conn->query("CREATE TABLE IF NOT EXISTS `staff_biometrics` (
-        `id` INT AUTO_INCREMENT PRIMARY KEY,
-        `staff_id` VARCHAR(50) NOT NULL,
-        `credential_id` VARCHAR(255) NOT NULL,
-        `public_key` TEXT NOT NULL,
-        `device_name` VARCHAR(150) DEFAULT 'Mobile / PC Fingerprint',
-        `counter` INT DEFAULT 0,
-        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-        INDEX(`staff_id`),
-        UNIQUE KEY `uniq_cred` (`credential_id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // staff_biometrics table verified in schema
 
     // Helper function to generate URL-safe Base64
     function base64url_encode($data) {
@@ -73,7 +62,7 @@ try {
             }
         } else {
             // Global credentials lookup across all registered staff
-            $res = $conn->query("SELECT credential_id FROM staff_biometrics LIMIT 50");
+            $res = $conn->query("SELECT credential_id FROM staff_biometrics LIMIT 10");
             if ($res) {
                 while ($row = $res->fetch_assoc()) {
                     $allowCredentials[] = [

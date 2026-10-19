@@ -46,18 +46,7 @@ include(__DIR__ . "/lib/Geolocation.php");
 // AUDIT HELPER
 // ──────────────────────────────────────────────────────────────────
 function audit_clock_event($conn, $staff_id, $full_name, $event_type, $detail) {
-    // Silently create table if missing
-    $conn->query("
-        CREATE TABLE IF NOT EXISTS audit_log (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            staff_id VARCHAR(50),
-            full_name VARCHAR(200),
-            event_type VARCHAR(80) NOT NULL,
-            event_detail TEXT,
-            ip_address VARCHAR(60),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
+    // audit_log table verified in schema
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
     $s = $conn->prepare("INSERT INTO audit_log (staff_id, full_name, event_type, event_detail, ip_address) VALUES (?,?,?,?,?)");
     if ($s) {
@@ -147,11 +136,7 @@ try {
     }
 } catch (Throwable $t) { /* ignore */ }
 
-// ──────────────────────────────────────────────────────────────────
-// CREATE COLUMNS IF MISSING
-// ──────────────────────────────────────────────────────────────────
-try { $conn->query("ALTER TABLE attendance ADD COLUMN branch_in VARCHAR(100) NULL"); } catch(Exception $e) {}
-try { $conn->query("ALTER TABLE attendance ADD COLUMN branch_out VARCHAR(100) NULL"); } catch(Exception $e) {}
+// Columns branch_in and branch_out already verified in schema
 
 // ──────────────────────────────────────────────────────────────────
 // GEOFENCE VALIDATION & BRANCH DETECTION

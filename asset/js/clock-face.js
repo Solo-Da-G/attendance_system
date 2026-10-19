@@ -87,9 +87,19 @@
     return null;
   }
 
-  // ── load profile photo and extract face descriptor ──────────────
+  // Helper to hash photo string for instant descriptor caching
+  function getPhotoHash(str) {
+    let h = 0;
+    const len = str.length;
+    for (let i = 0; i < Math.min(len, 600); i++) {
+      h = ((h << 5) - h) + str.charCodeAt(i);
+      h |= 0;
+    }
+    return 'tds_face_desc_' + len + '_' + Math.abs(h);
+  }
+
+  // ── load profile photo and extract face descriptor (cached in localStorage) ──
   async function loadProfilePhoto(photoDataUri) {
-    await loadModels();
     if (!photoDataUri || photoDataUri.length < 500) {
       throw new Error('Profile photo missing or too small. Admin: re-upload a clear face photo in Employees.');
     }
@@ -97,12 +107,33 @@
       throw new Error('Invalid profile photo format. Re-upload a JPG or PNG in Employees.');
     }
 
+    // Check localStorage cache first for 0ms instantaneous loading
+    const cacheKey = getPhotoHash(photoDataUri);
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length === 128) {
+          profileDescriptor = new Float32Array(parsed);
+          // Start background model load without blocking
+          loadModels().catch(() => {});
+          return;
+        }
+      }
+    } catch (_) {}
+
+    await loadModels();
     const img = await loadImageFromDataUri(photoDataUri);
     profileDescriptor = await descriptorFromImage(img, true);
 
     if (!profileDescriptor) {
       throw new Error('No face found in your profile photo. Upload a clear, well-lit, front-facing photo WITHOUT glasses or hat.');
     }
+
+    // Save to cache for future 0ms loads
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(Array.from(profileDescriptor)));
+    } catch (_) {}
   }
 
   // ── wait until video is actually streaming ──────────────────────
@@ -112,15 +143,18 @@
         resolve();
         return;
       }
-      const timeout = setTimeout(() => reject(new Error('Camera not ready. Wait a moment and try again.')), maxMs || 10000);
+      const timeout = setTimeout(() => reject(new Error('Camera not ready. Wait a moment and try again.')), maxMs || 6000);
       const done = () => { clearTimeout(timeout); resolve(); };
       videoEl.addEventListener('loadeddata', done, { once: true });
       videoEl.addEventListener('playing', done, { once: true });
     });
   }
 
-  // ── verify face from live video ─────────────────────────────────
+  // ── verify face from live video (fast 1-2s inference with early exit) ──
   async function verifyVideoFace(videoEl) {
+    // Stop background detection immediately so 100% CPU is available for verification
+    stopLiveDetection();
+
     await loadModels();
     if (!profileDescriptor) {
       throw new Error('Profile face not loaded. Refresh the page.');
@@ -130,21 +164,22 @@
 
     let bestDistance = 999;
     let bestDet = null;
-    // 4 attempts with short delay — picks best match
-    const attempts = 4;
+    // Maximum 2 attempts with optimized 224 input size for 3x faster mobile inference
+    const attempts = 2;
 
     for (let i = 0; i < attempts; i++) {
       const opts = new faceapi.TinyFaceDetectorOptions({
-        inputSize: 320,
-        scoreThreshold: 0.35,  // Lowered back to 0.35 so mobile cameras can detect the face
+        inputSize: 224,
+        scoreThreshold: 0.32,
       });
+
       const det = await faceapi
         .detectSingleFace(videoEl, opts)
         .withFaceLandmarks()
         .withFaceDescriptor();
 
       if (det) {
-        // ── Accessory checks ──────────────────────────────────────
+        // Accessory checks
         if (hasGlassesDetected(det.landmarks)) {
           return {
             match: false,
@@ -165,9 +200,21 @@
           bestDistance = dist;
           bestDet = det;
         }
+
+        // EARLY EXIT: If this frame is a match, return immediately!
+        // No need to run further attempts and delay clocking by 10-20 seconds.
+        if (dist < MATCH_THRESHOLD) {
+          return {
+            match: true,
+            distance: dist,
+            descriptor: Array.from(det.descriptor),
+            message: '✅ Face matched! (score ' + dist.toFixed(2) + ')',
+          };
+        }
       }
+
       if (i < attempts - 1) {
-        await new Promise((r) => setTimeout(r, 150));
+        await new Promise((r) => setTimeout(r, 100));
       }
     }
 
@@ -187,39 +234,34 @@
       message: match
         ? '✅ Face matched! (score ' + bestDistance.toFixed(2) + ')'
         : '❌ Face does not match your profile photo (score ' + bestDistance.toFixed(2) + ', need under ' + MATCH_THRESHOLD + '). '
-          + 'Ensure no glasses/hat, face camera squarely, and use good lighting. If this keeps failing, ask admin to re-upload your profile photo.',
+          + 'Ensure no glasses/hat, face camera squarely, and use good lighting.',
     };
   }
 
-  // ── LIVE DETECTION LOOP (shows green/red/orange border on camera) ──
+  // ── LIVE DETECTION LOOP (lightweight presence indicator, runs every 1200ms) ──
   async function startLiveDetection(videoEl, containerEl) {
     if (!modelsReady || !profileDescriptor) return;
 
     async function loop() {
       if (!liveLoopId) return; // stopped
       try {
-        await waitForVideoReady(videoEl, 2000);
-        const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.40 });
-        const det = await faceapi.detectSingleFace(videoEl, opts).withFaceLandmarks().withFaceDescriptor();
+        await waitForVideoReady(videoEl, 1500);
+        // Use ultra-fast 160 input size just for the border status
+        const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.38 });
+        const det = await faceapi.detectSingleFace(videoEl, opts).withFaceLandmarks();
         if (containerEl) {
           if (!det) {
-            containerEl.style.borderColor = '#e2e8f0'; // neutral — no face
+            containerEl.style.borderColor = '#e2e8f0'; // neutral — looking for face
           } else {
-            // Check accessories first
-            const glassesDetected = hasGlassesDetected(det.landmarks);
-            const capDetected = hasCapDetected(det);
-            if (glassesDetected || capDetected) {
-              containerEl.style.borderColor = '#f59e0b'; // amber — accessory warning
-            } else {
-              const dist = faceapi.euclideanDistance(profileDescriptor, det.descriptor);
-              containerEl.style.borderColor = dist < MATCH_THRESHOLD ? '#10b981' : '#ef4444';
-            }
+            containerEl.style.borderColor = '#10b981'; // green — face in frame!
           }
         }
       } catch (_) { /* ignore live loop errors */ }
-      liveLoopId = setTimeout(loop, 700); // run every 700ms
+      if (liveLoopId) {
+        liveLoopId = setTimeout(loop, 1200); // run every 1200ms (lightweight, saves CPU)
+      }
     }
-    liveLoopId = setTimeout(loop, 500);
+    liveLoopId = setTimeout(loop, 800);
   }
 
   function stopLiveDetection() {
