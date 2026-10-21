@@ -40,6 +40,7 @@ $staff_photo_error = '';
 $style_version = @filemtime(dirname(__DIR__) . "/asset/css/style.css") ?: time();
 $face_api_version = @filemtime(dirname(__DIR__) . "/asset/js/face-api.min.js") ?: time();
 $clock_face_version = @filemtime(dirname(__DIR__) . "/asset/js/clock-face.js") ?: time();
+$audio_version = @filemtime(dirname(__DIR__) . "/asset/js/attendance-audio.js") ?: time();
 $idle_logout_version = @filemtime(dirname(__DIR__) . "/asset/js/idle-logout.js") ?: time();
 
 // Determine greeting based on hour of the day
@@ -106,6 +107,7 @@ if ($staff_id) {
   <title>Dashboard — Attendance System</title>
   <link rel="stylesheet" href="/asset/css/style.css?v=<?php echo $style_version; ?>">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="/asset/js/attendance-audio.js?v=<?php echo $audio_version; ?>"></script>
   <style>
     :root {
         --primary:        #10439f; /* TDS Brand Blue */
@@ -1689,6 +1691,10 @@ if ($staff_id) {
     }
 
     async function processClocking(action) {
+        if (window.TDSAudio) {
+            try { TDSAudio.unlock(); } catch(_) {}
+        }
+
         // ── 7 PM Client-side cutoff ─────────────────────────────────
         const nowHour = new Date().getHours();
         if (nowHour >= 19) {
@@ -1807,7 +1813,7 @@ if ($staff_id) {
                         TDSAudio.playClockIn();
                     }
                 }
-                setTimeout(() => location.reload(), 1400);
+                setTimeout(() => location.reload(), 2200);
             } else {
                 let errMsg = data.message || 'Verification failed.';
                 if (data.debug && data.debug.dist) {
@@ -2567,6 +2573,10 @@ async function registerCurrentDevice() {
 }
 
 async function processBiometricClock() {
+    if (window.TDSAudio) {
+        try { TDSAudio.unlock(); } catch(_) {}
+    }
+
     const statusText = document.getElementById('bioDeviceStatus');
     const bioCard = document.getElementById('bioTouchCard');
     const bioBtn = document.getElementById('bioClockBtn');
@@ -2593,7 +2603,7 @@ async function processBiometricClock() {
                 TDSAudio.playClockIn();
             }
         }
-        setTimeout(() => location.reload(), 1400);
+        setTimeout(() => location.reload(), 2200);
     } catch (err) {
         if (window.TDSAudio) TDSAudio.playError();
         if (bioCard) bioCard.classList.remove('scanning');
