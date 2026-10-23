@@ -107,7 +107,10 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
     $to = $_GET['to'] ?? '';
     $filter_branch = $_GET['filter_branch'] ?? '';
 
-    $query = "SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.clock_in, a.clock_out, a.status, a.source, a.photo_in, a.photo_out, a.branch_in, a.branch_out
+    $query = "SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.id, a.clock_in, a.clock_out, a.status, a.source, 
+                     (a.photo_in IS NOT NULL AND a.photo_in != '') AS has_photo_in, 
+                     (a.photo_out IS NOT NULL AND a.photo_out != '') AS has_photo_out, 
+                     a.branch_in, a.branch_out
               FROM attendance a
               JOIN staff s ON a.staff_id = s.staff_id WHERE 1=1";
     $params = [];
@@ -127,7 +130,7 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
         $types .= "ss";
     }
 
-    $query .= " ORDER BY a.clock_in DESC";
+    $query .= " ORDER BY a.clock_in DESC LIMIT 200";
 
     if (!empty($params)) {
         $stmt = $conn->prepare($query);
@@ -147,7 +150,12 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
         $src = strtolower(trim((string)($row['source'] ?? '')));
         $srcLabel = $src === 'device' ? 'DEVICE' : ($src === 'mobile' ? 'MOBILE' : 'UNKNOWN');
         $srcBadge = $src === 'device' ? 'badge-info' : ($src === 'mobile' ? 'badge-success' : 'badge-warning');
-        $selfie = $row['photo_in'] ?: ($row['photo_out'] ?: '');
+        $hasSelfie = !empty($row['has_photo_in']) || !empty($row['has_photo_out']);
+        $selfieHtml = "<span style='color:var(--text-muted);'>—</span>";
+        if ($hasSelfie) {
+            $selfieUrl = "/api/photo.php?type=attendance&id=" . (int)$row['id'];
+            $selfieHtml = "<img src='{$selfieUrl}' class='photo' style='border-radius:12px;width:44px;height:44px;object-fit:cover;cursor:pointer;' onclick='showFull(\"{$selfieUrl}\")' loading='lazy' alt='Selfie'>";
+        }
 
         $b_in = htmlspecialchars($row['branch_in'] ?? 'Unknown Branch');
         $b_out = htmlspecialchars($row['branch_out'] ?? 'Unknown Branch');
@@ -166,7 +174,7 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
           <td>{$timeInHtml}</td>
           <td>{$timeOutHtml}</td>
           <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
-          <td>" . ($selfie ? "<img src='{$selfie}' class='photo' style='border-radius:12px;' alt='Selfie'>" : "<span style='color:var(--text-muted);'>—</span>") . "</td>
+          <td>{$selfieHtml}</td>
           <td class='status {$statusClass}'>" . ($row['status'] ?? 'In') . "</td>
         </tr>";
       }
@@ -185,5 +193,10 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
   </div>
 </div>
 
+<script>
+function showFull(src) {
+    if (src) window.open(src, '_blank');
+}
+</script>
 </body>
 </html>

@@ -1305,8 +1305,16 @@ if ($staff_id) {
 
     <!-- ── Collapsible Attendance Log ── -->
     <?php
-        // Pre-count stats for the toggle header
-        $log_res = $conn->query("SELECT a.*, s.full_name, s.photo, COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') AS branch_name FROM attendance a JOIN staff s ON a.staff_id = s.staff_id ORDER BY a.id DESC LIMIT 200");
+        // Pre-count stats for the toggle header (optimized query without heavy base64 blobs)
+        $log_res = $conn->query("SELECT a.id, a.staff_id, a.clock_in, a.clock_out, a.status, 
+                                        (a.photo_in IS NOT NULL AND a.photo_in != '') AS has_photo_in, 
+                                        (a.photo_out IS NOT NULL AND a.photo_out != '') AS has_photo_out, 
+                                        s.full_name, 
+                                        (s.photo IS NOT NULL AND s.photo != '') AS has_photo, 
+                                        COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') AS branch_name 
+                                 FROM attendance a 
+                                 JOIN staff s ON a.staff_id = s.staff_id 
+                                 ORDER BY a.id DESC LIMIT 100");
         $log_rows      = [];
         $log_working   = 0;
         $log_completed = 0;
@@ -1327,7 +1335,7 @@ if ($staff_id) {
             <div class="att-log-toggle-icon">📋</div>
             <div class="att-log-toggle-text">
                 <div class="att-log-toggle-title">Staff Attendance Log</div>
-                <div class="att-log-toggle-sub">Click to expand · Last 200 records · Search by name, ID or branch</div>
+                <div class="att-log-toggle-sub">Click to expand · Recent 100 records · Search by name, ID or branch</div>
             </div>
             <div class="att-log-toggle-badges">
                 <?php if ($log_working > 0): ?>
@@ -1384,13 +1392,15 @@ if ($staff_id) {
                                 $status_badge = 'badge-info';
                                 $status_text  = 'Completed';
                             }
-                            $selfie      = $row['photo_in'] ?: $row['photo_out'];
                             $branch_disp = htmlspecialchars($row['branch_name']);
                             $row_bg      = ($idx % 2 === 0) ? '' : 'style="background:#fafbff;"';
 
                             echo "<tr data-branch='".strtoupper(htmlspecialchars($row['branch_name']))."' {$row_bg}>";
                             echo "<td data-label='Staff Name' style='padding:12px 16px;'>";
-                            if ($row['photo']) echo "<img src='{$row['photo']}' class='staff-thumb'>";
+                            if (!empty($row['has_photo'])) {
+                                $staffPhotoUrl = "/api/photo.php?type=staff&id=" . urlencode($row['staff_id']);
+                                echo "<img src='{$staffPhotoUrl}' class='staff-thumb' loading='lazy' alt='Avatar'>";
+                            }
                             echo "<strong>".htmlspecialchars($row['full_name'])."</strong></td>";
                             echo "<td data-label='Staff ID' style='padding:12px 16px;'><code style='background:#f1f5f9;padding:2px 7px;border-radius:6px;font-size:13px;'>".htmlspecialchars($row['staff_id'])."</code></td>";
                             echo "<td data-label='Branch' style='padding:12px 16px;'><span style='background:rgba(16,67,159,0.06);color:#10439f;border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;'>{$branch_disp}</span></td>";
@@ -1402,8 +1412,9 @@ if ($staff_id) {
                             }
                             echo "<td data-label='Clock Out' style='padding:12px 16px;font-size:13px;'>".$clockOutLabel."</td>";
                             echo "<td data-label='Selfie' style='padding:12px 16px;'>";
-                            if ($selfie) {
-                                echo "<img src='{$selfie}' style='border-radius:10px;width:42px;height:42px;object-fit:cover;cursor:pointer;border:2px solid #e0e7ff;' onclick='showFull(\"{$selfie}\")'>";
+                            if (!empty($row['has_photo_in']) || !empty($row['has_photo_out'])) {
+                                $selfieUrl = "/api/photo.php?type=attendance&id=" . (int)$row['id'];
+                                echo "<img src='{$selfieUrl}' style='border-radius:10px;width:42px;height:42px;object-fit:cover;cursor:pointer;border:2px solid #e0e7ff;' onclick='showFull(\"{$selfieUrl}\")' loading='lazy' alt='Selfie'>";
                             } else {
                                 echo "<span style='color:#cbd5e1;font-size:18px;'>🚫</span>";
                             }

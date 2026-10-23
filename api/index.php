@@ -135,7 +135,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 32px 40px 24px;
+    padding: 24px 32px 18px;
     position: relative;
     overflow: hidden;
     color: #ffffff;
@@ -257,25 +257,25 @@ body {
     transform: translateY(-2px);
 }
 
-/* ── 3D SLIDER CAROUSEL SECTION ── */
+/* ── 3D SLIDER CAROUSEL SECTION (Compact laptop-friendly sizing matching auth-card) ── */
 .slider-container {
     position: relative;
     z-index: 5;
-    margin: 20px auto;
+    margin: 12px auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: 900px;
-    min-height: 480px;
+    max-width: 480px;
+    min-height: 400px;
 }
 
 .slide-track {
     position: relative;
     width: 100%;
-    max-width: 580px;
-    height: 420px;
+    max-width: 460px;
+    height: 330px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -289,7 +289,7 @@ body {
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transform: translateY(20px) scale(0.96);
+    transform: translateY(16px) scale(0.96);
     transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
     text-align: center;
@@ -302,26 +302,26 @@ body {
     z-index: 4;
 }
 
-/* Image Showcase Box */
+/* Image Showcase Box - Sized to comfortably match auth container scale */
 .slide-visual-card {
     position: relative;
-    width: 250px;
-    height: 250px;
-    border-radius: 32px;
+    width: 180px;
+    height: 180px;
+    border-radius: 26px;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
     border: 2px solid rgba(255, 255, 255, 0.28);
     backdrop-filter: blur(16px);
-    box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.5), 0 0 40px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 30px rgba(37, 99, 235, 0.25);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 22px;
+    margin-bottom: 16px;
     overflow: hidden;
     transition: transform 0.4s ease;
 }
 
 .slide-visual-card:hover {
-    transform: translateY(-4px) scale(1.03);
+    transform: translateY(-3px) scale(1.02);
 }
 
 .slide-visual-card img {
@@ -333,33 +333,33 @@ body {
 
 .slide-visual-card img.transparent-char {
     object-fit: contain;
-    padding: 12px;
-    filter: drop-shadow(0 15px 25px rgba(0,0,0,0.35));
+    padding: 10px;
+    filter: drop-shadow(0 12px 20px rgba(0,0,0,0.35));
 }
 
 .slide-badge {
     position: absolute;
-    bottom: 12px;
+    bottom: 10px;
     background: rgba(15, 23, 42, 0.88);
     border: 1px solid rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(10px);
     color: #38bdf8;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
-    padding: 5px 14px;
+    padding: 4px 12px;
     border-radius: 99px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
 .slide-title {
-    font-size: clamp(24px, 3vw, 34px);
+    font-size: 23px;
     font-weight: 800;
-    letter-spacing: -0.6px;
+    letter-spacing: -0.5px;
     line-height: 1.25;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     color: #ffffff;
     text-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
@@ -371,10 +371,10 @@ body {
 }
 
 .slide-desc {
-    font-size: 15px;
+    font-size: 13.5px;
     color: #cbd5e1;
-    max-width: 480px;
-    line-height: 1.6;
+    max-width: 420px;
+    line-height: 1.5;
     font-weight: 500;
 }
 
@@ -382,8 +382,8 @@ body {
 .carousel-nav-wrap {
     display: flex;
     align-items: center;
-    gap: 18px;
-    margin-top: 18px;
+    gap: 16px;
+    margin-top: 14px;
     z-index: 10;
 }
 
@@ -1064,21 +1064,21 @@ body {
         border-radius: 14px;
     }
     .slide-visual-card {
-        width: 190px;
-        height: 190px;
-        border-radius: 24px;
+        width: 165px;
+        height: 165px;
+        border-radius: 22px;
     }
     .slider-container {
-        min-height: 390px;
+        min-height: 370px;
     }
     .slide-track {
-        height: 350px;
+        height: 310px;
     }
     .slide-title {
-        font-size: 22px;
+        font-size: 21px;
     }
     .slide-desc {
-        font-size: 13.5px;
+        font-size: 13px;
     }
 }
 </style>
@@ -1205,34 +1205,6 @@ body {
             <p>Select your preferred authentication method</p>
         </div>
 
-        <!-- Hero Biometric Fingerprint Button (First-Class One-Touch Mobile Auth) -->
-        <button type="button" class="btn-biometric-hero" id="btnBiometricLogin" onclick="handleBiometricLogin()">
-            <div class="bio-hero-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-                    <path d="M2 16h.01"/>
-                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-                    <path d="M5.5 13.5a8 8 0 0 1 1.5-4.5"/>
-                    <path d="M12 2a10 10 0 0 0-9 12"/>
-                    <path d="M12 22a10 10 0 0 1-5-1.5"/>
-                </svg>
-            </div>
-            <div class="bio-hero-text-wrap">
-                <span class="bio-hero-title">Quick Fingerprint Sign In</span>
-                <span class="bio-hero-sub">Touch device sensor for 1-tap entry</span>
-            </div>
-            <div class="bio-hero-badge">Instant</div>
-        </button>
-
-        <div id="biometricFeedback" class="biometric-feedback-box" style="display:none;"></div>
-
-        <!-- Separation Divider -->
-        <div class="auth-divider">
-            <span>OR SIGN IN WITH PASSWORD</span>
-        </div>
-
         <form method="POST" action="index.php" autocomplete="off" id="loginForm">
             <div class="form-group">
                 <label class="form-label" for="username">Username or Staff ID</label>
@@ -1270,6 +1242,34 @@ body {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
         </form>
+
+        <!-- Separation Divider -->
+        <div class="auth-divider">
+            <span>OR SIGN IN WITH BIOMETRICS</span>
+        </div>
+
+        <!-- Biometric Fingerprint Button (Below Sign In to Dashboard) -->
+        <button type="button" class="btn-biometric-hero" id="btnBiometricLogin" onclick="handleBiometricLogin()">
+            <div class="bio-hero-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                    <path d="M2 16h.01"/>
+                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+                    <path d="M5.5 13.5a8 8 0 0 1 1.5-4.5"/>
+                    <path d="M12 2a10 10 0 0 0-9 12"/>
+                    <path d="M12 22a10 10 0 0 1-5-1.5"/>
+                </svg>
+            </div>
+            <div class="bio-hero-text-wrap">
+                <span class="bio-hero-title">Quick Fingerprint Sign In</span>
+                <span class="bio-hero-sub">Touch device sensor for 1-tap entry</span>
+            </div>
+            <div class="bio-hero-badge">Instant</div>
+        </button>
+
+        <div id="biometricFeedback" class="biometric-feedback-box" style="display:none;"></div>
 
         <?php if (!empty($idle_notice)): ?>
             <div class="notice-box notice-idle">
