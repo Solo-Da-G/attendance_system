@@ -38,8 +38,20 @@ if (function_exists('db_has_table') && db_has_table($conn, 'branches')) {
 }
 
 if ($is_near) {
-    // Auto-register staff location to match current GPS so override works smoothly
-    $radius = 300;
+    // Auto-register staff location to match current GPS with branch's configured radius
+    $radius = 200;
+    if ($nearest_branch) {
+        $br = $conn->prepare("SELECT radius_meters FROM branches WHERE LOWER(TRIM(branch_name)) = LOWER(TRIM(?)) LIMIT 1");
+        if ($br) {
+            $br->bind_param("s", $nearest_branch);
+            $br->execute();
+            $br_row = $br->get_result()->fetch_assoc();
+            $br->close();
+            if (!empty($br_row['radius_meters'])) {
+                $radius = (int)$br_row['radius_meters'];
+            }
+        }
+    }
     if (function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lat')) {
         $stmt = $conn->prepare("UPDATE staff SET clock_lat = ?, clock_lng = ?, clock_radius = ? WHERE staff_id = ?");
         if ($stmt) {

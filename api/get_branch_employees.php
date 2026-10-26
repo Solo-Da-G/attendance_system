@@ -24,7 +24,7 @@ if ($filter !== 'all') {
     $sql .= " INNER JOIN attendance a ON a.staff_id = s.staff_id";
 }
 
-$sql .= " WHERE " . $branchCondition;
+$sql .= " WHERE " . $branchCondition . " AND s.deleted_at IS NULL";
 
 if ($filter === 'daily_in') {
     $sql .= " AND DATE(a.clock_in) = CURDATE()";

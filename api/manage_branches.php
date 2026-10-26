@@ -156,9 +156,18 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                 <div class="coordinates">
                     LAT: <?php echo $b['latitude']; ?> | LNG: <?php echo $b['longitude']; ?>
                 </div>
-                    <div style="font-size:14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
-                        <span>Allowed Radius: <strong id="radius-<?php echo $b['id']; ?>"><?php echo $b['radius_meters']; ?> meters</strong></span>
-                        <button type="button" class="action-btn edit-btn" onclick="editBranchRadius(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')" style="margin-left:8px;">✏️ Edit Radius</button>
+                    <div class="radius-controller" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:14px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="font-size:13px;font-weight:700;color:#334155;">📍 Allowed Radius:</span>
+                            <span id="radius-badge-<?php echo $b['id']; ?>" style="font-size:12px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-weight:700;"><strong id="radius-val-<?php echo $b['id']; ?>"><?php echo (int)$b['radius_meters']; ?></strong> meters</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                            <button type="button" onclick="adjustRadius(<?php echo (int)$b['id']; ?>, -50)" style="padding:6px 12px;background:#e2e8f0;color:#1e293b;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px;" title="Decrease 50m">- 50m</button>
+                            <input type="number" id="radius-input-<?php echo $b['id']; ?>" value="<?php echo (int)$b['radius_meters']; ?>" min="10" max="10000" step="10" style="flex:1;min-width:70px;padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;text-align:center;font-weight:700;font-size:14px;" aria-label="Radius in meters">
+                            <button type="button" onclick="adjustRadius(<?php echo (int)$b['id']; ?>, 50)" style="padding:6px 12px;background:#e2e8f0;color:#1e293b;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px;" title="Increase 50m">+ 50m</button>
+                            <button type="button" id="save-btn-<?php echo $b['id']; ?>" class="action-btn edit-btn" onclick="saveBranchRadius(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')" style="padding:8px 14px;background:#10439f;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;">💾 Save</button>
+                        </div>
+                        <div id="status-msg-<?php echo $b['id']; ?>" style="display:none;font-size:12px;font-weight:600;padding:6px 8px;border-radius:6px;margin-top:6px;"></div>
                     </div>
                 <button type="button" class="action-btn edit-btn" style="width:100%;margin-bottom:8px;"
                     onclick="updateBranchGps(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')">
@@ -220,24 +229,80 @@ function updateBranchGps(branchId, branchName) {
         if (data.status === 'success') location.reload();
     }, function() { alert('GPS failed'); }, { enableHighAccuracy: true, timeout: 25000 });
 }
-function editBranchRadius(branchId, branchName) {
-    const newRadius = prompt(`Enter new radius (meters) for "${branchName}":`, '');
-    if (newRadius === null) return;
-    const radius = parseInt(newRadius, 10);
+function adjustRadius(branchId, delta) {
+    const input = document.getElementById('radius-input-' + branchId);
+    if (!input) return;
+    let val = parseInt(input.value, 10) || 100;
+    val = Math.max(10, val + delta);
+    input.value = val;
+}
+
+async function saveBranchRadius(branchId, branchName) {
+    const input = document.getElementById('radius-input-' + branchId);
+    const saveBtn = document.getElementById('save-btn-' + branchId);
+    const badgeVal = document.getElementById('radius-val-' + branchId);
+    const statusBox = document.getElementById('status-msg-' + branchId);
+    if (!input) return;
+
+    const radius = parseInt(input.value, 10);
     if (isNaN(radius) || radius <= 0) {
-        alert('Please enter a valid positive number.');
+        alert('Please enter a valid positive radius (in meters).');
         return;
     }
-    const fd = new FormData();
-    fd.append('branch_id', branchId);
-    fd.append('radius_meters', radius);
-    fetch('update_branch_radius.php', { method: 'POST', body: fd, credentials: 'same-origin' })
-        .then(r => r.json())
-        .then(data => {
-            alert(data.message || (data.status === 'success' ? 'Radius updated!' : 'Failed'));
-            if (data.status === 'success') location.reload();
-        })
-        .catch(() => alert('Network error.'));
+
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Saving…';
+    }
+
+    try {
+        const fd = new FormData();
+        fd.append('branch_id', branchId);
+        fd.append('radius_meters', radius);
+
+        const res = await fetch('update_branch_radius.php', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+        });
+        const data = await res.json();
+
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = '💾 Save';
+        }
+
+        if (data.status === 'success') {
+            if (badgeVal) badgeVal.innerText = radius;
+            if (statusBox) {
+                statusBox.style.display = 'block';
+                statusBox.style.background = '#f0fdf4';
+                statusBox.style.color = '#15803d';
+                statusBox.style.border = '1px solid #bbf7d0';
+                statusBox.innerHTML = '✅ ' + (data.message || 'Radius updated!');
+                setTimeout(() => { statusBox.style.display = 'none'; }, 6000);
+            }
+        } else {
+            if (statusBox) {
+                statusBox.style.display = 'block';
+                statusBox.style.background = '#fef2f2';
+                statusBox.style.color = '#b91c1c';
+                statusBox.style.border = '1px solid #fecaca';
+                statusBox.innerHTML = '❌ ' + (data.message || 'Failed to update');
+            }
+        }
+    } catch (err) {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = '💾 Save';
+        }
+        if (statusBox) {
+            statusBox.style.display = 'block';
+            statusBox.style.background = '#fef2f2';
+            statusBox.style.color = '#b91c1c';
+            statusBox.innerHTML = '❌ Network error updating radius.';
+        }
+    }
 }
 </script>
 

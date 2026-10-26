@@ -19,6 +19,11 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         </a>
     </div>
     <div class="mobile-header-actions">
+        <button class="mobile-header-btn" id="mobileHeaderInstallBtn" type="button" title="Install App on Device" aria-label="Install App" style="display:none; background:#10439f; color:#ffffff;">
+            <span class="t-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </span>
+        </button>
         <button class="mobile-header-btn" id="mobileThemeToggle" type="button" title="Toggle Theme" aria-label="Toggle Theme">
             <span class="t-icon" id="mobileThemeIcon">
                 <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -40,8 +45,19 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 <!-- ──────────────────────────────────────────────────────────── -->
 <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
     <!-- Desktop Brand Logo -->
-    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; margin: 0 18px 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.22); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
+    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; margin: 0 18px 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.22); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
         <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 56px; max-width: 100%; width: auto; object-fit: contain; display: block;">
+    </div>
+
+    <!-- Desktop App Install Trigger -->
+    <div class="desktop-brand" style="margin: 0 18px 16px;">
+        <button type="button" id="desktopInstallAppBtn" class="app-install-trigger" style="width:100%; display:none; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #10439f, #1e40af); color:#ffffff; padding:11px 14px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.2); font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(16,67,159,0.35); transition:all .2s ease;">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>📲 Install App</span>
+        </button>
+        <div id="desktopAppInstalledBadge" style="display:none; text-align:center; font-size:11px; font-weight:700; color:#10b981; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:6px 8px;">
+            ✓ App Installed (Desktop)
+        </div>
     </div>
 
     <!-- Mobile Drawer Header (User Avatar + Close Button) -->
@@ -162,6 +178,12 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
                 </span>
                 <span class="nav-text" id="sidebarThemeText">Dark Mode</span>
             </a>
+            <div class="mobile-drawer-install-wrap" style="margin: 8px 12px 10px;">
+                <button type="button" id="mobileDrawerInstallBtn" class="app-install-trigger" style="width:100%; display:none; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #10439f, #1e40af); color:#ffffff; padding:11px 14px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.2); font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(16,67,159,0.35);">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>📲 Install App</span>
+                </button>
+            </div>
             <a href="/api/logout.php" class="nav-item nav-logout" data-mobile-nav-link style="background: rgba(239, 68, 68, 0.12); color: #f87171 !important; margin-top: 10px; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.22); border-radius: 12px;">
                 <span class="t-icon nav-icon" style="color: #ef4444;">
                     <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -171,6 +193,24 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         </div>
     </nav>
 </aside>
+
+<!-- iOS Safari Add to Home Screen Instructions Modal -->
+<div id="iosInstallModal" class="ios-install-modal" style="display:none; position:fixed; inset:0; background:rgba(6,13,31,0.85); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#ffffff; color:#0f172a; border-radius:24px; padding:26px 22px; max-width:380px; width:100%; box-shadow:0 20px 40px rgba(0,0,0,0.35); text-align:center; position:relative;">
+        <button type="button" onclick="closeIosInstallModal()" style="position:absolute; top:14px; right:16px; background:transparent; border:none; font-size:24px; color:#64748b; cursor:pointer;">&times;</button>
+        <div style="width:60px; height:60px; background:#e0e7ff; border-radius:16px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;">
+            <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="width:42px; height:42px; object-fit:contain;">
+        </div>
+        <h3 style="font-size:18px; font-weight:800; color:#0f172a; margin-bottom:6px;">Install TDS Attendance App</h3>
+        <p style="font-size:13px; color:#64748b; line-height:1.45; margin-bottom:16px;">Add this app to your iPhone/iPad Home Screen for fast, standalone access:</p>
+        <div style="text-align:left; background:#f8fafc; border-radius:12px; padding:12px 14px; margin-bottom:18px; font-size:13px; line-height:1.7; color:#334155; border:1px solid #e2e8f0;">
+            1. Tap the <strong>Share</strong> button <span style="font-size:16px;">⎋</span> at the bottom of Safari<br>
+            2. Scroll down &amp; tap <strong>➕ Add to Home Screen</strong><br>
+            3. Tap <strong>Add</strong> in the top-right corner
+        </div>
+        <button type="button" onclick="closeIosInstallModal()" style="width:100%; padding:11px; background:#10439f; color:#ffffff; border:none; border-radius:12px; font-weight:700; cursor:pointer;">Got It</button>
+    </div>
+</div>
 
 <!-- ──────────────────────────────────────────────────────────── -->
 <!-- NATIVE MOBILE BOTTOM NAVIGATION BAR                            -->
@@ -348,6 +388,90 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 
     window.toggleMobileDrawer = toggleDrawer;
     window.closeMobileDrawer = closeDrawer;
+
+    // ────────────────────────────────────────────────────────────
+    // UNIVERSAL PWA APP INSTALL CONTROLLER (Desktop, Laptop, Android, iOS)
+    // ────────────────────────────────────────────────────────────
+    let deferredInstallPrompt = null;
+    const desktopInstallBtn = document.getElementById('desktopInstallAppBtn');
+    const mobileHeaderInstallBtn = document.getElementById('mobileHeaderInstallBtn');
+    const mobileDrawerInstallBtn = document.getElementById('mobileDrawerInstallBtn');
+    const desktopInstalledBadge = document.getElementById('desktopAppInstalledBadge');
+    const iosModal = document.getElementById('iosInstallModal');
+
+    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    function showInstallTriggers() {
+        if (isStandalone) {
+            if (desktopInstalledBadge) desktopInstalledBadge.style.display = 'block';
+            if (desktopInstallBtn) desktopInstallBtn.style.display = 'none';
+            if (mobileHeaderInstallBtn) mobileHeaderInstallBtn.style.display = 'none';
+            if (mobileDrawerInstallBtn) mobileDrawerInstallBtn.style.display = 'none';
+            return;
+        }
+
+        if (desktopInstallBtn) desktopInstallBtn.style.display = 'inline-flex';
+        if (mobileHeaderInstallBtn) mobileHeaderInstallBtn.style.display = 'inline-flex';
+        if (mobileDrawerInstallBtn) mobileDrawerInstallBtn.style.display = 'inline-flex';
+    }
+
+    // Capture native PWA install prompt (Chrome, Edge on Windows, Mac, Linux, Android)
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        showInstallTriggers();
+    });
+
+    // If on iOS or non-standalone browser, show install triggers
+    if (isIos && !isStandalone) {
+        showInstallTriggers();
+    } else if (!isStandalone) {
+        // Show button on laptops/PCs and mobile so users know it can be installed
+        setTimeout(showInstallTriggers, 800);
+    } else {
+        showInstallTriggers();
+    }
+
+    async function handleInstallClick(e) {
+        if (e) e.preventDefault();
+        
+        if (isIos && !isStandalone) {
+            if (iosModal) iosModal.style.display = 'flex';
+            return;
+        }
+
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            const choiceResult = await deferredInstallPrompt.userChoice;
+            if (choiceResult && choiceResult.outcome === 'accepted') {
+                deferredInstallPrompt = null;
+                if (desktopInstallBtn) desktopInstallBtn.style.display = 'none';
+                if (mobileHeaderInstallBtn) mobileHeaderInstallBtn.style.display = 'none';
+                if (mobileDrawerInstallBtn) mobileDrawerInstallBtn.style.display = 'none';
+                if (desktopInstalledBadge) desktopInstalledBadge.style.display = 'block';
+            }
+        } else {
+            // Inform user how to install directly from browser bar
+            alert("To install this app on your computer or phone:\n\n• Laptop / PC (Chrome or Edge): Click the Install icon (⊕) in the browser address bar.\n• Android: Tap the three dots (⋮) and tap 'Install app' or 'Add to Home screen'.\n• iPhone / iPad: Tap Share (⎋) in Safari and tap 'Add to Home Screen'.");
+        }
+    }
+
+    [desktopInstallBtn, mobileHeaderInstallBtn, mobileDrawerInstallBtn].forEach(btn => {
+        if (btn) btn.addEventListener('click', handleInstallClick);
+    });
+
+    window.closeIosInstallModal = function() {
+        if (iosModal) iosModal.style.display = 'none';
+    };
+
+    window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        if (desktopInstallBtn) desktopInstallBtn.style.display = 'none';
+        if (mobileHeaderInstallBtn) mobileHeaderInstallBtn.style.display = 'none';
+        if (mobileDrawerInstallBtn) mobileDrawerInstallBtn.style.display = 'none';
+        if (desktopInstalledBadge) desktopInstalledBadge.style.display = 'block';
+    });
 
     // Service Worker Registration for PWA Support
     if ('serviceWorker' in navigator) {

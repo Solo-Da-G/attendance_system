@@ -106,18 +106,28 @@ if ($stmtStat) {
     <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
   </div>
 
-  <table>
-    <tr>
-      <th>ID</th>
-      <th>Staff ID</th>
-      <th>Full Name</th>
-      <th>Department</th>
-      <th>Clock In</th>
-      <th>Clock Out</th>
-      <th>Source</th>
-      <th>Status</th>
-      <th>Total Hours</th>
-    </tr>
+  <div style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; padding:10px 14px; border-radius:12px; font-size:13px; font-weight:600; margin: 16px 0 12px; display:flex; align-items:center; gap:8px;">
+    <span>👉</span>
+    <span>Swipe table horizontally to review all columns (department, GPS location, source, status, hours).</span>
+  </div>
+
+  <div class="table-card" style="box-shadow:none; border:1px solid #e2e8f0; border-radius:16px; margin-top:8px; padding:0; overflow:hidden; background:#fff;">
+    <div class="table-scroll" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+      <table class="responsive-table" style="min-width:850px; width:100%; margin:0; border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">ID</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Staff ID</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Full Name</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Department</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Clock In</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Clock Out</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Source</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Status</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Total Hours</th>
+          </tr>
+        </thead>
+        <tbody>
 
     <?php
     $totalRecords = 0;
@@ -128,7 +138,7 @@ if ($stmtStat) {
     
     $query = "SELECT a.id, a.staff_id, s.full_name, s.department, a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out
               FROM attendance a
-              JOIN staff s ON a.staff_id = s.staff_id WHERE 1=1";
+              JOIN staff s ON a.staff_id = s.staff_id WHERE s.deleted_at IS NULL";
     $params = [];
     $types = "";
 
@@ -172,28 +182,31 @@ if ($stmtStat) {
             }
 
             echo "<tr>
-                    <td>{$row['id']}</td>
-                    <td>{$row['staff_id']}</td>
-                    <td>" . htmlspecialchars($row['full_name']) . "</td>
-                    <td>{$row['department']}</td>
-                    <td>{$clockInHtml}</td>
-                    <td>{$clockOutHtml}</td>
-                    <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
-                    <td class='status {$statusClass}'>" . (($row['status'] ?? 'In') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'In')) . "</td>
-                    <td>" . formatHours($hours) . "</td>
+                    <td data-label='ID' style='padding:12px 16px;'>{$row['id']}</td>
+                    <td data-label='Staff ID' style='padding:12px 16px;'><code style='background:#f1f5f9;padding:2px 6px;border-radius:4px;'>{$row['staff_id']}</code></td>
+                    <td data-label='Full Name' style='padding:12px 16px;'><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
+                    <td data-label='Department' style='padding:12px 16px;'>" . htmlspecialchars($row['department'] ?? '—') . "</td>
+                    <td data-label='Clock In' style='padding:12px 16px;'>{$clockInHtml}</td>
+                    <td data-label='Clock Out' style='padding:12px 16px;'>{$clockOutHtml}</td>
+                    <td data-label='Source' style='padding:12px 16px;'><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
+                    <td data-label='Status' style='padding:12px 16px;' class='status {$statusClass}'>" . (($row['status'] ?? 'In') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'In')) . "</td>
+                    <td data-label='Total Hours' style='padding:12px 16px;'><strong>" . formatHours($hours) . "</strong></td>
                   </tr>";
             $totalRecords++;
             $totalHoursAll += $hours;
         }
     } else {
-        echo "<tr><td colspan='9' style='text-align:center;'>No attendance records found.</td></tr>";
+        echo "<tr><td colspan='9' style='text-align:center;padding:32px;color:#94a3b8;'>No attendance records found.</td></tr>";
     }
 
     if (isset($stmt) && $stmt instanceof mysqli_stmt) {
         try { $stmt->close(); } catch (Throwable $e) {}
     }
     ?>
-  </table>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <div class="summary">
     <p>Total Records: <?php echo $totalRecords; ?></p>

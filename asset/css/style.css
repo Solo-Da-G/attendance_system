@@ -7,36 +7,36 @@
 
 /* ---------- CSS Custom Properties ---------- */
 :root {
-  /* Brand palette */
-  --primary:        #4f46e5;
-  --primary-light:  #6366f1;
-  --primary-dark:   #3730a3;
-  --primary-glow:   rgba(99, 102, 241, .18);
+  /* Thick & Vibrant Enterprise Brand palette */
+  --primary:        #10439f;
+  --primary-light:  #1d4ed8;
+  --primary-dark:   #092355;
+  --primary-glow:   rgba(16, 67, 159, .22);
 
-  /* Accents */
-  --success:   #10b981;
+  /* Thick Accents */
+  --success:   #059669;
   --success-bg:#d1fae5;
-  --warning:   #f59e0b;
+  --warning:   #d97706;
   --warning-bg:#fef3c7;
-  --danger:    #ef4444;
+  --danger:    #dc2626;
   --danger-bg: #fee2e2;
-  --info:      #3b82f6;
-  --info-bg:   #dbeafe;
+  --info:      #0284c7;
+  --info-bg:   #e0f2fe;
 
   /* Neutrals */
   --bg:          #f1f5f9;
   --surface:     #ffffff;
   --surface-alt: #f8fafc;
-  --border:      #e2e8f0;
-  --text:        #1e293b;
-  --text-muted:  #64748b;
-  --text-light:  #94a3b8;
+  --border:      #cbd5e1;
+  --text:        #0f172a;
+  --text-muted:  #475569;
+  --text-light:  #64748b;
 
-  /* Sidebar */
-  --sidebar-bg:    #0f172a;
-  --sidebar-hover: #1e293b;
+  /* Thick Dark Enterprise Sidebar */
+  --sidebar-bg:    #060d1f;
+  --sidebar-hover: #0f1e40;
   --sidebar-text:  #94a3b8;
-  --sidebar-active:#4f46e5;
+  --sidebar-active:#10439f;
   --sidebar-w:     280px;
 
   /* Radius */
@@ -1953,15 +1953,33 @@ body.login-page {
   }
 
   /* Mobile Responsive Table Wrapper */
-  .table-card {
-    padding: 12px;
-    border-radius: var(--radius);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  .table-card, .table-scroll, .table-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
   }
 
-  table {
-    min-width: 540px;
+  .table-card table, .table-scroll table, .table-wrapper table {
+    border-collapse: collapse;
+  }
+
+  /* Prevent text clipping and ensure touch accessibility */
+  .table-scroll td, .table-card td, .table-wrapper td {
+    font-size: 13px;
+  }
+
+  .table-scroll::-webkit-scrollbar,
+  .table-wrapper::-webkit-scrollbar,
+  .table-card::-webkit-scrollbar {
+    height: 5px;
+  }
+  .table-scroll::-webkit-scrollbar-thumb,
+  .table-wrapper::-webkit-scrollbar-thumb,
+  .table-card::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
   }
 
   /* Touch-friendly buttons & links */

@@ -179,8 +179,20 @@ if ($clock_branch) {
         $locationRow = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         if ($locationRow && $locationRow['clock_lat'] !== null && $locationRow['clock_lng'] !== null) {
-            $dist = Geolocation::getDistance($lat, $lng, $locationRow['clock_lat'], $locationRow['clock_lng']);
             $rad  = (int)($locationRow['clock_radius'] ?? 300);
+            if (!empty($locationRow['branch']) && $locationRow['branch'] !== 'No Branch') {
+                $bCheck = $conn->prepare("SELECT radius_meters FROM branches WHERE LOWER(TRIM(branch_name)) = LOWER(TRIM(?)) LIMIT 1");
+                if ($bCheck) {
+                    $bCheck->bind_param("s", $locationRow['branch']);
+                    $bCheck->execute();
+                    $bCRow = $bCheck->get_result()->fetch_assoc();
+                    $bCheck->close();
+                    if (!empty($bCRow['radius_meters'])) {
+                        $rad = (int)$bCRow['radius_meters'];
+                    }
+                }
+            }
+            $dist = Geolocation::getDistance($lat, $lng, $locationRow['clock_lat'], $locationRow['clock_lng']);
             if ($dist <= $rad) {
                 $is_near = true;
                 $clock_branch = $locationRow['branch'];

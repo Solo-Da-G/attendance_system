@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tds-attendance-v1';
+const CACHE_NAME = 'tds-attendance-v2';
 const ASSETS = [
   '/',
   '/asset/css/style.css',

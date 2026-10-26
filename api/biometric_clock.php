@@ -70,18 +70,22 @@ if ($s_stmt) {
         $target_lng = $s_row['clock_lng'];
         $radius     = $s_row['clock_radius'] ?: 250;
 
-        // If not set on staff, check branch table
-        if (empty($target_lat) && !empty($branch_name)) {
-            $b_stmt = $conn->prepare("SELECT latitude, longitude, radius_meters FROM branches WHERE branch_name = ? LIMIT 1");
+        // If staff belongs to a branch, ALWAYS query live branch settings from branches table
+        if (!empty($branch_name)) {
+            $b_stmt = $conn->prepare("SELECT latitude, longitude, radius_meters FROM branches WHERE LOWER(TRIM(branch_name)) = LOWER(TRIM(?)) LIMIT 1");
             if ($b_stmt) {
                 $b_stmt->bind_param("s", $branch_name);
                 $b_stmt->execute();
                 $b_row = $b_stmt->get_result()->fetch_assoc();
                 $b_stmt->close();
                 if ($b_row) {
-                    $target_lat = $b_row['latitude'];
-                    $target_lng = $b_row['longitude'];
-                    $radius     = $b_row['radius_meters'] ?: 250;
+                    if (!empty($b_row['latitude']) && !empty($b_row['longitude'])) {
+                        $target_lat = $b_row['latitude'];
+                        $target_lng = $b_row['longitude'];
+                    }
+                    if (!empty($b_row['radius_meters'])) {
+                        $radius = (int)$b_row['radius_meters'];
+                    }
                 }
             }
         }

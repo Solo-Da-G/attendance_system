@@ -18,7 +18,7 @@ if ($branch === '__NO_BRANCH__' || $branch === '⚫ NO BRANCH ASSIGNED') {
 $results = [];
 
 if ($type === 'total_staff') {
-    $sql = "SELECT s.staff_id, s.full_name, s.branch, s.department FROM staff s ORDER BY s.full_name ASC";
+    $sql = "SELECT s.staff_id, s.full_name, s.branch, s.department FROM staff s WHERE s.deleted_at IS NULL ORDER BY s.full_name ASC";
     $res = $conn->query($sql);
     if ($res) {
         while ($row = $res->fetch_assoc()) {
@@ -34,7 +34,7 @@ if ($type === 'total_staff') {
     $sql = "SELECT a.staff_id, s.full_name, s.branch, MIN(a.clock_in) as time_in, MAX(a.clock_out) as time_out, a.status 
             FROM attendance a 
             JOIN staff s ON a.staff_id = s.staff_id 
-            WHERE DATE(a.clock_in) = CURDATE() 
+            WHERE DATE(a.clock_in) = CURDATE() AND s.deleted_at IS NULL
             GROUP BY a.staff_id, s.full_name, s.branch, a.status
             ORDER BY s.full_name ASC";
     $res = $conn->query($sql);
@@ -53,7 +53,7 @@ if ($type === 'total_staff') {
 } elseif ($type === 'absent_today') {
     $sql = "SELECT s.staff_id, s.full_name, s.branch, s.department 
             FROM staff s 
-            WHERE s.staff_id NOT IN (
+            WHERE s.deleted_at IS NULL AND s.staff_id NOT IN (
                 SELECT DISTINCT staff_id FROM attendance WHERE DATE(clock_in) = CURDATE()
             )
             ORDER BY s.full_name ASC";
@@ -88,7 +88,7 @@ if ($type === 'total_staff') {
             }
         }
     }
-    $res = $conn->query("SELECT DISTINCT branch FROM staff WHERE branch IS NOT NULL AND branch != ''");
+    $res = $conn->query("SELECT DISTINCT branch FROM staff WHERE deleted_at IS NULL AND branch IS NOT NULL AND branch != ''");
     if ($res) {
         while ($row = $res->fetch_assoc()) {
             if (!isset($branches[$row['branch']])) {
@@ -127,7 +127,7 @@ if ($type === 'total_staff') {
     $sql = "SELECT a.staff_id, s.full_name, s.branch, MIN(a.clock_in) as time_in, MAX(a.clock_out) as time_out, a.status 
             FROM attendance a 
             JOIN staff s ON a.staff_id = s.staff_id 
-            WHERE $date_filter $out_filter AND $branch_cond
+            WHERE s.deleted_at IS NULL AND $date_filter $out_filter AND $branch_cond
             GROUP BY a.staff_id, s.full_name, s.branch, a.status
             ORDER BY s.full_name ASC";
             

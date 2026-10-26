@@ -970,25 +970,25 @@ if ($staff_id) {
     $present_today = 0;
     $absent_today = 0;
 
-    $res_staff = $conn->query("SELECT COUNT(*) as c FROM staff");
+    $res_staff = $conn->query("SELECT COUNT(*) as c FROM staff WHERE deleted_at IS NULL");
     if ($res_staff) {
         $total_staff = $res_staff->fetch_assoc()['c'];
     }
 
-    $res_present = $conn->query("SELECT COUNT(DISTINCT staff_id) as c FROM attendance WHERE DATE(clock_in) = CURDATE()");
+    $res_present = $conn->query("SELECT COUNT(DISTINCT a.staff_id) as c FROM attendance a JOIN staff s ON a.staff_id = s.staff_id WHERE DATE(a.clock_in) = CURDATE() AND s.deleted_at IS NULL");
     if ($res_present) {
         $present_today = $res_present->fetch_assoc()['c'];
     }
 
     $absent_today = max(0, $total_staff - $present_today);
     
-    $res_th_today = $conn->query("SELECT SUM(total_hours) as th FROM attendance WHERE DATE(clock_in) = CURDATE()");
+    $res_th_today = $conn->query("SELECT SUM(a.total_hours) as th FROM attendance a JOIN staff s ON a.staff_id = s.staff_id WHERE DATE(a.clock_in) = CURDATE() AND s.deleted_at IS NULL");
     $admin_th_today = 0;
     if ($res_th_today) {
         $admin_th_today = $res_th_today->fetch_assoc()['th'] ?? 0;
     }
     
-    $res_missed_yest = $conn->query("SELECT COUNT(*) as c FROM attendance WHERE DATE(clock_in) = CURDATE() - INTERVAL 1 DAY AND status = 'missed_out'");
+    $res_missed_yest = $conn->query("SELECT COUNT(*) as c FROM attendance a JOIN staff s ON a.staff_id = s.staff_id WHERE DATE(a.clock_in) = CURDATE() - INTERVAL 1 DAY AND a.status = 'missed_out' AND s.deleted_at IS NULL");
     $missed_yest = 0;
     if ($res_missed_yest) {
         $missed_yest = $res_missed_yest->fetch_assoc()['c'] ?? 0;
@@ -1000,15 +1000,15 @@ if ($staff_id) {
     for ($i = 6; $i >= 0; $i--) {
         $d = date("Y-m-d", strtotime("-$i days"));
         $chart_labels[] = date("D", strtotime($d));
-        $res_chart = $conn->query("SELECT COUNT(DISTINCT staff_id) as c FROM attendance WHERE DATE(clock_in) = '$d'");
+        $res_chart = $conn->query("SELECT COUNT(DISTINCT a.staff_id) as c FROM attendance a JOIN staff s ON a.staff_id = s.staff_id WHERE DATE(a.clock_in) = '$d' AND s.deleted_at IS NULL");
         $chart_data[] = $res_chart ? $res_chart->fetch_assoc()['c'] : 0;
     }
 
     // ── Branch Scorecard Data ───────────────────────────────────────
-    // Get all unique branches from branches table + staff with no branch
+    // Get all unique branches from branches table + staff with no branch (active staff only)
     $branch_scores = [];
 
-    // Daily clock-in and clock-out per branch (staff.branch used)
+    // Daily clock-in and clock-out per branch (active staff.branch used)
     $score_daily_sql = "
         SELECT
             COALESCE(NULLIF(TRIM(s.branch),''), '__NO_BRANCH__') AS branch_key,
@@ -1016,6 +1016,7 @@ if ($staff_id) {
             COUNT(DISTINCT CASE WHEN DATE(a.clock_in) = CURDATE() AND a.clock_out IS NOT NULL AND a.status != 'missed_out' THEN a.staff_id END) AS daily_out
         FROM staff s
         LEFT JOIN attendance a ON a.staff_id = s.staff_id
+        WHERE s.deleted_at IS NULL
         GROUP BY branch_key
         ORDER BY branch_key ASC
     ";
@@ -1026,6 +1027,7 @@ if ($staff_id) {
             COUNT(DISTINCT CASE WHEN YEARWEEK(a.clock_in,1) = YEARWEEK(CURDATE(),1) AND a.clock_out IS NOT NULL AND a.status != 'missed_out' THEN a.staff_id END) AS weekly_out
         FROM staff s
         LEFT JOIN attendance a ON a.staff_id = s.staff_id
+        WHERE s.deleted_at IS NULL
         GROUP BY branch_key
         ORDER BY branch_key ASC
     ";
@@ -1314,6 +1316,7 @@ if ($staff_id) {
                                         COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') AS branch_name 
                                  FROM attendance a 
                                  JOIN staff s ON a.staff_id = s.staff_id 
+                                 WHERE s.deleted_at IS NULL
                                  ORDER BY a.id DESC LIMIT 100");
         $log_rows      = [];
         $log_working   = 0;
@@ -1363,10 +1366,10 @@ if ($staff_id) {
                            placeholder="Search by name, staff ID, branch, or status…"
                            oninput="filterTable()" autocomplete="off">
                 </div>
-                <p class="search-hint" style="margin-bottom:16px;">💡 e.g. type <strong>Miss Dalemo</strong> or <strong>Head Office</strong> to filter that branch</p>
+                <p class="search-hint" style="margin-bottom:16px;">💡 e.g. type <strong>Head Office</strong> or <strong>Lekki</strong> to filter that branch</p>
 
                 <!-- Table -->
-                <div class="table-scroll" style="border-radius:16px;overflow:hidden;border:1px solid #e0e7ff;">
+                <div class="table-scroll" style="border-radius:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e0e7ff;">
                 <table id="attendanceTable" class="responsive-table">
                     <thead style="background:linear-gradient(135deg, var(--primary), var(--primary-light));">
                         <tr>
@@ -2628,6 +2631,30 @@ async function processBiometricClock() {
         }
     }
 }
+
+// Auto update and synchronize dashboard with database
+(function() {
+    let lastRefresh = Date.now();
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && Date.now() - lastRefresh > 45000) {
+            lastRefresh = Date.now();
+            const activeModal = document.querySelector('.modal[style*="display: flex"], .modal[style*="display: block"]');
+            const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+            if (!activeModal && !isTyping) {
+                location.reload();
+            }
+        }
+    });
+    setInterval(function() {
+        if (!document.hidden) {
+            const activeModal = document.querySelector('.modal[style*="display: flex"], .modal[style*="display: block"]');
+            const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+            if (!activeModal && !isTyping) {
+                location.reload();
+            }
+        }
+    }, 120000);
+})();
 </script>
 
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>

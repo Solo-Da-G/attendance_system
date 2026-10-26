@@ -22,7 +22,18 @@ if ($lat === null || $lng === null) {
     exit;
 }
 
-$radius = 300;
+$radius = 200;
+// Dynamically check assigned branch radius
+$bLookup = $conn->prepare("SELECT b.radius_meters FROM staff s JOIN branches b ON LOWER(TRIM(s.branch)) = LOWER(TRIM(b.branch_name)) WHERE s.staff_id = ? LIMIT 1");
+if ($bLookup) {
+    $bLookup->bind_param("s", $staff_id);
+    $bLookup->execute();
+    $bLookupRes = $bLookup->get_result()->fetch_assoc();
+    $bLookup->close();
+    if (!empty($bLookupRes['radius_meters'])) {
+        $radius = (int)$bLookupRes['radius_meters'];
+    }
+}
 
 if (!function_exists('db_has_column') ||
     !db_has_column($conn, 'staff', 'clock_lat') ||

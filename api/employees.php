@@ -147,6 +147,9 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
     }
     
     @media (max-width: 768px) {
+        .mobile-swipe-hint {
+            display: flex !important;
+        }
         .employees-table th,
         .employees-table td {
             padding: 10px 12px;
@@ -178,7 +181,12 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
         <input type="text" id="employeeSearch" class="search-input" placeholder="Search by name, staff ID, branch..." onkeyup="filterEmployees()">
     </div>
 
-    <div class="table-wrapper">
+    <div class="mobile-swipe-hint" style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; padding:10px 14px; border-radius:12px; font-size:13px; font-weight:600; margin-bottom:12px; display:none; align-items:center; gap:8px;">
+        <span>👉</span>
+        <span>Swipe table sideways to view all staff info &amp; Edit / Delete actions</span>
+    </div>
+
+    <div class="table-wrapper" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; background:white; border-radius:16px; border:1px solid #e2e8f0; margin-top:14px;">
         <table class="employees-table" id="employeesTable">
             <thead>
                 <tr>
@@ -199,26 +207,26 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
                         $hasPhoto = !empty($row['photo']) && strlen($row['photo']) > 500 && strpos($row['photo'], 'data:image') === 0;
                     ?>
                         <tr>
-                            <td>
+                            <td data-label="Photo">
                                 <?php if ($hasPhoto): ?>
                                     <img src="<?php echo htmlspecialchars($row['photo']); ?>" class="staff-photo" alt="Photo">
                                 <?php else: ?>
                                     <div class="no-photo">📷</div>
                                 <?php endif; ?>
                             </td>
-                            <td><code><?php echo htmlspecialchars($row['staff_id']); ?></code></td>
-                            <td><strong><?php echo htmlspecialchars($row['full_name']); ?></strong></td>
-                            <td><?php echo htmlspecialchars($row['job_title'] ?? '—'); ?></td>
-                            <td><?php echo htmlspecialchars($row['department'] ?? '—'); ?></td>
-                            <td><?php echo htmlspecialchars($row['branch'] ?? '—'); ?></td>
-                            <td><?php echo htmlspecialchars($row['email'] ?? '—'); ?></td>
-                            <td><?php echo htmlspecialchars($row['phone'] ?? '—'); ?></td>
-                            <td>
+                            <td data-label="Staff ID"><code><?php echo htmlspecialchars($row['staff_id']); ?></code></td>
+                            <td data-label="Full Name"><strong><?php echo htmlspecialchars($row['full_name']); ?></strong></td>
+                            <td data-label="Job Title"><?php echo htmlspecialchars($row['job_title'] ?? '—'); ?></td>
+                            <td data-label="Department"><?php echo htmlspecialchars($row['department'] ?? '—'); ?></td>
+                            <td data-label="Branch"><?php echo htmlspecialchars($row['branch'] ?? '—'); ?></td>
+                            <td data-label="Email"><?php echo htmlspecialchars($row['email'] ?? '—'); ?></td>
+                            <td data-label="Phone"><?php echo htmlspecialchars($row['phone'] ?? '—'); ?></td>
+                            <td data-label="Actions" style="white-space:nowrap;">
                                 <a href="edit_employee.php?id=<?php echo $row['id']; ?>">
-                                    <button class="action-btn edit-btn">Edit</button>
+                                    <button class="action-btn edit-btn" style="min-height:36px;padding:6px 14px;">Edit</button>
                                 </a>
                                 <a href="delete_employee.php?id=<?php echo $row['id']; ?>" onclick="return confirm('Delete this employee?');">
-                                    <button class="action-btn delete-btn">Delete</button>
+                                    <button class="action-btn delete-btn" style="min-height:36px;padding:6px 14px;">Delete</button>
                                 </a>
                             </td>
                         </tr>
