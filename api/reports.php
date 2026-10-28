@@ -102,8 +102,20 @@ if ($stmtStat) {
     </div>
   </form>
 
-  <div class="print-box">
+  <div class="print-box" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
     <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
+    <?php
+      $repExport = "backup.php?action=attendance_excel";
+      if (!empty($_GET['filter_date'])) {
+          $repExport .= "&from=" . urlencode($_GET['filter_date']) . "&to=" . urlencode($_GET['filter_date']);
+      }
+      if (!empty($_GET['filter_branch'])) {
+          $repExport .= "&branch=" . urlencode($_GET['filter_branch']);
+      }
+    ?>
+    <a href="<?php echo htmlspecialchars($repExport); ?>" target="_blank" style="padding: 10px 18px; border-radius: 8px; background:linear-gradient(135deg, #10b981, #059669); color:white; text-decoration:none; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
+      <span>📊</span> Export to Excel
+    </a>
   </div>
 
   <div style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; padding:10px 14px; border-radius:12px; font-size:13px; font-weight:600; margin: 16px 0 12px; display:flex; align-items:center; gap:8px;">

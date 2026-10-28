@@ -1,9 +1,15 @@
 <?php
+// Suppress deprecation notices so they do not corrupt CSV/ZIP binary streams or JSON/alert outputs
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 include(__DIR__ . "/includes/config.php");
 
 // Ensure auto-backup columns exist in `admin` table
 if (!db_has_column($conn, 'admin', 'auto_backup_freq')) {
     $conn->query("ALTER TABLE `admin` ADD COLUMN `auto_backup_freq` VARCHAR(20) DEFAULT 'never'");
+}
+if (!db_has_column($conn, 'admin', 'auto_backup_type')) {
+    $conn->query("ALTER TABLE `admin` ADD COLUMN `auto_backup_type` VARCHAR(30) DEFAULT 'both'");
 }
 if (!db_has_column($conn, 'admin', 'last_backup_time')) {
     $conn->query("ALTER TABLE `admin` ADD COLUMN `last_backup_time` DATETIME NULL");
@@ -15,38 +21,9 @@ if (!isset($_SESSION['admin_id'])) {
 
 $action = $_GET['action'] ?? '';
 
-// Check auto-backup frequency first
-if ($action === 'auto') {
-    $stmt = $conn->prepare("SELECT id, auto_backup_freq, last_backup_time FROM admin WHERE id = ?");
-    $stmt->bind_param("i", $_SESSION['admin_id']);
-    $stmt->execute();
-    $adminRow = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    
-    if (!$adminRow || $adminRow['auto_backup_freq'] === 'never') {
-        die("Auto backup disabled.");
-    }
-    
-    $freq = $adminRow['auto_backup_freq'];
-    $last = $adminRow['last_backup_time'] ? strtotime($adminRow['last_backup_time']) : 0;
-    
-    $intervals = [
-        '24_hours' => 24 * 3600,
-        '7_days' => 7 * 24 * 3600,
-        '14_days' => 14 * 24 * 3600,
-        '30_days' => 30 * 24 * 3600,
-        '90_days' => 90 * 24 * 3600,
-        '180_days' => 180 * 24 * 3600,
-        '365_days' => 365 * 24 * 3600,
-    ];
-    
-    $required_interval = $intervals[$freq] ?? null;
-    if (!$required_interval || (time() - $last) < $required_interval) {
-        die("Not time yet.");
-    }
-}
-
-// Proceed to dump database
+// -------------------------------------------------------------
+// HELPER: Dump database structure & data to SQL
+// -------------------------------------------------------------
 function dumpDatabase($conn) {
     $tables = [];
     $result = $conn->query("SHOW TABLES");
@@ -88,7 +65,120 @@ function dumpDatabase($conn) {
 }
 
 // -------------------------------------------------------------
-// HELPER: Fetch detailed employee information with metrics
+// HELPER: Fetch detailed attendance records with staff profiles
+// -------------------------------------------------------------
+function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $branch = '') {
+    $where = [];
+    $params = [];
+    $types = '';
+
+    // Month filter (e.g. '2026-10')
+    if (!empty($month) && $month !== 'all') {
+        $where[] = "DATE_FORMAT(a.clock_in, '%Y-%m') = ?";
+        $params[] = $month;
+        $types .= 's';
+    } elseif (!empty($from) && !empty($to)) {
+        $where[] = "DATE(a.clock_in) BETWEEN ? AND ?";
+        $params[] = $from;
+        $params[] = $to;
+        $types .= 'ss';
+    }
+
+    if (!empty($branch) && $branch !== 'all') {
+        $where[] = "(s.branch = ? OR a.branch_in = ? OR a.branch_out = ?)";
+        $params[] = $branch;
+        $params[] = $branch;
+        $params[] = $branch;
+        $types .= 'sss';
+    }
+
+    $whereSql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $hasPhotoIn   = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'photo_in') : false;
+    $hasPhotoOut  = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'photo_out') : false;
+    $hasGeofence  = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'is_geofenced') : false;
+    $hasBranchIn  = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'branch_in') : false;
+    $hasBranchOut = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'branch_out') : false;
+
+    $photoInExpr   = $hasPhotoIn ? "(a.photo_in IS NOT NULL AND a.photo_in != '')" : "0";
+    $photoOutExpr  = $hasPhotoOut ? "(a.photo_out IS NOT NULL AND a.photo_out != '')" : "0";
+    $branchInExpr  = $hasBranchIn ? "COALESCE(a.branch_in, s.branch, 'Main Branch')" : "COALESCE(s.branch, 'Main Branch')";
+    $branchOutExpr = $hasBranchOut ? "COALESCE(a.branch_out, s.branch, 'Main Branch')" : "COALESCE(s.branch, 'Main Branch')";
+    $geoExpr       = $hasGeofence ? "a.is_geofenced" : "0";
+
+    $sql = "SELECT a.id, a.staff_id, a.clock_in, a.clock_out, a.status, a.source, a.total_hours,
+                   {$photoInExpr} AS has_photo_in,
+                   {$photoOutExpr} AS has_photo_out,
+                   {$branchInExpr} AS loc_in,
+                   {$branchOutExpr} AS loc_out,
+                   {$geoExpr} AS is_geofenced,
+                   s.full_name, s.job_title, s.department, s.branch, s.email, s.phone
+            FROM attendance a
+            LEFT JOIN staff s ON a.staff_id = s.staff_id
+            {$whereSql}
+            ORDER BY a.clock_in DESC";
+
+    if (!empty($params)) {
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $res = $stmt->get_result();
+    } else {
+        $res = $conn->query($sql);
+    }
+
+    $records = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $clockInTime = !empty($row['clock_in']) ? date("h:i A", strtotime($row['clock_in'])) : '—';
+            $clockOutTime = !empty($row['clock_out']) ? date("h:i A", strtotime($row['clock_out'])) : 'Still Working';
+            $date = !empty($row['clock_in']) ? date("Y-m-d", strtotime($row['clock_in'])) : '—';
+            $dayName = !empty($row['clock_in']) ? date("l", strtotime($row['clock_in'])) : '—';
+            
+            $status = 'Completed';
+            if (($row['status'] ?? '') === 'missed_out') {
+                $status = 'missed(clockout)';
+            } elseif (empty($row['clock_out'])) {
+                $status = 'Working';
+            }
+
+            $src = strtoupper((string)($row['source'] ?? 'WEB'));
+            if ($src === 'DEVICE') $src = 'Fingerprint / Biometric';
+            elseif ($src === 'MOBILE') $src = 'Mobile App';
+
+            $selfie = (!empty($row['has_photo_in']) || !empty($row['has_photo_out'])) ? 'Yes' : 'No';
+            $geofenced = !empty($row['is_geofenced']) ? 'Yes' : 'No';
+
+            $hours = isset($row['total_hours']) && $row['total_hours'] !== null ? number_format((float)$row['total_hours'], 2) . ' hrs' : ($status === 'Working' ? 'In Progress' : '0.00 hrs');
+
+            $records[] = [
+                'Log ID'               => $row['id'],
+                'Staff ID'             => $row['staff_id'],
+                'Full Name'            => $row['full_name'] ?: 'Unknown Staff',
+                'Job Title'            => $row['job_title'] ?: '—',
+                'Department'           => $row['department'] ?: '—',
+                'Assigned Branch'      => $row['branch'] ?: '—',
+                'Email'                => $row['email'] ?: '—',
+                'Phone'                => $row['phone'] ?: '—',
+                'Date'                 => $date,
+                'Day'                  => $dayName,
+                'Clock In Time'        => $clockInTime,
+                'Clock In Branch'      => $row['loc_in'],
+                'Clock Out Time'       => $clockOutTime,
+                'Clock Out Branch'     => $row['loc_out'],
+                'Total Hours'          => $hours,
+                'Status'               => $status,
+                'Clock Method'         => $src,
+                'Geofenced Verified'   => $geofenced,
+                'Selfie Verified'      => $selfie
+            ];
+        }
+    }
+    return $records;
+}
+
+// -------------------------------------------------------------
+// HELPER: Fetch detailed employee master directory
 // -------------------------------------------------------------
 function getEmployeeRecords($conn) {
     $hasDeletedAt = function_exists('db_has_column') ? db_has_column($conn, 'staff', 'deleted_at') : true;
@@ -165,17 +255,18 @@ function getEmployeeRecords($conn) {
 // -------------------------------------------------------------
 // HELPER: Generate CSV with UTF-8 BOM for Microsoft Excel
 // -------------------------------------------------------------
-function generateEmployeesCsv($records) {
+function generateCsvFromRecords($records, $emptyMsg = 'No records found') {
     $out = fopen('php://temp', 'r+');
     fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM for Microsoft Excel auto-detection
     if (!empty($records)) {
-        fputcsv($out, array_keys($records[0]));
+        // Explicitly supply separator, enclosure, and escape character to satisfy PHP 8.4+ deprecation requirements
+        fputcsv($out, array_keys($records[0]), ',', '"', "\\");
         foreach ($records as $r) {
-            fputcsv($out, array_values($r));
+            fputcsv($out, array_values($r), ',', '"', "\\");
         }
     } else {
-        fputcsv($out, ['Message']);
-        fputcsv($out, ['No employee records found in database.']);
+        fputcsv($out, ['Message'], ',', '"', "\\");
+        fputcsv($out, [$emptyMsg], ',', '"', "\\");
     }
     rewind($out);
     $csv = stream_get_contents($out);
@@ -184,88 +275,31 @@ function generateEmployeesCsv($records) {
 }
 
 // -------------------------------------------------------------
-// HELPER: Generate XML Spreadsheet 2003 (.xls) for Microsoft Excel
+// HELPER: Create ZIP Archive in memory
 // -------------------------------------------------------------
-function generateEmployeesXmlExcel($records, $sheetName = "Employees") {
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-    $xml .= '<?mso-application progid="Excel.Sheet"?>' . "\n";
-    $xml .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
-    $xml .= ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
-    $xml .= ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
-    $xml .= ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
-    $xml .= ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
-    $xml .= ' <Styles>' . "\n";
-    $xml .= '  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Color="#1e293b"/></Style>' . "\n";
-    $xml .= '  <Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#10439F" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0c3276"/></Borders></Style>' . "\n";
-    $xml .= '  <Style ss:ID="Text"><NumberFormat ss:Format="@"/></Style>' . "\n";
-    $xml .= '  <Style ss:ID="Active"><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#059669"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
-    $xml .= '  <Style ss:ID="Archived"><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#dc2626"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
-    $xml .= ' </Styles>' . "\n";
-    $xml .= ' <Worksheet ss:Name="' . htmlspecialchars($sheetName, ENT_QUOTES | ENT_XML1, 'UTF-8') . '">' . "\n";
-    $xml .= '  <Table>' . "\n";
-    
-    if (!empty($records)) {
-        $headers = array_keys($records[0]);
-        $xml .= '   <Row ss:Height="26" ss:StyleID="Header">' . "\n";
-        foreach ($headers as $h) {
-            $xml .= '    <Cell><Data ss:Type="String">' . htmlspecialchars((string)$h, ENT_QUOTES | ENT_XML1, 'UTF-8') . '</Data></Cell>' . "\n";
+function createZipArchive($files) {
+    if (!class_exists('ZipArchive')) return false;
+    $tempZip = tempnam(sys_get_temp_dir(), 'att_zip_');
+    $zip = new ZipArchive();
+    if ($zip->open($tempZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+        foreach ($files as $name => $content) {
+            $zip->addFromString($name, $content);
         }
-        $xml .= '   </Row>' . "\n";
-        
-        foreach ($records as $r) {
-            $xml .= '   <Row ss:Height="22">' . "\n";
-            foreach ($r as $key => $val) {
-                $style = ' ss:StyleID="Text"';
-                if ($key === 'Employment Status') {
-                    $style = (strpos((string)$val, 'Active') !== false) ? ' ss:StyleID="Active"' : ' ss:StyleID="Archived"';
-                }
-                $xml .= '    <Cell' . $style . '><Data ss:Type="String">' . htmlspecialchars((string)$val, ENT_QUOTES | ENT_XML1, 'UTF-8') . '</Data></Cell>' . "\n";
-            }
-            $xml .= '   </Row>' . "\n";
-        }
-    } else {
-        $xml .= '   <Row ss:Height="26" ss:StyleID="Header"><Cell><Data ss:Type="String">Message</Data></Cell></Row>' . "\n";
-        $xml .= '   <Row ss:Height="20"><Cell ss:StyleID="Text"><Data ss:Type="String">No employee records found in database.</Data></Cell></Row>' . "\n";
+        $zip->close();
+        $data = file_get_contents($tempZip);
+        @unlink($tempZip);
+        return $data;
     }
-    
-    $xml .= '  </Table>' . "\n";
-    $xml .= ' </Worksheet>' . "\n";
-    $xml .= '</Workbook>' . "\n";
-    return $xml;
+    return false;
 }
 
 // -------------------------------------------------------------
-// ACTION: Download Employees Excel / CSV
+// HELPER: Send Brevo Email with Attachment
 // -------------------------------------------------------------
-if ($action === 'employees_excel' || $action === 'employees_download') {
-    $records = getEmployeeRecords($conn);
-    $format = strtolower($_GET['format'] ?? 'csv');
-
-    if ($format === 'xls') {
-        $output = generateEmployeesXmlExcel($records);
-        $filename = "attendance_employees_backup_" . date("Y-m-d_H-i") . ".xls";
-        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-    } else {
-        $output = generateEmployeesCsv($records);
-        $filename = "attendance_employees_backup_" . date("Y-m-d_H-i") . ".csv";
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-    }
-
-    header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
-    header('Pragma: public');
-    echo $output;
-    exit;
-}
-
-// -------------------------------------------------------------
-// ACTION: Email Employees Excel / CSV Backup
-// -------------------------------------------------------------
-if ($action === 'email_employees') {
+function sendBrevoEmail($conn, $subject, $htmlContent, $attachments) {
     $apiKey = getenv('BREVO_API_KEY') ?: $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? '';
     if ($apiKey === '') {
-        die("<!DOCTYPE html><html><body><script>alert('Brevo API not configured in Vercel env vars.'); window.location.href='dashboard.php';</script></body></html>");
+        return ['success' => false, 'error' => 'Brevo API not configured in Vercel env vars.'];
     }
 
     $fromEmail = getenv('BREVO_FROM_EMAIL') ?: $_ENV['BREVO_FROM_EMAIL'] ?? $_SERVER['BREVO_FROM_EMAIL'] ?? 'no-reply@attendance.system';
@@ -278,22 +312,20 @@ if ($action === 'email_employees') {
     $adminEmail = $stmt->get_result()->fetch_assoc()['email'] ?? 'admin@localhost';
     $stmt->close();
 
-    $records   = getEmployeeRecords($conn);
-    $csvData   = generateEmployeesCsv($records);
-    $filename  = "attendance_employees_backup_" . date("Y-m-d_H-i") . ".csv";
-    $count     = count($records);
+    $brevoAttachments = [];
+    foreach ($attachments as $att) {
+        $brevoAttachments[] = [
+            'name'    => $att['name'],
+            'content' => base64_encode($att['content'])
+        ];
+    }
 
     $postData = [
         'sender'      => ['name' => $fromName, 'email' => $fromEmail],
         'to'          => [['email' => $adminEmail, 'name' => 'Admin']],
-        'subject'     => 'Employee Information Backup (Excel/CSV) - ' . date("M d, Y"),
-        'htmlContent' => '<h3>Employee Information Backup</h3><p>Attached is the complete employee information spreadsheet backup containing <strong>' . $count . ' staff records</strong> with contact details, branches, departments, biometric enrollment status, and attendance summaries.</p><p><small>Generated on ' . date("M d, Y h:i A") . '</small></p>',
-        'attachment'  => [
-            [
-                'name'    => $filename,
-                'content' => base64_encode($csvData)
-            ]
-        ]
+        'subject'     => $subject,
+        'htmlContent' => $htmlContent,
+        'attachment'  => $brevoAttachments
     ];
 
     $ch = curl_init('https://api.brevo.com/v3/smtp/email');
@@ -306,17 +338,259 @@ if ($action === 'email_employees') {
             'accept: application/json',
             'content-type: application/json',
         ],
-        CURLOPT_TIMEOUT => 20,
+        CURLOPT_TIMEOUT => 25,
     ]);
 
     $resp = curl_exec($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     if ($code >= 200 && $code < 300) {
-        echo "<!DOCTYPE html><html><body><script>alert('✅ Employee Excel backup sent successfully to $adminEmail ($count staff records)'); window.location.href='dashboard.php';</script></body></html>";
+        return ['success' => true, 'email' => $adminEmail];
     } else {
-        $safeResp = json_encode(substr((string)$resp, 0, 150));
-        echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send employee backup. Check Brevo config.\\n\\nStatus: " . $code . "\\nResponse: ' + " . $safeResp . "); window.location.href='dashboard.php';</script></body></html>";
+        return ['success' => false, 'error' => "HTTP $code: " . substr((string)$resp, 0, 150), 'email' => $adminEmail];
+    }
+}
+
+// -------------------------------------------------------------
+// ACTION: Automated Backup Handler (Cron / Iframe)
+// -------------------------------------------------------------
+if ($action === 'auto') {
+    $stmt = $conn->prepare("SELECT id, auto_backup_freq, auto_backup_type, last_backup_time FROM admin WHERE id = ?");
+    $stmt->bind_param("i", $_SESSION['admin_id']);
+    $stmt->execute();
+    $adminRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    
+    if (!$adminRow || ($adminRow['auto_backup_freq'] ?? 'never') === 'never') {
+        die("Auto backup disabled.");
+    }
+    
+    $freq = $adminRow['auto_backup_freq'];
+    $last = $adminRow['last_backup_time'] ? strtotime($adminRow['last_backup_time']) : 0;
+    
+    $intervals = [
+        '24_hours' => 24 * 3600,
+        '7_days'   => 7 * 24 * 3600,
+        '14_days'  => 14 * 24 * 3600,
+        '30_days'  => 30 * 24 * 3600,
+        '90_days'  => 90 * 24 * 3600,
+        '180_days' => 180 * 24 * 3600,
+        '365_days' => 365 * 24 * 3600,
+    ];
+    
+    $required_interval = $intervals[$freq] ?? null;
+    if (!$required_interval || (time() - $last) < $required_interval) {
+        die("Not time yet.");
+    }
+
+    $backupType = $adminRow['auto_backup_type'] ?? 'both';
+    $currentMonth = date('Y-m');
+    $dateLabel = date('Y-m-d');
+    $filesToZip = [];
+
+    // SQL dump
+    if ($backupType === 'sql' || $backupType === 'both') {
+        $sqlData = dumpDatabase($conn);
+        if ($backupType === 'sql') {
+            $attachments = [
+                ['name' => "attendance_backup_{$dateLabel}.sql.txt", 'content' => $sqlData]
+            ];
+        } else {
+            $filesToZip["database_backup_{$dateLabel}.sql"] = $sqlData;
+        }
+    }
+
+    // Excel/CSV records
+    if ($backupType === 'excel' || $backupType === 'both') {
+        $attRecords = getAttendanceLogRecords($conn, $currentMonth);
+        $attCsv = generateCsvFromRecords($attRecords, 'No attendance records logged this month.');
+        $empRecords = getEmployeeRecords($conn);
+        $empCsv = generateCsvFromRecords($empRecords, 'No staff records found.');
+
+        $filesToZip["attendance_records_{$currentMonth}.csv"] = $attCsv;
+        $filesToZip["staff_master_directory.csv"] = $empCsv;
+    }
+
+    if (!empty($filesToZip)) {
+        $zipData = createZipArchive($filesToZip);
+        if ($zipData !== false && strlen($zipData) > 0) {
+            $zipName = ($backupType === 'both') 
+                ? "attendance_complete_backup_{$dateLabel}.zip" 
+                : "attendance_records_{$currentMonth}.zip";
+            $attachments = [
+                ['name' => $zipName, 'content' => $zipData]
+            ];
+        } else {
+            $attachments = [];
+            foreach ($filesToZip as $fname => $fdata) {
+                $attachments[] = ['name' => $fname, 'content' => $fdata];
+            }
+        }
+    }
+
+    $subject = "Automated System Backup - " . date("M d, Y");
+    $html = "<h3>Automated Backup Report</h3>
+             <p>Your automated attendance system backup has been successfully generated.</p>
+             <ul>
+                 <li><strong>Backup Type:</strong> " . strtoupper($backupType) . "</li>
+                 <li><strong>Frequency:</strong> " . htmlspecialchars($freq) . "</li>
+                 <li><strong>Generated:</strong> " . date("M d, Y h:i A") . "</li>
+             </ul>";
+
+    $res = sendBrevoEmail($conn, $subject, $html, $attachments);
+    if ($res['success']) {
+        $conn->query("UPDATE admin SET last_backup_time = NOW() WHERE id = " . (int)$_SESSION['admin_id']);
+        die("Auto backup sent successfully.");
+    } else {
+        die("Auto backup error: " . $res['error']);
+    }
+}
+
+// -------------------------------------------------------------
+// ACTION: Download Detailed Attendance Log (Month or All-Time)
+// -------------------------------------------------------------
+if ($action === 'attendance_excel' || $action === 'attendance_download') {
+    $month  = trim($_GET['month'] ?? date('Y-m'));
+    $from   = trim($_GET['from'] ?? '');
+    $to     = trim($_GET['to'] ?? '');
+    $branch = trim($_GET['branch'] ?? '');
+    $isZip  = (!empty($_GET['zip']) && $_GET['zip'] == '1');
+
+    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch);
+    $csvData = generateCsvFromRecords($records, 'No attendance records found for this period.');
+
+    $fileLabel = ($month === 'all') ? 'all_time' : (!empty($month) ? $month : date('Y-m-d'));
+
+    if ($isZip) {
+        $zipData = createZipArchive([
+            "attendance_records_{$fileLabel}.csv" => $csvData
+        ]);
+        if ($zipData !== false && strlen($zipData) > 0) {
+            $zipFilename = "attendance_records_{$fileLabel}.zip";
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="' . $zipFilename . '"');
+            header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+            header('Pragma: public');
+            echo $zipData;
+            exit;
+        }
+        // Fallback: stream uncompressed CSV if ZipArchive is unavailable
+    }
+    $filename = "attendance_records_{$fileLabel}.csv";
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+    header('Pragma: public');
+    echo $csvData;
+    exit;
+}
+
+// -------------------------------------------------------------
+// ACTION: Email Attendance Logs (Compressed ZIP / CSV)
+// -------------------------------------------------------------
+if ($action === 'email_attendance') {
+    $month  = trim($_GET['month'] ?? date('Y-m'));
+    $from   = trim($_GET['from'] ?? '');
+    $to     = trim($_GET['to'] ?? '');
+    $branch = trim($_GET['branch'] ?? '');
+
+    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch);
+    $csvData = generateCsvFromRecords($records, 'No attendance records found for this period.');
+    $count   = count($records);
+
+    $fileLabel = ($month === 'all') ? 'all_time' : (!empty($month) ? $month : date('Y-m-d'));
+    $zipData = createZipArchive([
+        "attendance_records_{$fileLabel}.csv" => $csvData
+    ]);
+
+    $monthName = ($month === 'all') ? 'All Time (Full History)' : date('F Y', strtotime($month . '-01'));
+    $subject = "Attendance Records Report ({$monthName}) - " . date("M d, Y");
+    $html = "<h3>Attendance Records Report</h3>
+             <p>Attached is the spreadsheet backup for <strong>{$monthName}</strong>.</p>
+             <p>Total logged attendance sessions: <strong>{$count} records</strong></p>
+             <p>The attached file contains complete staff information, clock-in, clock-out, branches, and total hours.</p>
+             <p><small>Generated on " . date("M d, Y h:i A") . "</small></p>";
+
+    if ($zipData !== false && strlen($zipData) > 0) {
+        $attachments = [
+            ['name' => "attendance_records_{$fileLabel}.zip", 'content' => $zipData]
+        ];
+    } else {
+        $attachments = [
+            ['name' => "attendance_records_{$fileLabel}.csv", 'content' => $csvData]
+        ];
+    }
+
+    $res = sendBrevoEmail($conn, $subject, $html, $attachments);
+    if ($res['success']) {
+        echo "<!DOCTYPE html><html><body><script>alert('✅ Attendance records for {$monthName} ({$count} records) sent successfully to {$res['email']}'); window.location.href='settings.php';</script></body></html>";
+    } else {
+        $safeResp = json_encode($res['error']);
+        echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send attendance backup.\\n\\nDetails: ' + " . $safeResp . "); window.location.href='settings.php';</script></body></html>";
+    }
+    exit;
+}
+
+// -------------------------------------------------------------
+// ACTION: Download Employee Master Directory (Excel / CSV)
+// -------------------------------------------------------------
+if ($action === 'employees_excel' || $action === 'employees_download') {
+    $records = getEmployeeRecords($conn);
+    $isZip = (!empty($_GET['zip']) && $_GET['zip'] == '1');
+    $csvData = generateCsvFromRecords($records, 'No staff records found in database.');
+    $filename = "staff_directory_backup_" . date("Y-m-d") . ".csv";
+
+    if ($isZip) {
+        $zipData = createZipArchive([$filename => $csvData]);
+        if ($zipData !== false && strlen($zipData) > 0) {
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="staff_directory_backup_' . date("Y-m-d") . '.zip"');
+            echo $zipData;
+            exit;
+        }
+        // Fallback: stream uncompressed CSV if ZipArchive is unavailable
+    }
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+    header('Pragma: public');
+    echo $csvData;
+    exit;
+}
+
+// -------------------------------------------------------------
+// ACTION: Email Employee Master Directory
+// -------------------------------------------------------------
+if ($action === 'email_employees') {
+    $records  = getEmployeeRecords($conn);
+    $csvData  = generateCsvFromRecords($records, 'No staff records found in database.');
+    $count    = count($records);
+    $zipData  = createZipArchive([
+        "staff_directory_backup_" . date("Y-m-d") . ".csv" => $csvData
+    ]);
+
+    $subject = "Staff Directory Backup - " . date("M d, Y");
+    $html = "<h3>Staff Master Directory Backup</h3>
+             <p>Attached is the spreadsheet containing <strong>{$count} employee profiles</strong> with contact details, branches, departments, and enrollment status.</p>
+             <p><small>Generated on " . date("M d, Y h:i A") . "</small></p>";
+
+    if ($zipData !== false && strlen($zipData) > 0) {
+        $attachments = [
+            ['name' => "staff_directory_backup_" . date("Y-m-d") . ".zip", 'content' => $zipData]
+        ];
+    } else {
+        $attachments = [
+            ['name' => "staff_directory_backup_" . date("Y-m-d") . ".csv", 'content' => $csvData]
+        ];
+    }
+
+    $res = sendBrevoEmail($conn, $subject, $html, $attachments);
+    if ($res['success']) {
+        echo "<!DOCTYPE html><html><body><script>alert('✅ Staff Directory ({$count} staff profiles) sent successfully to {$res['email']}'); window.location.href='settings.php';</script></body></html>";
+    } else {
+        $safeResp = json_encode($res['error']);
+        echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send staff backup.\\n\\nDetails: ' + " . $safeResp . "); window.location.href='settings.php';</script></body></html>";
     }
     exit;
 }
@@ -333,64 +607,26 @@ if ($action === 'download') {
     exit;
 }
 
-if ($action === 'email' || $action === 'auto') {
-    // Send email using Brevo
-    $apiKey = getenv('BREVO_API_KEY') ?: $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? '';
-    if ($apiKey === '') {
-        die("<!DOCTYPE html><html><body><script>alert('Brevo API not configured in Vercel env vars.'); window.location.href='dashboard.php';</script></body></html>");
-    }
-    
-    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: $_ENV['BREVO_FROM_EMAIL'] ?? $_SERVER['BREVO_FROM_EMAIL'] ?? 'no-reply@attendance.system';
-    $fromName  = getenv('BREVO_FROM_NAME') ?: $_ENV['BREVO_FROM_NAME'] ?? $_SERVER['BREVO_FROM_NAME'] ?? 'Attendance System';
-    
-    // Get admin email
-    $stmt = $conn->prepare("SELECT email FROM admin WHERE id = ?");
-    $stmt->bind_param("i", $_SESSION['admin_id']);
-    $stmt->execute();
-    $adminEmail = $stmt->get_result()->fetch_assoc()['email'] ?? 'admin@localhost';
-    $stmt->close();
-    
-    $postData = [
-        'sender'      => ['name' => $fromName, 'email' => $fromEmail],
-        'to'          => [['email' => $adminEmail, 'name' => 'Admin']],
-        'subject'     => 'Database Backup - ' . date("M d, Y"),
-        'htmlContent' => '<h3>Database Backup</h3><p>Attached is your latest attendance database backup.</p>',
-        'attachment'  => [
-            [
-                'name'    => $filename . '.txt',
-                'content' => base64_encode($sql_dump)
-            ]
-        ]
+// -------------------------------------------------------------
+// ACTION: Email SQL Database Backup
+// -------------------------------------------------------------
+if ($action === 'email') {
+    $sql_dump = dumpDatabase($conn);
+    $filename = "attendance_backup_" . date("Y-m-d_H-i") . ".sql";
+
+    $subject = "Database Backup - " . date("M d, Y");
+    $html = "<h3>Database Backup</h3><p>Attached is your latest attendance database backup (.sql).</p>";
+    $attachments = [
+        ['name' => $filename . '.txt', 'content' => $sql_dump]
     ];
-    
-    $ch = curl_init('https://api.brevo.com/v3/smtp/email');
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POSTFIELDS => json_encode($postData),
-        CURLOPT_HTTPHEADER => [
-            'api-key: ' . $apiKey,
-            'accept: application/json',
-            'content-type: application/json',
-        ],
-        CURLOPT_TIMEOUT => 20,
-    ]);
-    
-    $resp = curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
-    if ($action === 'auto' && $code >= 200 && $code < 300) {
-        $conn->query("UPDATE admin SET last_backup_time = NOW() WHERE id = " . (int)$_SESSION['admin_id']);
-        die("Auto backup sent.");
+
+    $res = sendBrevoEmail($conn, $subject, $html, $attachments);
+    if ($res['success']) {
+        echo "<!DOCTYPE html><html><body><script>alert('✅ Database backup sent successfully to {$res['email']}'); window.location.href='dashboard.php';</script></body></html>";
+    } else {
+        $safeResp = json_encode($res['error']);
+        echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send database backup.\\n\\nDetails: ' + " . $safeResp . "); window.location.href='dashboard.php';</script></body></html>";
     }
-    
-    if ($action === 'email') {
-        if ($code >= 200 && $code < 300) {
-            echo "<!DOCTYPE html><html><body><script>alert('✅ Backup sent successfully to $adminEmail'); window.location.href='dashboard.php';</script></body></html>";
-        } else {
-            $safeResp = json_encode(substr((string)$resp, 0, 150));
-            echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send backup. Check Brevo config.\\n\\nStatus: " . $code . "\\nResponse: ' + " . $safeResp . "); window.location.href='dashboard.php';</script></body></html>";
-        }
-    }
+    exit;
 }
 ?>

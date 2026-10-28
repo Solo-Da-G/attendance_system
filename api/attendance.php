@@ -90,9 +90,21 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
           <?php endforeach; ?>
       </select>
     </div>
-    <div style="display:flex; gap:8px; align-items:flex-end;">
+    <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
       <button type="submit" style="padding: 11px 22px; border-radius: 8px;">Filter</button>
       <button type="button" class="print-btn" onclick="window.print()" style="padding: 11px 18px; border-radius: 8px;">🖨️ Print</button>
+      <?php
+        $exportUrl = "backup.php?action=attendance_excel";
+        if (!empty($_GET['from']) && !empty($_GET['to'])) {
+            $exportUrl .= "&from=" . urlencode($_GET['from']) . "&to=" . urlencode($_GET['to']);
+        }
+        if (!empty($_GET['filter_branch'])) {
+            $exportUrl .= "&branch=" . urlencode($_GET['filter_branch']);
+        }
+      ?>
+      <a href="<?php echo htmlspecialchars($exportUrl); ?>" target="_blank" style="padding: 11px 18px; border-radius: 8px; background:linear-gradient(135deg, #10b981, #059669); color:white; text-decoration:none; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
+        <span>📊</span> Export to Excel
+      </a>
     </div>
   </form>
 
