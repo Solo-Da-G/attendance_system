@@ -70,37 +70,50 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
   $selected_branch = $_GET['filter_branch'] ?? '';
   ?>
   <!-- Filter form -->
-  <form method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-    <label>From:</label>
-    <input type="date" name="from" value="<?php echo isset($_GET['from']) ? htmlspecialchars($_GET['from']) : ''; ?>" required>
-    <label>To:</label>
-    <input type="date" name="to" value="<?php echo isset($_GET['to']) ? htmlspecialchars($_GET['to']) : ''; ?>" required>
-    <label>Branch:</label>
-    <select name="filter_branch" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;">
-        <option value="">All Branches</option>
-        <?php foreach ($branches as $br): ?>
-            <option value="<?php echo htmlspecialchars($br); ?>" <?php echo $selected_branch === $br ? 'selected' : ''; ?>>
-                <?php echo htmlspecialchars($br); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-    <button type="submit">Filter</button>
-    <button type="button" class="print-btn" onclick="window.print()">🖨️ Print</button>
+  <form method="GET" class="filter-form" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <div style="flex:1; min-width:140px;">
+      <label style="display:block; margin-bottom:4px; font-weight:600;">From:</label>
+      <input type="date" name="from" value="<?php echo isset($_GET['from']) ? htmlspecialchars($_GET['from']) : ''; ?>" required style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; width:100%;">
+    </div>
+    <div style="flex:1; min-width:140px;">
+      <label style="display:block; margin-bottom:4px; font-weight:600;">To:</label>
+      <input type="date" name="to" value="<?php echo isset($_GET['to']) ? htmlspecialchars($_GET['to']) : ''; ?>" required style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; width:100%;">
+    </div>
+    <div style="flex:1; min-width:160px;">
+      <label style="display:block; margin-bottom:4px; font-weight:600;">Branch:</label>
+      <select name="filter_branch" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; width:100%;">
+          <option value="">All Branches</option>
+          <?php foreach ($branches as $br): ?>
+              <option value="<?php echo htmlspecialchars($br); ?>" <?php echo $selected_branch === $br ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($br); ?>
+              </option>
+          <?php endforeach; ?>
+      </select>
+    </div>
+    <div style="display:flex; gap:8px; align-items:flex-end;">
+      <button type="submit" style="padding: 11px 22px; border-radius: 8px;">Filter</button>
+      <button type="button" class="print-btn" onclick="window.print()" style="padding: 11px 18px; border-radius: 8px;">🖨️ Print</button>
+    </div>
   </form>
 
-  <table>
-    <tr>
-      <th>Employee Name</th>
-      <th>Employee ID</th>
-      <th>Job Title</th>
-      <th>Branch</th>
-      <th>Date</th>
-      <th>Time In</th>
-      <th>Time Out</th>
-      <th>Source</th>
-      <th>Selfie</th>
-      <th>Status</th>
-    </tr>
+  <div class="table-card" style="box-shadow:none; border:1px solid #e2e8f0; border-radius:16px; margin-top:16px; padding:0; background:#fff;">
+    <div class="table-scroll">
+      <table class="responsive-table" style="width:100%; margin:0; border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+            <th>Employee Name</th>
+            <th>Employee ID</th>
+            <th>Job Title</th>
+            <th>Branch</th>
+            <th>Date</th>
+            <th>Time In</th>
+            <th>Time Out</th>
+            <th>Source</th>
+            <th>Selfie</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
 
     <?php
     $from = $_GET['from'] ?? '';
@@ -165,28 +178,33 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
             $timeOutHtml = "{$timeOut}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>";
         }
 
+        $displayStatus = ($row['status'] ?? 'In') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'In');
+
         echo "<tr>
-          <td>" . htmlspecialchars($row['full_name']) . "</td>
-          <td>{$row['staff_id']}</td>
-          <td>{$row['job_title']}</td>
-          <td>{$row['branch']}</td>
-          <td>{$date}</td>
-          <td>{$timeInHtml}</td>
-          <td>{$timeOutHtml}</td>
-          <td><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
-          <td>{$selfieHtml}</td>
-          <td class='status {$statusClass}'>" . ($row['status'] ?? 'In') . "</td>
+          <td data-label='Employee Name'><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
+          <td data-label='Employee ID'><code style='background:#f1f5f9;padding:2px 6px;border-radius:4px;'>{$row['staff_id']}</code></td>
+          <td data-label='Job Title'>" . htmlspecialchars($row['job_title'] ?? '—') . "</td>
+          <td data-label='Branch'>" . htmlspecialchars($row['branch'] ?? '—') . "</td>
+          <td data-label='Date'>{$date}</td>
+          <td data-label='Time In'>{$timeInHtml}</td>
+          <td data-label='Time Out'>{$timeOutHtml}</td>
+          <td data-label='Source'><span class='badge {$srcBadge}'>{$srcLabel}</span></td>
+          <td data-label='Selfie'>{$selfieHtml}</td>
+          <td data-label='Status' class='status {$statusClass}'>{$displayStatus}</td>
         </tr>";
       }
     } else {
-      echo "<tr><td colspan='10' style='text-align:center;'>No attendance records found</td></tr>";
+      echo "<tr><td colspan='10' style='text-align:center;padding:32px;color:#94a3b8;'>No attendance records found</td></tr>";
     }
 
     if (isset($stmt) && $stmt instanceof mysqli_stmt) {
       try { $stmt->close(); } catch (Throwable $e) {}
     }
     ?>
-  </table>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <div class="footer">
     &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu

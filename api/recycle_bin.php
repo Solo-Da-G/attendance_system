@@ -215,7 +215,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
         <h3>👥 Deleted Staff</h3>
         <?php if ($deleted_staff && $deleted_staff->num_rows > 0): ?>
         <div style="overflow-x:auto;">
-            <table>
+            <table class="responsive-table">
                 <thead>
                     <tr>
                         <th>Staff ID</th>
@@ -233,12 +233,12 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
                         $days_left = max(0, $days_left);
                     ?>
                     <tr>
-                        <td><strong><?php echo htmlspecialchars($r['staff_id']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($r['full_name']); ?></td>
-                        <td><?php echo htmlspecialchars($r['branch'] ?: '—'); ?></td>
-                        <td><?php echo date('M d, Y h:i A', $del_time); ?></td>
-                        <td><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
-                        <td style="display:flex; gap:8px;">
+                        <td data-label="Staff ID"><strong><?php echo htmlspecialchars($r['staff_id']); ?></strong></td>
+                        <td data-label="Full Name"><?php echo htmlspecialchars($r['full_name']); ?></td>
+                        <td data-label="Branch"><?php echo htmlspecialchars($r['branch'] ?: '—'); ?></td>
+                        <td data-label="Deleted On"><?php echo date('M d, Y h:i A', $del_time); ?></td>
+                        <td data-label="Days Left"><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
+                        <td data-label="Actions" style="display:flex; gap:8px;">
                             <a href="?restore_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this staff member?');">↺ Restore</a>
                             <a href="?perm_delete_type=staff&id=<?php echo $r['id']; ?>" class="btn btn-delete" onclick="return confirm('Permanently delete? This cannot be undone.');">Delete</a>
                         </td>
@@ -259,7 +259,7 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
         <h3>👑 Deleted Admins</h3>
         <?php if ($is_super_admin && $deleted_admins && $deleted_admins->num_rows > 0): ?>
         <div style="overflow-x:auto;">
-            <table>
+            <table class="responsive-table">
                 <thead>
                     <tr>
                         <th>Username</th>
@@ -277,12 +277,12 @@ $total_items = ($deleted_admins ? $deleted_admins->num_rows : 0) + ($deleted_sta
                         $days_left = max(0, $days_left);
                     ?>
                     <tr>
-                        <td><strong><?php echo htmlspecialchars($r['username']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($r['email'] ?: '—'); ?></td>
-                        <td><?php echo htmlspecialchars($r['role'] ?: 'admin'); ?></td>
-                        <td><?php echo date('M d, Y h:i A', $del_time); ?></td>
-                        <td><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
-                        <td style="display:flex; gap:8px;">
+                        <td data-label="Username"><strong><?php echo htmlspecialchars($r['username']); ?></strong></td>
+                        <td data-label="Email"><?php echo htmlspecialchars($r['email'] ?: '—'); ?></td>
+                        <td data-label="Role"><?php echo htmlspecialchars($r['role'] ?: 'admin'); ?></td>
+                        <td data-label="Deleted On"><?php echo date('M d, Y h:i A', $del_time); ?></td>
+                        <td data-label="Days Left"><span style="color: <?php echo $days_left < 5 ? '#ef4444' : '#64748b'; ?>; font-weight:600;"><?php echo $days_left; ?> days</span></td>
+                        <td data-label="Actions" style="display:flex; gap:8px;">
                             <a href="?restore_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-restore" onclick="return confirm('Restore this admin?');">↺ Restore</a>
                             <a href="?perm_delete_type=admin&id=<?php echo $r['id']; ?>" class="btn btn-delete" onclick="return confirm('Permanently delete? This cannot be undone.');">Delete</a>
                         </td>

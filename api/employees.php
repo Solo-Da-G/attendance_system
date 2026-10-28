@@ -83,6 +83,27 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
         min-width: 1000px;
         border-collapse: collapse;
     }
+
+    @media (max-width: 768px) {
+        .table-wrapper {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
+            margin-top: 14px !important;
+        }
+        .employees-table {
+            min-width: 0 !important;
+            width: 100% !important;
+        }
+        .add-btn {
+            width: 100% !important;
+            min-height: 44px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+    }
     
     .employees-table th,
     .employees-table td {
@@ -186,8 +207,8 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
         <span>Swipe table sideways to view all staff info &amp; Edit / Delete actions</span>
     </div>
 
-    <div class="table-wrapper" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; background:white; border-radius:16px; border:1px solid #e2e8f0; margin-top:14px;">
-        <table class="employees-table" id="employeesTable">
+    <div class="table-wrapper">
+        <table class="employees-table responsive-table" id="employeesTable">
             <thead>
                 <tr>
                     <th>Photo</th>

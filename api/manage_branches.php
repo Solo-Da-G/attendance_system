@@ -99,6 +99,32 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
             margin: 8px 0;
             line-height: 1.6;
         }
+        .branch-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 768px) {
+            .geo-box {
+                padding: 16px !important;
+                margin-bottom: 20px !important;
+            }
+            .branch-grid {
+                grid-template-columns: 1fr !important;
+                gap: 14px !important;
+            }
+            .branch-form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .radius-controller div[style*="display:flex;align-items:center;gap:6px"] {
+                flex-wrap: wrap !important;
+            }
+            .radius-controller button,
+            .radius-controller input {
+                min-height: 40px !important;
+            }
+        }
     </style>
 </head>
 <body class="app-page branches-page">
@@ -119,7 +145,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
         <p class="helper-text">To get coordinates, open Google Maps, right-click on your office, and copy the Latitude/Longitude.</p>
         
         <form method="POST">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="branch-form-grid">
                 <div>
                     <label>Branch Name</label>
                     <input type="text" name="branch_name" placeholder="e.g. Lagos Head Office" required>

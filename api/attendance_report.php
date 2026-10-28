@@ -30,10 +30,20 @@ function formatHours($decimal) {
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 <div class="content">
   <h2>Attendance Report</h2>
-  <form method="GET">
-    <label>From:</label> <input type="date" name="from" value="<?php echo isset($_GET['from']) ? htmlspecialchars($_GET['from']) : ''; ?>" required>
-    <label>To:</label> <input type="date" name="to" value="<?php echo isset($_GET['to']) ? htmlspecialchars($_GET['to']) : ''; ?>" required>
-    <button type="submit">Generate</button>
+  <form method="GET" class="filter-form">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:140px;">
+        <label style="display:block;margin-bottom:4px;font-weight:600;">From:</label>
+        <input type="date" name="from" value="<?php echo isset($_GET['from']) ? htmlspecialchars($_GET['from']) : ''; ?>" required style="padding:10px;border-radius:8px;border:1px solid #cbd5e1;width:100%;">
+      </div>
+      <div style="flex:1;min-width:140px;">
+        <label style="display:block;margin-bottom:4px;font-weight:600;">To:</label>
+        <input type="date" name="to" value="<?php echo isset($_GET['to']) ? htmlspecialchars($_GET['to']) : ''; ?>" required style="padding:10px;border-radius:8px;border:1px solid #cbd5e1;width:100%;">
+      </div>
+      <div>
+        <button type="submit" style="padding:11px 22px;border-radius:8px;">Generate</button>
+      </div>
+    </div>
   </form>
 
   <?php
@@ -45,9 +55,9 @@ function formatHours($decimal) {
     $stmt->execute();
     $res = $stmt->get_result();
 
-    echo "<div class='table-card' style='box-shadow:none;border:1px solid #e2e8f0;border-radius:16px;margin-top:16px;padding:0;overflow:hidden;background:#fff;'>
-            <div class='table-scroll' style='width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;'>
-              <table class='responsive-table' style='width:100%;min-width:600px;margin:0;border-collapse:collapse;'>
+    echo "<div class='table-card' style='box-shadow:none;border:1px solid #e2e8f0;border-radius:16px;margin-top:16px;padding:0;background:#fff;'>
+            <div class='table-scroll'>
+              <table class='responsive-table' style='width:100%;margin:0;border-collapse:collapse;'>
                 <thead>
                   <tr style='background:#f8fafc;border-bottom:2px solid #e2e8f0;'>
                     <th style='padding:12px 16px;font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;'>Staff ID</th>

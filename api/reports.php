@@ -80,14 +80,14 @@ if ($stmtStat) {
   }
   $selected_branch = $_GET['filter_branch'] ?? '';
   ?>
-  <form method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-    <div>
+  <form method="GET" class="filter-form" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="flex:1; min-width:140px;">
       <label style="display:block; margin-bottom:5px; font-weight:600;">Filter by Date:</label>
-      <input type="date" name="filter_date" value="<?php echo isset($_GET['filter_date']) ? htmlspecialchars($_GET['filter_date']) : ''; ?>" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+      <input type="date" name="filter_date" value="<?php echo isset($_GET['filter_date']) ? htmlspecialchars($_GET['filter_date']) : ''; ?>" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; width:100%;">
     </div>
-    <div>
+    <div style="flex:1; min-width:160px;">
       <label style="display:block; margin-bottom:5px; font-weight:600;">Branch:</label>
-      <select name="filter_branch" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: 150px;">
+      <select name="filter_branch" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; width:100%;">
           <option value="">All Branches</option>
           <?php foreach ($branches as $br): ?>
               <option value="<?php echo htmlspecialchars($br); ?>" <?php echo $selected_branch === $br ? 'selected' : ''; ?>>
@@ -96,9 +96,9 @@ if ($stmtStat) {
           <?php endforeach; ?>
       </select>
     </div>
-    <div>
-      <button type="submit" style="padding: 10px 20px; border-radius: 8px;">View</button>
-      <a href="reports.php" style="margin-left:10px; color:var(--primary); font-weight:600; text-decoration:none;">Reset</a>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button type="submit" style="padding: 11px 22px; border-radius: 8px;">View</button>
+      <a href="reports.php" style="margin-left:6px; color:var(--primary); font-weight:600; text-decoration:none;">Reset</a>
     </div>
   </form>
 
@@ -107,13 +107,13 @@ if ($stmtStat) {
   </div>
 
   <div style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; padding:10px 14px; border-radius:12px; font-size:13px; font-weight:600; margin: 16px 0 12px; display:flex; align-items:center; gap:8px;">
-    <span>👉</span>
-    <span>Swipe table horizontally to review all columns (department, GPS location, source, status, hours).</span>
+    <span>📱</span>
+    <span>Mobile Optimized: Attendance records are formatted for full visibility on mobile screens.</span>
   </div>
 
-  <div class="table-card" style="box-shadow:none; border:1px solid #e2e8f0; border-radius:16px; margin-top:8px; padding:0; overflow:hidden; background:#fff;">
-    <div class="table-scroll" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
-      <table class="responsive-table" style="min-width:850px; width:100%; margin:0; border-collapse:collapse;">
+  <div class="table-card" style="box-shadow:none; border:1px solid #e2e8f0; border-radius:16px; margin-top:8px; padding:0; background:#fff;">
+    <div class="table-scroll">
+      <table class="responsive-table" style="width:100%; margin:0; border-collapse:collapse;">
         <thead>
           <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
             <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">ID</th>

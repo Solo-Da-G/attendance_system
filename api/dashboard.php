@@ -127,9 +127,9 @@ if ($staff_id) {
         --shadow-lg:      0 18px 40px -8px rgba(16, 67, 159, 0.12), 0 0 0 1px rgba(16,67,159,0.04);
     }
     
-    body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-    html, body { max-width: 100vw; overflow-x: hidden; }
-    .dashboard-page .content { box-sizing: border-box; padding: 24px; min-width: 0; }
+    body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); width: 100%; max-width: 100%; overflow-x: hidden; }
+    html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+    .dashboard-page .content { box-sizing: border-box; padding: 24px; min-width: 0; width: 100%; max-width: 100%; }
 
     /* Executive Top Header */
     .dashboard-header {
@@ -502,7 +502,12 @@ if ($staff_id) {
     .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
 
     @media (max-width: 768px) {
-        .dashboard-page .content { padding: 80px 16px 24px !important; }
+        .dashboard-page .content {
+            padding: calc(var(--mobile-header-h) + var(--safe-top) + 14px) 14px calc(var(--bottom-nav-h) + var(--safe-bottom) + 28px) 14px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
         .scorecard-grid { grid-template-columns: 1fr; }
         .broadcast-row { flex-direction: column; }
         .broadcast-target, .broadcast-msg, .broadcast-send-btn { width: 100%; }
