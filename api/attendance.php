@@ -157,8 +157,8 @@ if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
     if ($result && $result->num_rows > 0) {
       while ($row = $result->fetch_assoc()) {
         $date = date("Y-m-d", strtotime($row['clock_in']));
-        $timeIn = date("H:i:s", strtotime($row['clock_in']));
-        $timeOut = $row['clock_out'] ? date("H:i:s", strtotime($row['clock_out'])) : "—";
+        $timeIn = date("h:i A", strtotime($row['clock_in']));
+        $timeOut = $row['clock_out'] ? date("h:i A", strtotime($row['clock_out'])) : "—";
         $statusClass = strtolower($row['status'] ?? 'in');
         $src = strtolower(trim((string)($row['source'] ?? '')));
         $srcLabel = $src === 'device' ? 'DEVICE' : ($src === 'mobile' ? 'MOBILE' : 'UNKNOWN');

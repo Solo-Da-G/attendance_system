@@ -175,10 +175,12 @@ if ($stmtStat) {
             $b_in = htmlspecialchars($row['branch_in'] ?? 'Unknown Branch');
             $b_out = htmlspecialchars($row['branch_out'] ?? 'Unknown Branch');
             
-            $clockInHtml = "{$row['clock_in']}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>";
+            $clockInFormatted = date("M d, Y h:i A", strtotime($row['clock_in']));
+            $clockInHtml = "{$clockInFormatted}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>";
             $clockOutHtml = "—";
             if (!empty($row['clock_out'])) {
-                $clockOutHtml = "{$row['clock_out']}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>";
+                $clockOutFormatted = date("M d, Y h:i A", strtotime($row['clock_out']));
+                $clockOutHtml = "{$clockOutFormatted}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>";
             }
 
             echo "<tr>

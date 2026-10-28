@@ -36,10 +36,12 @@ if (!isset($_SESSION['admin_id'])) {
           while ($row = $res->fetch_assoc()) {
             $statusClass = strtolower($row['status'] ?? 'in');
             $displayStatus = ($row['status'] ?? '') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'in');
+            $clockInFormatted = !empty($row['clock_in']) ? date("M d, Y h:i A", strtotime($row['clock_in'])) : '—';
+            $clockOutFormatted = !empty($row['clock_out']) ? date("M d, Y h:i A", strtotime($row['clock_out'])) : '—';
             echo "<tr>
                     <td data-label='Staff ID'><code style='background:#f1f5f9;padding:2px 6px;border-radius:4px;'>{$row['staff_id']}</code></td>
-                    <td data-label='Clock In'>{$row['clock_in']}</td>
-                    <td data-label='Clock Out'>" . ($row['clock_out'] ?? '—') . "</td>
+                    <td data-label='Clock In'>{$clockInFormatted}</td>
+                    <td data-label='Clock Out'>{$clockOutFormatted}</td>
                     <td data-label='Status' class='status {$statusClass}'>{$displayStatus}</td>
                   </tr>";
           }

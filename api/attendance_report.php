@@ -72,10 +72,12 @@ function formatHours($decimal) {
       while ($row = $res->fetch_assoc()) {
         $hours = floatval($row['total_hours']);
         $displayStatus = $row['status'] === 'missed_out' ? 'missed(clockout)' : $row['status'];
+        $clockInFormatted = !empty($row['clock_in']) ? date("M d, Y h:i A", strtotime($row['clock_in'])) : '—';
+        $clockOutFormatted = !empty($row['clock_out']) ? date("M d, Y h:i A", strtotime($row['clock_out'])) : '—';
         echo "<tr>
           <td data-label='Staff ID' style='padding:12px 16px;'><code style='background:#f1f5f9;padding:2px 6px;border-radius:4px;'>{$row['staff_id']}</code></td>
-          <td data-label='Clock In' style='padding:12px 16px;'>{$row['clock_in']}</td>
-          <td data-label='Clock Out' style='padding:12px 16px;'>" . ($row['clock_out'] ?? '—') . "</td>
+          <td data-label='Clock In' style='padding:12px 16px;'>{$clockInFormatted}</td>
+          <td data-label='Clock Out' style='padding:12px 16px;'>{$clockOutFormatted}</td>
           <td data-label='Status' style='padding:12px 16px;' class='status " . strtolower($row['status']) . "'>{$displayStatus}</td>
           <td data-label='Total Hours' style='padding:12px 16px;'><strong>" . formatHours($hours) . "</strong></td>
         </tr>";

@@ -129,6 +129,27 @@ $stmt->close();
                 </div>
             </div>
 
+            <!-- Employee Information Excel Backup -->
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.28); padding: 18px; border-radius: 12px; margin-top: 20px;">
+                <h4 style="margin: 0 0 8px; color: #047857; display: flex; align-items: center; gap: 8px; font-size: 15px;">
+                    <span>📊</span> Employee Records Backup (Excel)
+                </h4>
+                <p style="font-size: 13px; color: #4b5563; margin: 0 0 14px; line-height: 1.4;">
+                    Download or email a complete spreadsheet containing all employee profiles, contact details, assigned branches, biometric enrollment status, and attendance summaries.
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="backup.php?action=employees_excel" target="_blank" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);">
+                        <span>📊</span> Download Employees (Excel)
+                    </a>
+                    <a href="backup.php?action=employees_excel&format=xls" target="_blank" style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);">
+                        <span>📑</span> Download (.xls)
+                    </a>
+                    <a href="backup.php?action=email_employees" style="background: linear-gradient(135deg, #0d9488, #0f766e); color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);" onclick="return confirm('Send the employee Excel backup to your email now?');">
+                        <span>📧</span> Email Employees (Excel)
+                    </a>
+                </div>
+            </div>
+
             <button type="submit" name="update_settings" style="margin-top:25px; width:100%;">Save Settings</button>
         </form>
 

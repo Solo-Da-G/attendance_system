@@ -1300,10 +1300,16 @@ if ($staff_id) {
 
     <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap;">
         <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
-            <span>💾</span> Download Backup
+            <span>💾</span> Download SQL Backup
         </a>
         <a href="backup.php?action=email" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;" onclick="return confirm('Send the database backup to your email now?');">
-            <span>✉️</span> Email Backup Now
+            <span>✉️</span> Email SQL Backup
+        </a>
+        <a href="backup.php?action=employees_excel" target="_blank" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+            <span>📊</span> Download Employees (Excel)
+        </a>
+        <a href="backup.php?action=email_employees" style="background: linear-gradient(135deg, #0d9488, #0f766e); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;" onclick="return confirm('Send the employee Excel backup to your email now?');">
+            <span>📧</span> Email Employees (Excel)
         </a>
     </div>
 

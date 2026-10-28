@@ -76,8 +76,8 @@ if ($from !== '' && $to !== '') {
             <?php foreach ($rows as $row): ?>
               <?php
                 $date = date("Y-m-d", strtotime($row['clock_in']));
-                $timeIn = date("H:i:s", strtotime($row['clock_in']));
-                $timeOut = $row['clock_out'] ? date("H:i:s", strtotime($row['clock_out'])) : "—";
+                $timeIn = date("h:i A", strtotime($row['clock_in']));
+                $timeOut = $row['clock_out'] ? date("h:i A", strtotime($row['clock_out'])) : "—";
                 $statusClass = strtolower($row['status'] ?? 'in');
                 $hrs = isset($row['total_hours']) ? (float)$row['total_hours'] : 0;
               ?>

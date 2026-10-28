@@ -96,7 +96,7 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             min-width: 0 !important;
             width: 100% !important;
         }
-        .add-btn {
+        .add-btn, .export-btn {
             width: 100% !important;
             min-height: 44px !important;
             display: flex !important;
@@ -194,7 +194,12 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             <h2>📋 Employees</h2>
             <p class="subtitle">Manage staff records and profile photos for face recognition</p>
         </div>
-        <button class="add-btn" onclick="openModal()" style="padding:12px 24px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer;">+ Add New Employee</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="backup.php?action=employees_excel" target="_blank" class="export-btn" style="padding:12px 20px; background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 10px rgba(16,185,129,0.3);">
+                <span>📊</span> Export to Excel
+            </a>
+            <button class="add-btn" onclick="openModal()" style="padding:12px 24px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer;">+ Add New Employee</button>
+        </div>
     </div>
 
     <div class="search-section">
