@@ -156,13 +156,10 @@ if (isset($_POST['update_employee'])) {
             }
         }
 
-        // Add WHERE condition
-        $updates[] = "id = ?";
-        $params[]  = $id;
-        $types    .= "i";
-
-        // Build final SQL
-        $sql = "UPDATE staff SET " . implode(", ", $updates);
+        // Build final SQL with WHERE clause
+        $sql = "UPDATE staff SET " . implode(", ", $updates) . " WHERE id = ?";
+        $params[] = $id;
+        $types   .= "i";
 
         // Prepare and execute with error handling
         try {
