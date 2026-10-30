@@ -72,109 +72,125 @@ if (isset($_POST['update_employee'])) {
     $employee['phone']          = $phone;
     $employee['fingerprint_id'] = $finger_id;
 
-    // Start building the update query
-    $updates = [];
-    $params = [];
-    $types = "";
-
-    // Basic fields
-    $updates[] = "full_name = ?";
-    $params[]  = $full_name;
-    $types    .= "s";
-
-    $updates[] = "job_title = ?";
-    $params[]  = $job_title;
-    $types    .= "s";
-
-    $updates[] = "department = ?";
-    $params[]  = $department;
-    $types    .= "s";
-
-    $updates[] = "branch = ?";
-    $params[]  = $branch;
-    $types    .= "s";
-
-    $updates[] = "email = ?";
-    $params[]  = $email;
-    $types    .= "s";
-
-    $updates[] = "phone = ?";
-    $params[]  = $phone;
-    $types    .= "s";
-
-    // Handle fingerprint_id: if empty set to NULL, otherwise safely truncate to 255 chars
-    if ($finger_id === '') {
-        $updates[] = "fingerprint_id = NULL";
-    } else {
-        $updates[] = "fingerprint_id = ?";
-        $params[]  = substr($finger_id, 0, 255);
-        $types    .= "s";
-    }
-
-    // Handle password update (reset to default takes precedence over manual new password)
-    if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
-        $default_pass = $employee['staff_id'];
-        $hashed       = password_hash($default_pass, PASSWORD_DEFAULT);
-        $updates[]    = "password = ?";
-        $params[]     = $hashed;
-        $types       .= "s";
-    } elseif (!empty($_POST['new_password'])) {
-        $hashed    = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
-        $updates[] = "password = ?";
-        $params[]  = $hashed;
-        $types    .= "s";
-    }
-
-    // Handle photo upload
-    if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $imgData = file_get_contents($_FILES['photo']['tmp_name']);
-        $finfo   = finfo_open(FILEINFO_MIME_TYPE);
-        $imgType = finfo_file($finfo, $_FILES['photo']['tmp_name']);
-        finfo_close($finfo);
-
-        if (strpos($imgType, 'image/') === 0) {
-            $photo     = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
-            $updates[] = "photo = ?";
-            $params[]  = $photo;
-            $types    .= "s";
-            $employee['photo'] = $photo;
+    // Check for duplicate fingerprint_id across other active employees
+    if ($finger_id !== '') {
+        $dup_check = $conn->prepare("SELECT id, full_name, staff_id FROM staff WHERE fingerprint_id = ? AND id != ? AND deleted_at IS NULL LIMIT 1");
+        if ($dup_check) {
+            $dup_check->bind_param("si", $finger_id, $id);
+            $dup_check->execute();
+            $dup_res = $dup_check->get_result();
+            if ($dup_row = $dup_res->fetch_assoc()) {
+                $error_msg = "Fingerprint User ID '{$finger_id}' is already assigned to {$dup_row['full_name']} (Staff ID: {$dup_row['staff_id']}). Each employee must have a unique ZKTeco Device User ID.";
+            }
+            $dup_check->close();
         }
     }
 
-    // Add WHERE condition
-    $updates[] = "id = ?";
-    $params[]  = $id;
-    $types    .= "i";
+    if (!isset($error_msg)) {
+        // Start building the update query
+        $updates = [];
+        $params = [];
+        $types = "";
 
-    // Build final SQL
-    $sql = "UPDATE staff SET " . implode(", ", $updates);
+        // Basic fields
+        $updates[] = "full_name = ?";
+        $params[]  = $full_name;
+        $types    .= "s";
 
-    // Prepare and execute with error handling
-    try {
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            $error_msg = "Database prepare failed: " . $conn->error;
+        $updates[] = "job_title = ?";
+        $params[]  = $job_title;
+        $types    .= "s";
+
+        $updates[] = "department = ?";
+        $params[]  = $department;
+        $types    .= "s";
+
+        $updates[] = "branch = ?";
+        $params[]  = $branch;
+        $types    .= "s";
+
+        $updates[] = "email = ?";
+        $params[]  = $email;
+        $types    .= "s";
+
+        $updates[] = "phone = ?";
+        $params[]  = $phone;
+        $types    .= "s";
+
+        // Handle fingerprint_id: if empty set to NULL, otherwise safely truncate to 255 chars
+        if ($finger_id === '') {
+            $updates[] = "fingerprint_id = NULL";
         } else {
-            if (!empty($params)) {
-                $stmt->bind_param($types, ...$params);
-            }
-
-            if ($stmt->execute()) {
-                $msg = "✅ Employee updated successfully!";
-                if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
-                    $msg .= " Password reset to: " . $employee['staff_id'];
-                } elseif (!empty($_POST['new_password'])) {
-                    $msg .= " New password set.";
-                }
-                echo "<script>alert(" . json_encode($msg) . "); window.location='employees.php';</script>";
-                exit;
-            } else {
-                $error_msg = "Execute failed: " . $stmt->error;
-            }
-            $stmt->close();
+            $updates[] = "fingerprint_id = ?";
+            $params[]  = substr($finger_id, 0, 255);
+            $types    .= "s";
         }
-    } catch (Throwable $e) {
-        $error_msg = "Database error: " . $e->getMessage();
+
+        // Handle password update (reset to default takes precedence over manual new password)
+        if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
+            $default_pass = $employee['staff_id'];
+            $hashed       = password_hash($default_pass, PASSWORD_DEFAULT);
+            $updates[]    = "password = ?";
+            $params[]     = $hashed;
+            $types       .= "s";
+        } elseif (!empty($_POST['new_password'])) {
+            $hashed    = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
+            $updates[] = "password = ?";
+            $params[]  = $hashed;
+            $types    .= "s";
+        }
+
+        // Handle photo upload
+        if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+            $imgData = file_get_contents($_FILES['photo']['tmp_name']);
+            $finfo   = finfo_open(FILEINFO_MIME_TYPE);
+            $imgType = finfo_file($finfo, $_FILES['photo']['tmp_name']);
+            finfo_close($finfo);
+
+            if (strpos($imgType, 'image/') === 0) {
+                $photo     = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
+                $updates[] = "photo = ?";
+                $params[]  = $photo;
+                $types    .= "s";
+                $employee['photo'] = $photo;
+            }
+        }
+
+        // Add WHERE condition
+        $updates[] = "id = ?";
+        $params[]  = $id;
+        $types    .= "i";
+
+        // Build final SQL
+        $sql = "UPDATE staff SET " . implode(", ", $updates);
+
+        // Prepare and execute with error handling
+        try {
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                $error_msg = "Database prepare failed: " . $conn->error;
+            } else {
+                if (!empty($params)) {
+                    $stmt->bind_param($types, ...$params);
+                }
+
+                if ($stmt->execute()) {
+                    $msg = "✅ Employee updated successfully!";
+                    if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
+                        $msg .= " Password reset to: " . $employee['staff_id'];
+                    } elseif (!empty($_POST['new_password'])) {
+                        $msg .= " New password set.";
+                    }
+                    echo "<script>alert(" . json_encode($msg) . "); window.location='employees.php';</script>";
+                    exit;
+                } else {
+                    $error_msg = "Execute failed: " . $stmt->error;
+                }
+                $stmt->close();
+            }
+        } catch (Throwable $e) {
+            $error_msg = "Database error: " . $e->getMessage();
+        }
     }
 }
 ?>

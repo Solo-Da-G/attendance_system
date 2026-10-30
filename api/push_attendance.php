@@ -111,6 +111,114 @@ if ($action === 'push_attendance') {
 }
 
 // ================================================================
+// ACTION: push_device_logs — Direct bridge from local ZKTeco reader
+// No local database or XAMPP MySQL required on the office PC!
+// ================================================================
+if ($action === 'push_device_logs') {
+    $logs = $input['logs'] ?? [];
+    $device_name = $input['device_name'] ?? 'ZKTeco Device';
+
+    if (empty($logs)) {
+        echo json_encode(["status" => "success", "message" => "No logs received", "inserted" => 0, "skipped" => 0, "unmatched" => 0]);
+        exit;
+    }
+
+    $inserted  = 0;
+    $skipped   = 0;
+    $unmatched = 0;
+
+    foreach ($logs as $log) {
+        $finger_id = trim((string)($log['id'] ?? ($log['fingerprint_id'] ?? '')));
+        $timestamp = trim($log['timestamp'] ?? '');
+        $state     = isset($log['state']) ? (int)$log['state'] : 0; // 0=in, 1=out
+
+        if ($finger_id === '' || empty($timestamp)) {
+            $skipped++;
+            continue;
+        }
+
+        // Match staff member in cloud database
+        $stmt = $conn->prepare("SELECT staff_id FROM staff WHERE fingerprint_id = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt->bind_param("s", $finger_id);
+        $stmt->execute();
+        $staff = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$staff) {
+            $unmatched++;
+            continue;
+        }
+
+        $staff_id = $staff['staff_id'];
+        $date     = date("Y-m-d", strtotime($timestamp));
+
+        // Skip exact duplicate timestamp
+        $stmt = $conn->prepare("SELECT id FROM attendance WHERE staff_id = ? AND (clock_in = ? OR clock_out = ?)");
+        $stmt->bind_param("sss", $staff_id, $timestamp, $timestamp);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            $stmt->close();
+            $skipped++;
+            continue;
+        }
+        $stmt->close();
+
+        if ($state == 0) {
+            // Clock-In
+            $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, source) VALUES (?, ?, 'in', 'device')");
+            $stmt->bind_param("ss", $staff_id, $timestamp);
+            if ($stmt->execute()) {
+                $inserted++;
+            } else {
+                $skipped++;
+            }
+            $stmt->close();
+        } else {
+            // Clock-Out: match latest open clock_in for today
+            $stmt = $conn->prepare("SELECT id, clock_in FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
+            $stmt->bind_param("ss", $staff_id, $date);
+            $stmt->execute();
+            $open = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            if ($open) {
+                $clock_in_time  = strtotime($open['clock_in']);
+                $clock_out_time = strtotime($timestamp);
+                $total_hours    = round(($clock_out_time - $clock_in_time) / 3600, 2);
+
+                $stmt = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, source = 'device' WHERE id = ?");
+                $stmt->bind_param("sdi", $timestamp, $total_hours, $open['id']);
+                if ($stmt->execute()) {
+                    $inserted++;
+                } else {
+                    $skipped++;
+                }
+                $stmt->close();
+            } else {
+                // Standalone clock out
+                $stmt = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, clock_out, status, total_hours, source) VALUES (?, ?, ?, 'out', 0, 'device')");
+                $stmt->bind_param("sss", $staff_id, $timestamp, $timestamp);
+                if ($stmt->execute()) {
+                    $inserted++;
+                } else {
+                    $skipped++;
+                }
+                $stmt->close();
+            }
+        }
+    }
+
+    echo json_encode([
+        "status"    => "success",
+        "message"   => "Processed " . count($logs) . " records: $inserted recorded, $skipped duplicates, $unmatched unmatched",
+        "inserted"  => $inserted,
+        "skipped"   => $skipped,
+        "unmatched" => $unmatched
+    ]);
+    exit;
+}
+
+// ================================================================
 // ACTION: push_staff — Sync staff records to cloud
 // ================================================================
 if ($action === 'push_staff') {
