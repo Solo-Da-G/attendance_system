@@ -14,10 +14,11 @@ $queries = [
     "ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(150) NULL AFTER `password`",
     "ALTER TABLE `admin` ADD COLUMN `reset_token` VARCHAR(64) NULL",
     "ALTER TABLE `admin` ADD COLUMN `reset_token_expires` DATETIME NULL",
-    "ALTER TABLE `admin` ADD COLUMN `auth_token` VARCHAR(64) NULL",
-    "ALTER TABLE `admin` ADD COLUMN `deleted_at` DATETIME NULL",
+    "ALTER TABLE `admin` ADD COLUMN `last_backup_time` DATETIME NULL",
+    "ALTER TABLE `admin` ADD COLUMN `auto_backup_freq` VARCHAR(20) DEFAULT 'never'",
+    "ALTER TABLE `admin` ADD COLUMN `auto_backup_type` VARCHAR(30) DEFAULT 'both'",
     
-    // Add missing columns to staff table
+    // Add & modify columns in staff table
     "ALTER TABLE `staff` ADD COLUMN `password` VARCHAR(255) NULL",
     "ALTER TABLE `staff` ADD COLUMN `reset_token` VARCHAR(64) NULL",
     "ALTER TABLE `staff` ADD COLUMN `reset_token_expires` DATETIME NULL",
@@ -26,6 +27,12 @@ $queries = [
     "ALTER TABLE `staff` ADD COLUMN `clock_lat` DECIMAL(10,8) NULL",
     "ALTER TABLE `staff` ADD COLUMN `clock_lng` DECIMAL(11,8) NULL",
     "ALTER TABLE `staff` ADD COLUMN `clock_radius` INT DEFAULT 300",
+    "ALTER TABLE `staff` ADD COLUMN `branch_id` INT DEFAULT NULL AFTER `branch`",
+    "ALTER TABLE `staff` ADD COLUMN `fingerprint_id` VARCHAR(255) NULL",
+    "ALTER TABLE `staff` MODIFY COLUMN `fingerprint_id` VARCHAR(255) NULL DEFAULT NULL",
+    "ALTER TABLE `staff` ADD COLUMN `fingerprint_data` LONGTEXT NULL",
+    "ALTER TABLE `staff` MODIFY COLUMN `fingerprint_data` LONGTEXT NULL",
+    "ALTER TABLE `staff` MODIFY COLUMN `photo` LONGTEXT NULL",
     
     // Add missing columns to attendance table
     "ALTER TABLE `attendance` ADD COLUMN `source` VARCHAR(20) DEFAULT 'web'",

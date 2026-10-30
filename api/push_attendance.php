@@ -125,7 +125,7 @@ if ($action === 'push_staff') {
         $phone      = $s['phone'] ?? '';
         $department = $s['department'] ?? '';
         $branch     = $s['branch'] ?? '';
-        $fingerprint_id = $s['fingerprint_id'] ?? '';
+        $fingerprint_id = !empty($s['fingerprint_id']) ? substr(trim($s['fingerprint_id']), 0, 255) : null;
 
         if (empty($staff_id)) continue;
 
@@ -136,16 +136,21 @@ if ($action === 'push_staff') {
         $exists = $stmt->get_result();
         $stmt->close();
 
-        if ($exists->num_rows > 0) {
-            $stmt = $conn->prepare("UPDATE staff SET full_name=?, job_title=?, email=?, phone=?, department=?, branch=?, fingerprint_id=? WHERE staff_id=?");
-            $stmt->bind_param("ssssssss", $full_name, $job_title, $email, $phone, $department, $branch, $fingerprint_id, $staff_id);
-        } else {
-            $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, email, phone, department, branch, fingerprint_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssss", $staff_id, $full_name, $job_title, $email, $phone, $department, $branch, $fingerprint_id);
-        }
+        try {
+            if ($exists->num_rows > 0) {
+                $stmt = $conn->prepare("UPDATE staff SET full_name=?, job_title=?, email=?, phone=?, department=?, branch=?, fingerprint_id=? WHERE staff_id=?");
+                $stmt->bind_param("ssssssss", $full_name, $job_title, $email, $phone, $department, $branch, $fingerprint_id, $staff_id);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, email, phone, department, branch, fingerprint_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssssssss", $staff_id, $full_name, $job_title, $email, $phone, $department, $branch, $fingerprint_id);
+            }
 
-        if ($stmt->execute()) $synced++;
-        $stmt->close();
+            if ($stmt->execute()) $synced++;
+            $stmt->close();
+        } catch (Throwable $e) {
+            // Skip problematic row without halting entire sync
+            if (isset($stmt) && $stmt) { $stmt->close(); }
+        }
     }
 
     echo json_encode(["status" => "success", "message" => "Synced $synced staff records", "synced" => $synced]);

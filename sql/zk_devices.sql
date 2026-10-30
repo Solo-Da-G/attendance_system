@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS `zk_devices` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
--- Add fingerprint_id index to staff table (faster lookups)
+-- Ensure fingerprint_id column is present and properly sized in staff table
 -- ============================================================
+ALTER TABLE `staff` ADD COLUMN IF NOT EXISTS `fingerprint_id` VARCHAR(255) NULL DEFAULT NULL;
+ALTER TABLE `staff` MODIFY COLUMN `fingerprint_id` VARCHAR(255) NULL DEFAULT NULL;
 ALTER TABLE `staff` ADD INDEX `idx_fingerprint_id` (`fingerprint_id`);

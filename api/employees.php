@@ -31,11 +31,18 @@ if (isset($_POST['add_employee'])) {
     $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     if ($stmt) {
         $stmt->bind_param("sssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo);
-        if ($stmt->execute()) {
-            echo "<script>alert('Employee added successfully! Default password is: " . addslashes($plain_password) . "'); window.location='employees.php';</script>";
-            exit;
-        } else {
-            echo "<script>alert('Error: " . addslashes($stmt->error) . "');</script>";
+        try {
+            if ($stmt->execute()) {
+                echo "<script>alert('Employee added successfully! Default password is: " . addslashes($plain_password) . "'); window.location='employees.php';</script>";
+                exit;
+            } else {
+                echo "<script>alert('Error: " . addslashes($stmt->error) . "');</script>";
+            }
+        } catch (Throwable $e) {
+            $errText = (strpos($e->getMessage(), 'Duplicate entry') !== false)
+                ? "A staff member with Staff ID '$staff_id' already exists."
+                : "Database error: " . $e->getMessage();
+            echo "<script>alert(" . json_encode($errText) . ");</script>";
         }
         $stmt->close();
     }
