@@ -114,6 +114,49 @@ if (isset($_POST['change_password'])) {
     }
     button:hover { background: #2563eb; }
     .error { color: #ef4444; margin-bottom: 15px; font-size: 14px; }
+    .password-input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .password-input-wrap input {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+        padding-right: 48px !important;
+    }
+    .password-toggle-btn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        border-radius: 8px;
+        transition: color 0.2s;
+        z-index: 5;
+    }
+    .password-toggle-btn:hover {
+        color: #60a5fa;
+    }
+    .password-toggle-btn svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        display: block;
+        pointer-events: none;
+    }
 </style>
 </head>
 <body>
@@ -125,14 +168,51 @@ if (isset($_POST['change_password'])) {
     <?php if ($success) echo "<div style='color:#86efac;margin-bottom:15px;font-size:14px;background:rgba(16,185,129,0.15);padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,0.3);'>$success</div>"; ?>
     
     <form method="POST">
-        <input type="password" name="current_password" placeholder="Old Password" required>
-        <input type="password" name="new_password" placeholder="New Password (min 6 chars)" required>
-        <input type="password" name="confirm_password" placeholder="Confirm New Password" required>
+        <div class="password-input-wrap">
+            <input type="password" id="staffCurrPass" name="current_password" placeholder="Old Password" required autocomplete="current-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePassVisibility('staffCurrPass', this)" aria-label="Show password" title="Show password">
+                <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+        </div>
+        <div class="password-input-wrap">
+            <input type="password" id="staffNewPass" name="new_password" placeholder="New Password (min 6 chars)" required autocomplete="new-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePassVisibility('staffNewPass', this)" aria-label="Show password" title="Show password">
+                <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+        </div>
+        <div class="password-input-wrap">
+            <input type="password" id="staffConfPass" name="confirm_password" placeholder="Confirm New Password" required autocomplete="new-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePassVisibility('staffConfPass', this)" aria-label="Show password" title="Show password">
+                <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+        </div>
         <button type="submit" name="change_password">Update Password</button>
     </form>
     <div style="margin-top:18px;">
         <a href="my_profile.php" style="color:#93c5fd;font-weight:700;text-decoration:none;">← Back to My Profile</a>
     </div>
 </div>
+<script>
+function togglePassVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    const svg = btn ? btn.querySelector('svg') : null;
+    if (svg) {
+        if (isPass) {
+            svg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+            btn.style.color = '#60a5fa';
+            btn.setAttribute('aria-label', 'Hide password');
+            btn.setAttribute('title', 'Hide password');
+        } else {
+            svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+            btn.style.color = '#94a3b8';
+            btn.setAttribute('aria-label', 'Show password');
+            btn.setAttribute('title', 'Show password');
+        }
+    }
+}
+</script>
 </body>
 </html>

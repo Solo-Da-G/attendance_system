@@ -315,7 +315,12 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             <input type="text" name="phone" placeholder="+234..." style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
             <label>Password (Optional)</label>
-            <input type="password" name="password" placeholder="Leave blank to use Staff ID" style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <div class="password-input-wrap" style="margin-bottom:6px;">
+                <input type="password" id="addEmpPassField" name="password" placeholder="Leave blank to use Staff ID" style="width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:12px;">
+                <button type="button" class="password-toggle-btn" onclick="togglePassVisibility('addEmpPassField', this)" aria-label="Show password" title="Show password">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
             <small style="color:var(--text-muted); display:block; margin-bottom:16px;">Default: Staff ID</small>
 
             <label>Profile Photo (Required for Face Recognition)</label>
@@ -358,6 +363,25 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
                 }
             }
             rows[i].style.display = found ? '' : 'none';
+        }
+    function togglePassVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        const svg = btn ? btn.querySelector('svg') : null;
+        if (svg) {
+            if (isPass) {
+                svg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+                btn.style.color = '#2563eb';
+                btn.setAttribute('aria-label', 'Hide password');
+                btn.setAttribute('title', 'Hide password');
+            } else {
+                svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+                btn.style.color = '#94a3b8';
+                btn.setAttribute('aria-label', 'Show password');
+                btn.setAttribute('title', 'Show password');
+            }
         }
     }
 </script>

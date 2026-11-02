@@ -117,7 +117,12 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
                 </div>
                 <div>
                     <label>Password</label>
-                    <input type="password" name="new_password" placeholder="Password" required>
+                    <div class="password-input-wrap">
+                        <input type="password" id="newUserPassField" name="new_password" placeholder="Password" required autocomplete="new-password">
+                        <button type="button" class="password-toggle-btn" onclick="togglePassVisibility('newUserPassField', this)" aria-label="Show password" title="Show password">
+                            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label>Role</label>

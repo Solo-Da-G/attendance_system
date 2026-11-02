@@ -136,7 +136,12 @@ $stmt->close();
             <input type="text" name="username" value="<?php echo htmlspecialchars($admin['username'] ?? ''); ?>" required>
 
             <label style="margin-top:15px; display:block;">New Password (leave blank to keep current)</label>
-            <input type="password" name="password" placeholder="Enter new password">
+            <div class="password-input-wrap">
+                <input type="password" id="adminSettingsPassField" name="password" placeholder="Enter new password" autocomplete="new-password">
+                <button type="button" class="password-toggle-btn" onclick="togglePassVisibility('adminSettingsPassField', this)" aria-label="Show password" title="Show password">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
 
             <!-- ── SECTION 1: AUTOMATED EMAIL BACKUPS ── -->
             <div class="backup-box" style="background: rgba(139, 92, 246, 0.08); border: 1.5px solid rgba(139, 92, 246, 0.3);">
@@ -304,6 +309,26 @@ function refreshExportUrls() {
     document.getElementById('btnAttCsv').href = 'backup.php?action=attendance_excel&month=' + encodeURIComponent(monthVal);
     document.getElementById('btnAttZip').href = 'backup.php?action=attendance_excel&month=' + encodeURIComponent(monthVal) + '&zip=1';
     document.getElementById('btnAttEmail').href = 'backup.php?action=email_attendance&month=' + encodeURIComponent(monthVal);
+}
+function togglePassVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    const svg = btn ? btn.querySelector('svg') : null;
+    if (svg) {
+        if (isPass) {
+            svg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+            btn.style.color = '#2563eb';
+            btn.setAttribute('aria-label', 'Hide password');
+            btn.setAttribute('title', 'Hide password');
+        } else {
+            svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+            btn.style.color = '#94a3b8';
+            btn.setAttribute('aria-label', 'Show password');
+            btn.setAttribute('title', 'Show password');
+        }
+    }
 }
 </script>
 </body>

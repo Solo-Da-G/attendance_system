@@ -576,6 +576,58 @@ input[type="file"] {
   cursor: pointer;
 }
 
+/* Password Eye Toggle Container */
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 6px 0 14px;
+}
+
+.password-input-wrap input[type="password"],
+.password-input-wrap input[type="text"] {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding-right: 44px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 8px;
+  transition: color 0.2s, background-color 0.2s;
+  z-index: 5;
+}
+
+.password-toggle-btn:hover {
+  color: var(--primary);
+  background: rgba(16, 67, 159, 0.08);
+}
+
+.password-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+  pointer-events: none;
+}
+
 /* ============================================================
    BUTTONS
    ============================================================ */

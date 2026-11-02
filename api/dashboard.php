@@ -410,7 +410,13 @@ if ($staff_id) {
     }
 
     /* Collapsible Attendance Log */
-    .att-log-panel { margin-bottom: 24px; overflow: hidden; }
+    .att-log-panel {
+        margin-bottom: 24px;
+        overflow: hidden;
+        overflow-x: clip;
+        width: 100%;
+        max-width: 100%;
+    }
     .att-log-toggle {
         width: 100%; background: none; border: none; padding: 18px 22px;
         display: flex; align-items: center; gap: 12px; cursor: pointer; text-align: left;
@@ -430,9 +436,34 @@ if ($staff_id) {
     .att-log-badge.red   { background: #fee2e2; color: #991b1b; }
     .att-log-chevron { font-size: 16px; color: var(--primary); transition: transform 0.3s ease; }
     .att-log-chevron.open { transform: rotate(180deg); }
-    .att-log-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+    .att-log-body {
+        max-height: 0;
+        overflow-y: hidden;
+        overflow-x: clip;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        transition: max-height 0.4s ease;
+    }
     .att-log-body.open { max-height: 2400px; }
-    .att-log-body-inner { padding: 0 20px 20px; }
+    .att-log-body-inner {
+        padding: 0 20px 20px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow-x: clip;
+    }
+    .att-log-body .search-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+        position: relative;
+    }
+    .att-log-body .search-input {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
 
     /* Tables */
     .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1416,14 +1447,14 @@ if ($staff_id) {
             <div class="att-log-body-inner">
 
                 <!-- Search Box -->
-                <div class="search-section" style="margin-bottom:0;">
+                <div class="search-section" style="margin-bottom:8px; width:100%; max-width:100% !important; box-sizing:border-box;">
                     <span class="search-icon">🔍</span>
                     <input type="text" id="staffSearch" class="search-input"
-                           style="margin-bottom:8px;"
+                           style="margin:0; width:100%; box-sizing:border-box;"
                            placeholder="Search by name, staff ID, branch, or status…"
                            oninput="filterTable()" autocomplete="off">
                 </div>
-                <p class="search-hint" style="margin-bottom:16px;">💡 e.g. type <strong>Head Office</strong> or <strong>Lekki</strong> to filter that branch</p>
+                <p class="search-hint" style="margin:6px 0 16px 0;">💡 e.g. type <strong>Head Office</strong> or <strong>Lekki</strong> to filter that branch</p>
 
                 <!-- Table -->
                 <div class="table-scroll" style="border-radius:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e0e7ff;">
@@ -1951,6 +1982,12 @@ if ($staff_id) {
         const chevron = document.getElementById('attLogChevron');
         const btn     = document.getElementById('attLogToggle');
         if (!body) return;
+        const panel   = body.closest('.att-log-panel');
+        const inner   = body.querySelector('.att-log-body-inner');
+        if (body) body.scrollLeft = 0;
+        if (inner) inner.scrollLeft = 0;
+        if (panel) panel.scrollLeft = 0;
+
         const isOpen = body.classList.contains('open');
         if (isOpen) {
             body.classList.remove('open');
@@ -1960,10 +1997,19 @@ if ($staff_id) {
             body.classList.add('open');
             if (chevron) chevron.classList.add('open');
             if (btn) btn.setAttribute('aria-expanded', 'true');
-            // Auto-focus search when opening
+            // Auto-focus search when opening safely without horizontal scrolling
             setTimeout(() => {
+                if (body) body.scrollLeft = 0;
+                if (inner) inner.scrollLeft = 0;
+                if (panel) panel.scrollLeft = 0;
                 const s = document.getElementById('staffSearch');
-                if (s) s.focus();
+                if (s) {
+                    try {
+                        s.focus({ preventScroll: true });
+                    } catch (e) {
+                        s.focus();
+                    }
+                }
             }, 460);
         }
     }
