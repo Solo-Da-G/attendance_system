@@ -126,36 +126,56 @@ if (isset($_POST['change_password'])) {
         margin-bottom: 0 !important;
         padding-right: 48px !important;
     }
+    button.password-toggle-btn,
     .password-toggle-btn {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        color: #94a3b8;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 6px;
-        border-radius: 8px;
-        transition: color 0.2s;
-        z-index: 5;
+        position: absolute !important;
+        right: 12px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+        min-height: 34px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        cursor: pointer !important;
+        color: #94a3b8 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 8px !important;
+        transition: color 0.2s, background-color 0.2s !important;
+        z-index: 5 !important;
     }
-    .password-toggle-btn:hover {
-        color: #60a5fa;
+    button.password-toggle-btn:hover,
+    .password-toggle-btn:hover,
+    button.password-toggle-btn:focus,
+    .password-toggle-btn:focus {
+        transform: translateY(-50%) !important;
+        color: #60a5fa !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: none !important;
+        outline: none !important;
     }
+    button.password-toggle-btn:active,
+    .password-toggle-btn:active {
+        transform: translateY(-50%) scale(0.92) !important;
+    }
+    button.password-toggle-btn svg,
     .password-toggle-btn svg {
-        width: 20px;
-        height: 20px;
-        stroke: currentColor;
-        stroke-width: 2.2;
-        fill: none;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        display: block;
-        pointer-events: none;
+        width: 20px !important;
+        height: 20px !important;
+        stroke: currentColor !important;
+        stroke-width: 2.2 !important;
+        fill: none !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
+        display: block !important;
+        pointer-events: none !important;
+        margin: 0 !important;
     }
 </style>
 </head>
