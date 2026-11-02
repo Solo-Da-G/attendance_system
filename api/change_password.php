@@ -35,9 +35,12 @@ if (isset($_POST['change_password'])) {
             $error = "Current password is incorrect";
         } else {
             $new_hashed = password_hash($new_password, PASSWORD_DEFAULT);
-            $upd = $conn->prepare("UPDATE admin SET password = ? WHERE id = ?");
+            $has_mcp_admin = function_exists('db_has_column') && db_has_column($conn, 'admin', 'must_change_password');
+            $sql_upd = $has_mcp_admin ? "UPDATE admin SET password = ?, must_change_password = 0 WHERE id = ?" : "UPDATE admin SET password = ? WHERE id = ?";
+            $upd = $conn->prepare($sql_upd);
             $upd->bind_param("si", $new_hashed, $admin_id);
             if ($upd->execute()) {
+                unset($_SESSION['require_password_change']);
                 $success = "Password changed successfully";
             } else {
                 $error = "Failed to update password";
@@ -72,6 +75,11 @@ if (isset($_POST['change_password'])) {
   </div>
 
   <div class="box" style="max-width:520px;">
+    <?php if (isset($_GET['first_login']) || !empty($_SESSION['require_password_change'])): ?>
+      <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:14px; border-radius:12px; margin-bottom:18px; font-size:14px; font-weight:600;">
+        👋 <strong>Welcome!</strong> For account security, please update your temporary password to your own secure personal password.
+      </div>
+    <?php endif; ?>
     <?php if ($success) { ?>
       <p class="success"><?php echo htmlspecialchars($success); ?></p>
     <?php } ?>

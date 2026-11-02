@@ -596,6 +596,44 @@ if ($staff_id) {
   <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
   <div class="content">
+    <?php if (!empty($_SESSION['require_password_change'])): ?>
+    <?php $change_pass_url = $staff_id ? 'change_staff_password.php?first_login=1' : 'change_password.php?first_login=1'; ?>
+    <!-- First login password prompt modal -->
+    <div class="dashboard-modal-overlay show" id="firstLoginModal" style="display:flex; opacity:1; z-index:999999;">
+        <div class="dashboard-modal" style="text-align:center; padding:32px 24px; max-width:440px;">
+            <div style="width:68px; height:68px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:32px; margin:0 auto 16px;">
+                🔐
+            </div>
+            <h3 style="margin:0 0 10px; font-size:20px; color:var(--text); font-weight:800;">Please Change Your Password</h3>
+            <p style="color:var(--text-muted); font-size:14px; line-height:1.5; margin:0 0 24px;">
+                Welcome to <strong>TDS Attendance System</strong>! You are currently using a default or temporary password. For your security, please update it now.
+            </p>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <a href="<?php echo $change_pass_url; ?>" style="background:var(--primary); color:white; padding:13px; border-radius:12px; font-weight:700; font-size:15px; text-decoration:none; display:block;">
+                    Change Password Now
+                </a>
+                <button type="button" class="password-modal-dismiss-btn" onclick="document.getElementById('firstLoginModal').style.display='none'" style="background:transparent; border:none; color:var(--text-muted); padding:8px; font-weight:600; font-size:13px; cursor:pointer;">
+                    Remind Me Later
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top alert banner -->
+    <div style="background: linear-gradient(135deg, #fef3c7, #fed7aa); border: 1.5px solid #f59e0b; border-radius: 16px; padding: 18px 24px; margin-bottom: 24px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #f59e0b; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">🔒</div>
+            <div>
+                <strong style="color: #92400e; font-size: 15px; display: block;">Default Password Active — Action Required</strong>
+                <span style="color: #b45309; font-size: 13px;">As a new user/employee, you must set a personalized password to secure your account.</span>
+            </div>
+        </div>
+        <a href="<?php echo $change_pass_url; ?>" style="background: linear-gradient(135deg, #d97706, #b45309); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(180, 83, 9, 0.25);">
+            Change Password Now →
+        </a>
+    </div>
+    <?php endif; ?>
+
     <div class="dashboard-header">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px; position:relative; z-index:2;">
             <div>

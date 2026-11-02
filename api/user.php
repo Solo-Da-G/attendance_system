@@ -56,7 +56,10 @@ if (isset($_POST['create_admin_user'])) {
     if ($check->num_rows > 0) {
         $message = "<p class='msg-error'>Username already exists.</p>";
     } else {
-        $stmt = $conn->prepare("INSERT INTO `admin` (username, email, password, role) VALUES (?, ?, ?, ?)");
+        $has_mcp = function_exists('db_has_column') && db_has_column($conn, 'admin', 'must_change_password');
+        $stmt = $conn->prepare($has_mcp
+            ? "INSERT INTO `admin` (username, email, password, role, must_change_password) VALUES (?, ?, ?, ?, 1)"
+            : "INSERT INTO `admin` (username, email, password, role) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $new_user, $new_email, $new_pass, $role);
         $stmt->execute();
         $stmt->close();

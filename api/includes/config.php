@@ -139,6 +139,16 @@ if (!function_exists('db_has_table')) {
     }
 }
 
+// Auto-heal schema for password change requirements
+if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
+    if (db_has_table($conn, 'staff') && !db_has_column($conn, 'staff', 'must_change_password')) {
+        @$conn->query("ALTER TABLE `staff` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0");
+    }
+    if (db_has_table($conn, 'admin') && !db_has_column($conn, 'admin', 'must_change_password')) {
+        @$conn->query("ALTER TABLE `admin` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0");
+    }
+}
+
 // ================================================================
 // SECURITY HEADERS (for cloud)
 // ================================================================

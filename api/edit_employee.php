@@ -52,6 +52,9 @@ if (!$employee) {
     die("Employee not found.");
 }
 
+// Check if user is Super Admin
+$is_super_admin = isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin';
+
 // Handle update form submission
 if (isset($_POST['update_employee'])) {
     $id         = (int)$_POST['id'];
@@ -63,7 +66,14 @@ if (isset($_POST['update_employee'])) {
     $phone      = trim($_POST['phone'] ?? '');
     $finger_id  = trim($_POST['fingerprint_id'] ?? '');
 
+    $old_staff_id = $employee['staff_id'];
+    $new_staff_id = $old_staff_id;
+    if ($is_super_admin && isset($_POST['staff_id'])) {
+        $new_staff_id = trim($_POST['staff_id']);
+    }
+
     // Keep form values in $employee in case of error
+    $employee['staff_id']       = $new_staff_id;
     $employee['full_name']      = $full_name;
     $employee['job_title']      = $job_title;
     $employee['department']     = $department;
@@ -72,8 +82,24 @@ if (isset($_POST['update_employee'])) {
     $employee['phone']          = $phone;
     $employee['fingerprint_id'] = $finger_id;
 
+    // Validate staff_id
+    if ($new_staff_id === '') {
+        $error_msg = "Staff ID cannot be empty.";
+    } elseif ($new_staff_id !== $old_staff_id) {
+        $dup_staff = $conn->prepare("SELECT id, full_name FROM staff WHERE staff_id = ? AND id != ? LIMIT 1");
+        if ($dup_staff) {
+            $dup_staff->bind_param("si", $new_staff_id, $id);
+            $dup_staff->execute();
+            $dup_staff_res = $dup_staff->get_result();
+            if ($dup_staff_row = $dup_staff_res->fetch_assoc()) {
+                $error_msg = "Staff ID '{$new_staff_id}' is already assigned to {$dup_staff_row['full_name']}. User IDs must be unique.";
+            }
+            $dup_staff->close();
+        }
+    }
+
     // Check for duplicate fingerprint_id across other active employees
-    if ($finger_id !== '') {
+    if (!isset($error_msg) && $finger_id !== '') {
         $dup_check = $conn->prepare("SELECT id, full_name, staff_id FROM staff WHERE fingerprint_id = ? AND id != ? AND deleted_at IS NULL LIMIT 1");
         if ($dup_check) {
             $dup_check->bind_param("si", $finger_id, $id);
@@ -91,6 +117,12 @@ if (isset($_POST['update_employee'])) {
         $updates = [];
         $params = [];
         $types = "";
+
+        if ($new_staff_id !== $old_staff_id) {
+            $updates[] = "staff_id = ?";
+            $params[]  = $new_staff_id;
+            $types    .= "s";
+        }
 
         // Basic fields
         $updates[] = "full_name = ?";
@@ -128,11 +160,12 @@ if (isset($_POST['update_employee'])) {
 
         // Handle password update (reset to default takes precedence over manual new password)
         if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
-            $default_pass = $employee['staff_id'];
+            $default_pass = $new_staff_id;
             $hashed       = password_hash($default_pass, PASSWORD_DEFAULT);
             $updates[]    = "password = ?";
             $params[]     = $hashed;
             $types       .= "s";
+            $updates[]    = "must_change_password = 1";
         } elseif (!empty($_POST['new_password'])) {
             $hashed    = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
             $updates[] = "password = ?";
@@ -161,31 +194,100 @@ if (isset($_POST['update_employee'])) {
         $params[] = $id;
         $types   .= "i";
 
-        // Prepare and execute with error handling
+        // Execute inside transaction for data integrity across all linked tables
         try {
-            $stmt = $conn->prepare($sql);
-            if (!$stmt) {
-                $error_msg = "Database prepare failed: " . $conn->error;
-            } else {
-                if (!empty($params)) {
-                    $stmt->bind_param($types, ...$params);
+            $conn->begin_transaction();
+
+            // If staff_id changed, cascade update across all tables
+            if ($new_staff_id !== $old_staff_id) {
+                // 1. Attendance records (history, photos, sessions)
+                $att_stmt = $conn->prepare("UPDATE attendance SET staff_id = ? WHERE staff_id = ?");
+                if ($att_stmt) {
+                    $att_stmt->bind_param("ss", $new_staff_id, $old_staff_id);
+                    $att_stmt->execute();
+                    $att_stmt->close();
                 }
 
-                if ($stmt->execute()) {
-                    $msg = "✅ Employee updated successfully!";
-                    if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
-                        $msg .= " Password reset to: " . $employee['staff_id'];
-                    } elseif (!empty($_POST['new_password'])) {
-                        $msg .= " New password set.";
-                    }
-                    echo "<script>alert(" . json_encode($msg) . "); window.location='employees.php';</script>";
-                    exit;
-                } else {
-                    $error_msg = "Execute failed: " . $stmt->error;
+                // 2. Field work comments
+                $fw_stmt = $conn->prepare("UPDATE field_work_comments SET staff_id = ? WHERE staff_id = ?");
+                if ($fw_stmt) {
+                    $fw_stmt->bind_param("ss", $new_staff_id, $old_staff_id);
+                    $fw_stmt->execute();
+                    $fw_stmt->close();
                 }
-                $stmt->close();
+
+                // 3. Biometrics credentials
+                $bio_stmt = $conn->prepare("UPDATE staff_biometrics SET staff_id = ? WHERE staff_id = ?");
+                if ($bio_stmt) {
+                    $bio_stmt->bind_param("ss", $new_staff_id, $old_staff_id);
+                    $bio_stmt->execute();
+                    $bio_stmt->close();
+                }
+
+                // 4. Audit logs
+                $aud_stmt = $conn->prepare("UPDATE audit_log SET staff_id = ? WHERE staff_id = ?");
+                if ($aud_stmt) {
+                    $aud_stmt->bind_param("ss", $new_staff_id, $old_staff_id);
+                    $aud_stmt->execute();
+                    $aud_stmt->close();
+                }
+
+                // 5. Notification reads
+                $old_uk = 's_' . $old_staff_id;
+                $new_uk = 's_' . $new_staff_id;
+                $notif_stmt = $conn->prepare("UPDATE notif_reads SET user_key = ? WHERE user_key = ?");
+                if ($notif_stmt) {
+                    $notif_stmt->bind_param("ss", $new_uk, $old_uk);
+                    $notif_stmt->execute();
+                    $notif_stmt->close();
+                }
+
+                // Record audit event for Staff ID modification
+                $admin_name = $_SESSION['admin'] ?? 'Super Admin';
+                $ip_addr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+                $audit_event = "Super Admin '{$admin_name}' changed User ID from '{$old_staff_id}' to '{$new_staff_id}' for {$full_name}. All attendance, photos, comments, and audit logs cascaded.";
+                $log_stmt = $conn->prepare("INSERT INTO audit_log (staff_id, full_name, event_type, event_detail, ip_address) VALUES (?, ?, 'staff_id_change', ?, ?)");
+                if ($log_stmt) {
+                    $log_stmt->bind_param("ssss", $new_staff_id, $full_name, $audit_event, $ip_addr);
+                    $log_stmt->execute();
+                    $log_stmt->close();
+                }
+
+                // If currently authenticated as this staff member in session, update session
+                if (isset($_SESSION['staff_id']) && $_SESSION['staff_id'] === $old_staff_id) {
+                    $_SESSION['staff_id'] = $new_staff_id;
+                }
             }
+
+            // Execute the staff table update
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception("Database prepare failed: " . $conn->error);
+            }
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if (!$stmt->execute()) {
+                throw new Exception("Execute failed: " . $stmt->error);
+            }
+            $stmt->close();
+
+            // Commit transaction
+            $conn->commit();
+
+            $msg = "✅ Employee updated successfully!";
+            if ($new_staff_id !== $old_staff_id) {
+                $msg .= " User ID safely updated to: {$new_staff_id}. All attendance records, photos, comments, and logs remain 100% linked.";
+            }
+            if (isset($_POST['reset_to_default']) && $_POST['reset_to_default'] == '1') {
+                $msg .= " Password reset to: " . $new_staff_id;
+            } elseif (!empty($_POST['new_password'])) {
+                $msg .= " New password set.";
+            }
+            echo "<script>alert(" . json_encode($msg) . "); window.location='employees.php';</script>";
+            exit;
         } catch (Throwable $e) {
+            $conn->rollback();
             $error_msg = "Database error: " . $e->getMessage();
         }
     }
@@ -216,8 +318,18 @@ if (isset($_POST['update_employee'])) {
     <form method="POST" enctype="multipart/form-data" style="max-width:600px;">
         <input type="hidden" name="id" value="<?php echo (int)($employee['id'] ?? 0); ?>">
 
-        <label>Staff ID (Cannot be changed)</label>
-        <input type="text" value="<?php echo htmlspecialchars($employee['staff_id'] ?? ''); ?>" disabled style="background:#f1f5f9; cursor:not-allowed;">
+        <?php if ($is_super_admin): ?>
+            <label style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                <span>User ID / Staff ID *</span>
+                <span style="background:var(--primary-subtle, #eff6ff); color:var(--primary, #2563eb); font-size:11px; padding:3px 10px; border-radius:999px; font-weight:600; border:1px solid rgba(37,99,235,0.2);">🛡️ Super Admin Editable</span>
+            </label>
+            <input type="text" id="staffIdInput" name="staff_id" value="<?php echo htmlspecialchars($employee['staff_id'] ?? ''); ?>" required autocomplete="off" style="font-weight:600; letter-spacing:0.5px;">
+            <small style="color:var(--text-muted); display:block; margin-top:4px;">As Super Admin, you can edit this User ID. All historical attendance, selfie photos, biometrics, comments, and audit logs will automatically be preserved and linked to the new ID.</small>
+        <?php else: ?>
+            <label>User ID / Staff ID (Locked)</label>
+            <input type="text" value="<?php echo htmlspecialchars($employee['staff_id'] ?? ''); ?>" disabled style="background:#f1f5f9; cursor:not-allowed;">
+            <small style="color:var(--text-muted); display:block; margin-top:4px;">Only a Super Admin can modify an employee's User ID.</small>
+        <?php endif; ?>
 
         <label>Full Name *</label>
         <input type="text" name="full_name" value="<?php echo htmlspecialchars($employee['full_name'] ?? ''); ?>" required>
@@ -275,10 +387,10 @@ if (isset($_POST['update_employee'])) {
         
         <div style="margin: 15px 0; padding: 12px; background: #fef3c7; border-radius: 12px;">
             <label style="cursor: pointer;">
-                <input type="checkbox" name="reset_to_default" value="1">
-                🔄 <strong>Reset password to Staff ID: <code><?php echo htmlspecialchars($employee['staff_id'] ?? ''); ?></code></strong>
+                <input type="checkbox" name="reset_to_default" id="resetToDefaultCheck" value="1">
+                🔄 <strong>Reset password to Staff ID: <code id="staffIdDisplay"><?php echo htmlspecialchars($employee['staff_id'] ?? ''); ?></code></strong>
             </label>
-            <br><small style="color:var(--text-muted);">Check this box and click Save to reset their password to their Staff ID</small>
+            <br><small style="color:var(--text-muted);">Check this box and click Save to reset their password to their Staff ID. They will be required to change it on their next login.</small>
         </div>
 
         <hr style="margin: 25px 0;">
@@ -326,6 +438,15 @@ function togglePassVisibility(inputId, btn) {
             btn.setAttribute('title', 'Show password');
         }
     }
+}
+
+// Live update password reset hint when Super Admin changes User ID
+const staffIdInput = document.getElementById('staffIdInput');
+const staffIdDisplay = document.getElementById('staffIdDisplay');
+if (staffIdInput && staffIdDisplay) {
+    staffIdInput.addEventListener('input', function() {
+        staffIdDisplay.textContent = this.value.trim() || '—';
+    });
 }
 </script>
 </body>

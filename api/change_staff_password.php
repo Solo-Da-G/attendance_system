@@ -40,7 +40,9 @@ if (isset($_POST['change_password'])) {
                 $error = "Old password is incorrect.";
             } else {
                 $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
-                $upd = $conn->prepare("UPDATE staff SET password = ? WHERE staff_id = ?");
+                $has_mcp = function_exists('db_has_column') && db_has_column($conn, 'staff', 'must_change_password');
+                $sql_upd = $has_mcp ? "UPDATE staff SET password = ?, must_change_password = 0 WHERE staff_id = ?" : "UPDATE staff SET password = ? WHERE staff_id = ?";
+                $upd = $conn->prepare($sql_upd);
                 $upd->bind_param("ss", $hashed, $staff_id);
                 if ($upd->execute()) {
                     unset($_SESSION['require_password_change']);
@@ -183,6 +185,11 @@ if (isset($_POST['change_password'])) {
 <div class="box">
     <h2>Change Password</h2>
     <p>Enter your old password, then choose a new secure password.</p>
+    <?php if (isset($_GET['first_login']) || !empty($_SESSION['require_password_change'])): ?>
+    <div style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;padding:12px;border-radius:12px;margin-bottom:18px;font-size:13.5px;text-align:left;">
+        👋 <strong>Welcome to the team!</strong> For account security, please update your default password to your own private password.
+    </div>
+    <?php endif; ?>
     
     <?php if ($error) echo "<div class='error'>$error</div>"; ?>
     <?php if ($success) echo "<div style='color:#86efac;margin-bottom:15px;font-size:14px;background:rgba(16,185,129,0.15);padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,0.3);'>$success</div>"; ?>

@@ -17,9 +17,11 @@ $queries = [
     "ALTER TABLE `admin` ADD COLUMN `last_backup_time` DATETIME NULL",
     "ALTER TABLE `admin` ADD COLUMN `auto_backup_freq` VARCHAR(20) DEFAULT 'never'",
     "ALTER TABLE `admin` ADD COLUMN `auto_backup_type` VARCHAR(30) DEFAULT 'both'",
+    "ALTER TABLE `admin` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0",
     
     // Add & modify columns in staff table
     "ALTER TABLE `staff` ADD COLUMN `password` VARCHAR(255) NULL",
+    "ALTER TABLE `staff` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0",
     "ALTER TABLE `staff` ADD COLUMN `reset_token` VARCHAR(64) NULL",
     "ALTER TABLE `staff` ADD COLUMN `reset_token_expires` DATETIME NULL",
     "ALTER TABLE `staff` ADD COLUMN `auth_token` VARCHAR(64) NULL",

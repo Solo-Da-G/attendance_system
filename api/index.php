@@ -18,7 +18,11 @@ if (isset($_POST['login'])) {
     if (empty($username) || empty($password)) {
         $error = "Please fill in both fields!";
     } else {
-        $stmt = $conn->prepare("SELECT id, username, password, role FROM `admin` WHERE (username = ? OR email = ?) LIMIT 1");
+        $has_mcp_admin = function_exists('db_has_column') && db_has_column($conn, 'admin', 'must_change_password');
+        $sql_admin = $has_mcp_admin
+            ? "SELECT id, username, password, role, must_change_password FROM `admin` WHERE (username = ? OR email = ?) LIMIT 1"
+            : "SELECT id, username, password, role FROM `admin` WHERE (username = ? OR email = ?) LIMIT 1";
+        $stmt = $conn->prepare($sql_admin);
         if (!$stmt) { die("MySQL Prepare Error (Admin Table): " . $conn->error); }
         $stmt->bind_param("ss", $username, $username);
         $stmt->execute();
@@ -31,6 +35,9 @@ if (isset($_POST['login'])) {
                 $_SESSION['admin_id'] = $row['id'];
                 $_SESSION['admin']    = $row['username'];
                 $_SESSION['role']     = $row['role'];
+                if (!empty($row['must_change_password'])) {
+                    $_SESSION['require_password_change'] = true;
+                }
                 $token = bin2hex(random_bytes(32));
                 $saved = false;
                 if (function_exists('db_has_column') && db_has_column($conn, 'admin', 'auth_token')) {
@@ -49,7 +56,11 @@ if (isset($_POST['login'])) {
             }
         }
 
-        $stmt = $conn->prepare("SELECT id, staff_id, full_name, password FROM staff WHERE (staff_id = ? OR email = ?) AND deleted_at IS NULL LIMIT 1");
+        $has_mcp_staff = function_exists('db_has_column') && db_has_column($conn, 'staff', 'must_change_password');
+        $sql_staff = $has_mcp_staff
+            ? "SELECT id, staff_id, full_name, password, must_change_password FROM staff WHERE (staff_id = ? OR email = ?) AND deleted_at IS NULL LIMIT 1"
+            : "SELECT id, staff_id, full_name, password FROM staff WHERE (staff_id = ? OR email = ?) AND deleted_at IS NULL LIMIT 1";
+        $stmt = $conn->prepare($sql_staff);
         $stmt->bind_param("ss", $username, $username);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -62,7 +73,8 @@ if (isset($_POST['login'])) {
                 $_SESSION['staff_id'] = $row['staff_id'];
                 $_SESSION['admin']    = $row['full_name'];
                 $_SESSION['role']     = 'staff';
-                if ($password === $row['staff_id'] && (empty($row['password']) || password_verify($row['staff_id'], $row['password']))) {
+                $is_default_pass = ($password === $row['staff_id'] && (empty($row['password']) || password_verify($row['staff_id'], $row['password'])));
+                if (!empty($row['must_change_password']) || $is_default_pass) {
                     $_SESSION['require_password_change'] = true;
                 }
                 $token = bin2hex(random_bytes(32));

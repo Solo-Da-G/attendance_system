@@ -28,7 +28,13 @@ if (isset($_POST['add_employee'])) {
         $photo = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
     }
 
-    $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $has_mcp = function_exists('db_has_column') && db_has_column($conn, 'staff', 'must_change_password');
+    if ($has_mcp) {
+        $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
+    } else {
+        $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    }
+
     if ($stmt) {
         $stmt->bind_param("sssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo);
         try {
