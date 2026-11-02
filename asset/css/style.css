@@ -2389,5 +2389,128 @@ body.dark-mode .bottom-nav-item.clock-highlight .clock-circle {
   margin-right: 2px;
 }
 
+/* ============================================================
+   APP NAVIGATION CONTROLS (Back Arrow & Refresh Page)
+   For Mobile App & Computer Installed Desktop App
+   ============================================================ */
+.app-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
+.app-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
 
+.app-nav-btn:active {
+  transform: scale(0.92);
+}
+
+/* Desktop Sidebar Nav Pill Buttons */
+.app-nav-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.app-nav-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+}
+
+.app-nav-pill-btn:active {
+  transform: scale(0.96);
+}
+
+/* Floating Navigation Pill (Desktop & Installed Computer App) */
+.app-desktop-floating-nav {
+  position: fixed;
+  bottom: 24px;
+  right: 26px;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 4px 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transition: all 0.25s ease;
+}
+
+.app-desktop-floating-nav:hover {
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.floating-nav-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.floating-nav-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.floating-nav-pill-btn:active {
+  transform: scale(0.94);
+}
+
+.floating-nav-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.22);
+  margin: 0 2px;
+}
+
+/* Refresh spin animation */
+@keyframes appSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.app-refresh-btn.is-refreshing svg,
+.app-refresh-btn:active svg {
+  animation: appSpin 0.7s linear infinite !important;
+}
+
+/* Hide desktop floating nav on mobile screens */
+@media (max-width: 768px) {
+  .app-desktop-floating-nav {
+    display: none !important;
+  }
+}

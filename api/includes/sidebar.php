@@ -10,9 +10,26 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 <!-- ──────────────────────────────────────────────────────────── -->
 <header class="mobile-app-header" id="mobileAppHeader">
     <div class="mobile-header-left">
-        <a href="dashboard.php" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <div class="mobile-header-nav-btns" style="display: flex; align-items: center; gap: 6px;">
+            <button class="mobile-header-btn app-nav-btn app-back-btn" id="mobileBackBtn" type="button" onclick="appGoBack()" title="Back to Previous Page" aria-label="Go Back">
+                <span class="t-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                </span>
+            </button>
+            <button class="mobile-header-btn app-nav-btn app-refresh-btn" id="mobileRefreshBtn" type="button" onclick="appRefreshPage(this)" title="Refresh Page" aria-label="Refresh Page">
+                <span class="t-icon">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                </span>
+            </button>
+        </div>
+        <a href="dashboard.php" style="display: flex; align-items: center; gap: 8px; text-decoration: none; min-width: 0;">
             <img src="/asset/img/tds_logo.png" alt="TDS Logo" class="mobile-header-logo">
-            <div>
+            <div style="min-width: 0;">
                 <div class="mobile-header-title">TDS Attendance</div>
                 <div class="mobile-header-subtitle"><?php echo htmlspecialchars($user_role_label); ?></div>
             </div>
@@ -49,6 +66,23 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 44px; max-width: 100%; width: auto; object-fit: contain; display: block;">
     </div>
 
+    <!-- Desktop App Navigation Controls (Back & Refresh for computer installed app & browser) -->
+    <div class="desktop-brand app-nav-controls-desktop" style="margin: 0 14px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button type="button" class="app-nav-pill-btn app-back-btn" id="desktopBackBtn" onclick="appGoBack()" title="Back to Previous Page (Alt+Left)" aria-label="Go Back">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+        </button>
+        <button type="button" class="app-nav-pill-btn app-refresh-btn" id="desktopRefreshBtn" onclick="appRefreshPage(this)" title="Refresh Page (F5)" aria-label="Refresh Page">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>Refresh</span>
+        </button>
+    </div>
+
     <!-- Desktop App Install Trigger -->
     <div class="desktop-brand" style="margin: 0 14px 12px;">
         <button type="button" id="desktopInstallAppBtn" class="app-install-trigger" style="width:100%; display:none; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #10439f, #1e40af); color:#ffffff; padding:8px 12px; border-radius:10px; border:1.5px solid rgba(255,255,255,0.2); font-weight:700; font-size:12px; cursor:pointer; box-shadow:0 3px 12px rgba(16,67,159,0.3); transition:all .2s ease;">
@@ -72,6 +106,23 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
             </div>
         </div>
         <button class="sidebar-close-btn" id="sidebarCloseBtn" type="button" aria-label="Close menu">&times;</button>
+    </div>
+
+    <!-- Mobile Drawer Quick Nav Controls -->
+    <div class="mobile-drawer-nav-controls" style="margin: 0 14px 12px; display: none; gap: 8px;">
+        <button type="button" class="app-nav-pill-btn app-back-btn" onclick="appGoBack()" style="flex:1;">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+        </button>
+        <button type="button" class="app-nav-pill-btn app-refresh-btn" onclick="appRefreshPage(this)" style="flex:1;">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>Refresh</span>
+        </button>
     </div>
 
     <nav class="sidebar-nav" aria-label="Navigation Menu">
@@ -193,6 +244,24 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         </div>
     </nav>
 </aside>
+
+<!-- Floating Quick Navigation Pill (For Installed Desktop App & Large Screens) -->
+<div class="app-desktop-floating-nav" id="appDesktopFloatingNav" aria-label="Desktop App Navigation Controls">
+    <button type="button" class="floating-nav-pill-btn app-back-btn" onclick="appGoBack()" title="Back to Previous Page (Alt+Left)" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back</span>
+    </button>
+    <div class="floating-nav-divider"></div>
+    <button type="button" class="floating-nav-pill-btn app-refresh-btn" onclick="appRefreshPage(this)" title="Refresh Page (F5)" aria-label="Refresh Page">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>Refresh</span>
+    </button>
+</div>
 
 <!-- iOS Safari Add to Home Screen Instructions Modal -->
 <div id="iosInstallModal" class="ios-install-modal" style="display:none; position:fixed; inset:0; background:rgba(6,13,31,0.85); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
@@ -464,6 +533,34 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
     window.closeIosInstallModal = function() {
         if (iosModal) iosModal.style.display = 'none';
     };
+
+    // Global App Navigation Handlers (Back Arrow & Refresh Page)
+    window.appGoBack = function() {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = 'dashboard.php';
+        }
+    };
+
+    window.appRefreshPage = function(triggerBtn) {
+        if (triggerBtn) {
+            triggerBtn.classList.add('is-refreshing');
+            const svg = triggerBtn.querySelector('svg');
+            if (svg) svg.style.animation = 'appSpin 0.7s linear infinite';
+        }
+        setTimeout(function() {
+            window.location.reload();
+        }, 60);
+    };
+
+    // Keyboard shortcut: Alt+Left Arrow for back
+    document.addEventListener('keydown', function(e) {
+        if (e.altKey && e.key === 'ArrowLeft') {
+            e.preventDefault();
+            window.appGoBack();
+        }
+    });
 
     window.addEventListener('appinstalled', () => {
         deferredInstallPrompt = null;

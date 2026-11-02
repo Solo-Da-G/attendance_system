@@ -182,6 +182,16 @@ if (isset($_POST['change_password'])) {
 </style>
 </head>
 <body>
+<div style="position:fixed; top:18px; left:18px; z-index:100; display:flex; gap:8px;">
+    <button type="button" onclick="history.length > 1 ? history.back() : window.location='dashboard.php'" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#ffffff; padding:8px 14px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;" title="Go Back">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <span>Back</span>
+    </button>
+    <button type="button" onclick="window.location.reload()" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#ffffff; padding:8px 14px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;" title="Refresh Page">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        <span>Refresh</span>
+    </button>
+</div>
 <div class="box">
     <h2>Change Password</h2>
     <p>Enter your old password, then choose a new secure password.</p>
