@@ -42,7 +42,7 @@ if (isset($_POST['login'])) {
                     goto render_form;
                 } else {
                     $secure = function_exists('is_https_request') ? is_https_request() : true;
-                    setcookie('auth_token', $token, ['expires' => 0, 'path' => '/', 'secure' => $secure, 'httponly' => true, 'samesite' => 'Lax']);
+                    setcookie('auth_token', $token, ['expires' => time() + (86400 * 365), 'path' => '/', 'secure' => $secure, 'httponly' => true, 'samesite' => 'Lax']);
                     header("Location: /dashboard.php");
                     exit;
                 }
@@ -76,7 +76,7 @@ if (isset($_POST['login'])) {
                     goto render_form;
                 } else {
                     $secure = function_exists('is_https_request') ? is_https_request() : true;
-                    setcookie('auth_token', 'staff_' . $token, ['expires' => 0, 'path' => '/', 'secure' => $secure, 'httponly' => true, 'samesite' => 'Lax']);
+                    setcookie('auth_token', 'staff_' . $token, ['expires' => time() + (86400 * 365), 'path' => '/', 'secure' => $secure, 'httponly' => true, 'samesite' => 'Lax']);
                     header("Location: /dashboard.php");
                     exit;
                 }

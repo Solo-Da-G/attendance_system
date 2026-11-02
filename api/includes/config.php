@@ -12,13 +12,14 @@ if (!function_exists('is_https_request')) {
     }
 }
 
-// Start session (with sane cookie settings for both local + HTTPS deployments)
+// Start session (configured to persist until manual logout)
 if (session_status() === PHP_SESSION_NONE) {
     $secure = is_https_request();
-    // Ensure the session cookie works correctly on HTTPS and doesn't break local HTTP.
-    // Note: must be called BEFORE session_start()
+    // Keep session active for 30 days without timing out when idle
+    @ini_set('session.gc_maxlifetime', 86400 * 30);
+    @ini_set('session.cookie_lifetime', 86400 * 30);
     @session_set_cookie_params([
-        'lifetime' => 0,
+        'lifetime' => 86400 * 30,
         'path' => '/',
         'secure' => $secure,
         'httponly' => true,
