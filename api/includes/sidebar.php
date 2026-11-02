@@ -45,17 +45,17 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 <!-- ──────────────────────────────────────────────────────────── -->
 <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
     <!-- Desktop Brand Logo -->
-    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; margin: 0 18px 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.22); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
-        <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 56px; max-width: 100%; width: auto; object-fit: contain; display: block;">
+    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 14px; padding: 10px 14px; margin: 0 14px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
+        <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 44px; max-width: 100%; width: auto; object-fit: contain; display: block;">
     </div>
 
     <!-- Desktop App Install Trigger -->
-    <div class="desktop-brand" style="margin: 0 18px 16px;">
-        <button type="button" id="desktopInstallAppBtn" class="app-install-trigger" style="width:100%; display:none; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #10439f, #1e40af); color:#ffffff; padding:11px 14px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.2); font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(16,67,159,0.35); transition:all .2s ease;">
-            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <div class="desktop-brand" style="margin: 0 14px 12px;">
+        <button type="button" id="desktopInstallAppBtn" class="app-install-trigger" style="width:100%; display:none; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #10439f, #1e40af); color:#ffffff; padding:8px 12px; border-radius:10px; border:1.5px solid rgba(255,255,255,0.2); font-weight:700; font-size:12px; cursor:pointer; box-shadow:0 3px 12px rgba(16,67,159,0.3); transition:all .2s ease;">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>📲 Install App</span>
         </button>
-        <div id="desktopAppInstalledBadge" style="display:none; text-align:center; font-size:11px; font-weight:700; color:#10b981; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:6px 8px;">
+        <div id="desktopAppInstalledBadge" style="display:none; text-align:center; font-size:11px; font-weight:700; color:#10b981; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:5px 8px;">
             ✓ App Installed (Desktop)
         </div>
     </div>

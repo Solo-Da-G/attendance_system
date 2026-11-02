@@ -129,13 +129,20 @@ if ($staff_id) {
     
     body.dashboard-page { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); width: 100%; max-width: 100%; overflow-x: hidden; }
     html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
-    .dashboard-page .content { box-sizing: border-box; padding: 24px; min-width: 0; width: 100%; max-width: 100%; }
+    .dashboard-page .content {
+        box-sizing: border-box;
+        padding: clamp(16px, 2vw, 24px);
+        min-width: 0;
+        margin-left: var(--sidebar-w);
+        width: calc(100% - var(--sidebar-w));
+        max-width: calc(100% - var(--sidebar-w));
+    }
 
     /* Executive Top Header */
     .dashboard-header {
         background: linear-gradient(135deg, #020617 0%, #0b193d 45%, #10439f 100%);
-        color: #ffffff; padding: clamp(20px, 3.5vw, 32px); border-radius: 22px;
-        margin-bottom: 24px;
+        color: #ffffff; padding: clamp(16px, 2vw, 22px); border-radius: 18px;
+        margin-bottom: 20px;
         box-shadow: 0 16px 36px -6px rgba(16, 67, 159, 0.25);
         position: relative; overflow: hidden;
     }
@@ -144,36 +151,36 @@ if ($staff_id) {
         border-radius: 50%; background: radial-gradient(circle, rgba(37,99,235,0.25), transparent 70%);
         pointer-events: none;
     }
-    .dashboard-header h2 { font-size: clamp(1.4rem, 3.5vw, 1.95rem); font-weight: 800; margin: 0 0 6px; letter-spacing: -0.5px; color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.35); }
-    .dashboard-header p { margin: 0; font-size: clamp(0.95rem, 2vw, 1.05rem); color: #f1f5f9 !important; font-weight: 600; opacity: 1 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4); letter-spacing: 0.2px; }
+    .dashboard-header h2 { font-size: clamp(1.25rem, 2.4vw, 1.7rem); font-weight: 800; margin: 0 0 4px; letter-spacing: -0.4px; color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.35); }
+    .dashboard-header p { margin: 0; font-size: clamp(0.85rem, 1.4vw, 0.95rem); color: #f1f5f9 !important; font-weight: 600; opacity: 1 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.4); letter-spacing: 0.2px; }
 
     /* Cards & Containers */
     .clocking-card, .widget-card, .recent-table, .att-log-panel, .broadcast-panel {
-        background: var(--surface); border-radius: 20px;
+        background: var(--surface); border-radius: 18px;
         border: 1px solid var(--border); box-shadow: var(--shadow);
         transition: box-shadow 0.25s ease;
     }
-    .clocking-card { padding: clamp(20px, 3.5vw, 32px); margin-bottom: 24px; }
-    .clocking-card h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; color: var(--text); }
+    .clocking-card { padding: clamp(16px, 2vw, 22px); margin-bottom: 20px; }
+    .clocking-card h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; color: var(--text); }
 
     /* Camera Scanner Portal */
     #camera-container {
-        width: min(270px, 70vw); margin: 0 auto 20px;
+        width: min(220px, 55vw); margin: 0 auto 16px;
         border-radius: 50%; overflow: hidden; background: #020617;
-        aspect-ratio: 1 / 1; position: relative; border: 5px solid #e2e8f0;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        aspect-ratio: 1 / 1; position: relative; border: 4px solid #e2e8f0;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
         transition: all 0.3s ease;
     }
     #camera-container.active-scan {
         border-color: #10b981;
-        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.2), 0 12px 30px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.2), 0 10px 24px rgba(0, 0, 0, 0.12);
     }
     #video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
     #canvas { display: none; }
 
     .scanning-overlay {
         position: absolute; inset: 0; border-radius: 50%;
-        box-shadow: inset 0 0 0 8px rgba(37, 99, 235, 0.5);
+        box-shadow: inset 0 0 0 6px rgba(37, 99, 235, 0.5);
         animation: pulseRadar 1.5s infinite; display: none; z-index: 10;
     }
     @keyframes pulseRadar {
@@ -184,13 +191,13 @@ if ($staff_id) {
 
     /* Biometric Verification Tabs */
     .verification-tabs {
-        display: flex; gap: 8px; justify-content: center;
-        background: var(--surface-alt); padding: 6px; border-radius: 16px;
-        margin: 0 auto 22px; max-width: 380px; border: 1px solid var(--border);
+        display: flex; gap: 6px; justify-content: center;
+        background: var(--surface-alt); padding: 5px; border-radius: 14px;
+        margin: 0 auto 18px; max-width: 320px; border: 1px solid var(--border);
     }
     .ver-tab-btn {
-        flex: 1; padding: 10px 14px; border: none; border-radius: 12px;
-        background: transparent; font-weight: 700; font-size: 13.5px;
+        flex: 1; padding: 8px 12px; border: none; border-radius: 10px;
+        background: transparent; font-weight: 700; font-size: 13px;
         color: var(--text-muted); cursor: pointer; transition: all 0.25s ease;
         display: flex; align-items: center; justify-content: center; gap: 6px;
         font-family: inherit;
@@ -241,48 +248,48 @@ if ($staff_id) {
     .clock-btn {
         background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         color: white; border: none;
-        padding: 16px 36px;
-        font-size: 1rem; font-weight: 800;
-        border-radius: 14px; cursor: pointer; transition: all 0.25s ease;
-        box-shadow: 0 8px 24px -4px rgba(16, 67, 159, 0.4);
-        width: 100%; max-width: 360px;
-        letter-spacing: 0.3px;
+        padding: 12px 26px;
+        font-size: 0.95rem; font-weight: 800;
+        border-radius: 12px; cursor: pointer; transition: all 0.25s ease;
+        box-shadow: 0 6px 18px -3px rgba(16, 67, 159, 0.35);
+        width: 100%; max-width: 320px;
+        letter-spacing: 0.2px;
     }
-    .clock-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px -4px rgba(16, 67, 159, 0.5); }
+    .clock-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -4px rgba(16, 67, 159, 0.45); }
     .clock-btn.out {
         background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-        box-shadow: 0 8px 24px -4px rgba(239, 68, 68, 0.4);
+        box-shadow: 0 6px 18px -3px rgba(239, 68, 68, 0.35);
     }
-    .clock-btn.out:hover { box-shadow: 0 12px 28px -4px rgba(239, 68, 68, 0.5); }
+    .clock-btn.out:hover { box-shadow: 0 10px 24px -4px rgba(239, 68, 68, 0.45); }
     .clock-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
     .geo-register-btn {
-        background: #0f766e; color: white; border: none; padding: 11px 18px;
-        border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer;
-        margin-top: 10px; width: 100%; max-width: 360px; transition: all 0.2s;
+        background: #0f766e; color: white; border: none; padding: 9px 16px;
+        border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;
+        margin-top: 8px; width: 100%; max-width: 320px; transition: all 0.2s;
     }
     .geo-register-btn:hover { background: #0d9488; }
     .gps-coords-box {
-        background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px;
-        padding: 12px; margin: 12px 0; font-size: 13px; text-align: left;
+        background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px;
+        padding: 10px 14px; margin: 10px 0; font-size: 12.5px; text-align: left;
         color: #0c4a6e; word-break: break-all;
     }
 
-    .status-line { margin-top: 8px; color: var(--text-muted); font-size: 0.875rem; font-weight: 600; text-align: center; }
-    #apiResult { margin-top: 12px; font-weight: 700; font-size: 1.05rem; }
-    .error-message { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 12px 16px; border-radius: 12px; margin: 12px 0; font-size: 13.5px; font-weight: 600; }
+    .status-line { margin-top: 8px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-align: center; }
+    #apiResult { margin-top: 10px; font-weight: 700; font-size: 1rem; }
+    .error-message { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 10px; margin: 10px 0; font-size: 13px; font-weight: 600; }
 
     /* Search Section */
     .search-section { position: relative; width: 100%; margin-bottom: 8px; }
     .search-section .search-icon {
-        position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
-        font-size: 18px; pointer-events: none; z-index: 2; color: #94a3b8;
+        position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+        font-size: 16px; pointer-events: none; z-index: 2; color: #94a3b8;
     }
     .search-input {
-        width: 100%; padding: 14px 18px 14px 48px; box-sizing: border-box;
+        width: 100%; padding: 11px 16px 11px 44px; box-sizing: border-box;
         background: var(--surface);
         border: 1.5px solid var(--border);
-        border-radius: 14px; font-size: 14.5px; font-weight: 600;
+        border-radius: 12px; font-size: 13.5px; font-weight: 600;
         box-shadow: var(--shadow-sm);
         transition: border-color 0.2s, box-shadow 0.2s;
         outline: none; color: var(--text);
@@ -292,29 +299,29 @@ if ($staff_id) {
         border-color: var(--primary-light);
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
     }
-    .search-hint { font-size: 12px; color: var(--primary-light); font-weight: 600; margin: 6px 0 16px 4px; }
+    .search-hint { font-size: 11.5px; color: var(--primary-light); font-weight: 600; margin: 5px 0 14px 4px; }
 
     /* Executive Scorecards */
     .premium-scorecard {
         position: relative;
         background: var(--surface);
         color: var(--text);
-        padding: 20px 20px;
-        border-radius: 18px;
+        padding: 14px 16px;
+        border-radius: 14px;
         border: 1px solid var(--border);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow-sm);
         display: flex; flex-direction: column; justify-content: space-between;
-        min-height: 124px;
+        min-height: 104px;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         overflow: hidden;
     }
     .premium-scorecard:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
     }
     .premium-scorecard::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3.5px;
-        background: #94a3b8; border-radius: 18px 18px 0 0;
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        background: #94a3b8; border-radius: 14px 14px 0 0;
     }
     .premium-scorecard.blue::before   { background: #2563eb; }
     .premium-scorecard.green::before  { background: #10b981; }
@@ -324,59 +331,59 @@ if ($staff_id) {
     .premium-scorecard.teal::before   { background: #14b8a6; }
     .premium-scorecard.pink::before   { background: #ec4899; }
 
-    .scorecard-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .scorecard-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .scorecard-icon {
-        width: 36px; height: 36px; border-radius: 10px;
+        width: 32px; height: 32px; border-radius: 8px;
         background: var(--surface-alt);
         display: flex; align-items: center; justify-content: center;
-        font-size: 18px; flex-shrink: 0;
+        font-size: 16px; flex-shrink: 0;
     }
     .scorecard-label {
-        font-size: 11.5px; font-weight: 800; text-transform: uppercase;
-        letter-spacing: 0.7px; color: var(--text-muted);
+        font-size: 11px; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.5px; color: var(--text-muted);
     }
     .scorecard-value {
-        font-size: 24px; font-weight: 800; color: var(--text);
-        margin: 4px 0 2px; font-variant-numeric: tabular-nums;
+        font-size: 21px; font-weight: 800; color: var(--text);
+        margin: 2px 0 1px; font-variant-numeric: tabular-nums;
     }
-    .scorecard-sub { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+    .scorecard-sub { font-size: 11px; color: var(--text-muted); font-weight: 600; }
 
     /* Branch Scoreboard Grid */
-    .scorecard-section { margin-bottom: 28px; }
+    .scorecard-section { margin-bottom: 24px; }
     .scorecard-title {
-        font-size: 17px; font-weight: 800; color: var(--text);
-        margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+        font-size: 16px; font-weight: 800; color: var(--text);
+        margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
     }
     .scorecard-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 12px;
     }
     .branch-score-card {
         background: var(--surface); border: 1px solid var(--border);
-        border-radius: 18px; padding: 18px;
-        box-shadow: var(--shadow); position: relative; overflow: hidden;
+        border-radius: 14px; padding: 14px;
+        box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
         transition: transform 0.2s, box-shadow 0.2s;
     }
-    .branch-score-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .branch-score-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
     .branch-score-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3.5px;
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
         background: linear-gradient(90deg, var(--primary), var(--primary-light));
     }
-    .branch-score-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .branch-score-name { font-weight: 800; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .branch-score-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .branch-score-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .branch-score-name { font-weight: 800; font-size: 13.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .branch-score-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .branch-stat {
-        background: var(--surface-alt); border-radius: 10px; padding: 8px 10px; text-align: center;
+        background: var(--surface-alt); border-radius: 8px; padding: 7px 8px; text-align: center;
         transition: background 0.15s;
     }
     .branch-stat:hover { background: #e2e8f0; }
-    .branch-stat-label { font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
-    .branch-stat-value { font-size: 18px; font-weight: 800; color: var(--text); }
+    .branch-stat-label { font-size: 9px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
+    .branch-stat-value { font-size: 16px; font-weight: 800; color: var(--text); }
     .branch-stat-value.in-val { color: #10b981; }
     .branch-stat-value.out-val { color: #3b82f6; }
     .branch-stat-value.wk-val { color: #8b5cf6; }
-    .branch-stat-sub { font-size: 9.5px; color: var(--text-muted); font-weight: 600; }
+    .branch-stat-sub { font-size: 9px; color: var(--text-muted); font-weight: 600; }
 
     /* Broadcast & Panels */
     .broadcast-panel {
@@ -494,15 +501,44 @@ if ($staff_id) {
 
     /* Accordion buttons */
     .accordion-btn {
-        width: 100%; padding: 14px 18px; border: 1px solid var(--border);
+        width: 100%; padding: 11px 16px; border: 1px solid var(--border);
         background: var(--surface-alt); border-radius: 12px; font-weight: 700;
-        font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-        color: var(--text); font-family: inherit; margin-top: 14px;
+        font-size: 13.5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+        color: var(--text); font-family: inherit; margin-top: 12px;
     }
     .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
 
+    /* Dashboard Links & Action Buttons */
+    .dashboard-links-container {
+        display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .dash-quick-link {
+        padding: 8px 16px; border-radius: 10px; background: var(--surface-alt);
+        border: 1px solid var(--border); color: var(--text); font-weight: 700;
+        font-size: 13px; text-decoration: none; text-align: center;
+        transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .dash-quick-link:hover { background: #e2e8f0; color: var(--primary); }
+    .dash-quick-link.primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        border-color: transparent; color: #fff;
+    }
+    .dash-quick-link.primary:hover { opacity: 0.95; color: #fff; }
+
+    .field-work-submit-btn {
+        padding: 10px 22px; background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white; border: none; border-radius: 11px; font-weight: 700;
+        font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+        transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .field-work-submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(245,158,11,0.4);
+    }
+
     @media (max-width: 768px) {
         .dashboard-page .content {
+            margin-left: 0 !important;
             padding: calc(var(--mobile-header-h) + var(--safe-top) + 14px) 14px calc(var(--bottom-nav-h) + var(--safe-bottom) + 28px) 14px !important;
             width: 100% !important;
             max-width: 100% !important;
@@ -511,6 +547,15 @@ if ($staff_id) {
         .scorecard-grid { grid-template-columns: 1fr; }
         .broadcast-row { flex-direction: column; }
         .broadcast-target, .broadcast-msg, .broadcast-send-btn { width: 100%; }
+        .dashboard-links-container { width: 100% !important; margin-top: 8px; }
+        .dash-quick-link { flex: 1 1 calc(33.333% - 6px); min-width: 85px; padding: 8px 8px; font-size: 12px; }
+        .field-work-submit-btn { width: 100% !important; justify-content: center !important; }
+    }
+
+    @media (max-width: 540px) {
+        .today-record-row { justify-content: center !important; text-align: center; }
+        .record-divider { display: none !important; }
+        .dash-quick-link { flex: 1 1 100%; }
     }
   </style>
 </head>
@@ -705,51 +750,52 @@ if ($staff_id) {
 
     <!-- ── Field Work Comment Box (Staff Only) ── -->
     <div class="clocking-card" id="fieldWorkCard" style="margin-top:0;border-top:2px solid #fbbf24;background:linear-gradient(135deg,#fffbeb,#fef3c7);">
-        <h3 style="color:#92400e;display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <span style="background:#f59e0b;color:white;width:36px;height:36px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;">🏃</span>
+        <h3 style="color:#92400e;display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:15px;">
+            <span style="background:#f59e0b;color:white;width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;">🏃</span>
             Going for Field Work?
         </h3>
-        <p style="color:#78350f;font-size:13px;margin-bottom:14px;font-weight:600;">
+        <p style="color:#78350f;font-size:12.5px;margin-bottom:10px;font-weight:600;">
             If you are going to the field and may not return to clock out before day-end, leave a note here for your manager.
         </p>
-        <textarea id="fieldWorkMsg" rows="3" maxlength="1000"
-            style="width:100%;padding:12px 16px;border:1.5px solid #fbbf24;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;background:white;outline:none;resize:vertical;box-sizing:border-box;color:#1e293b;"
+        <textarea id="fieldWorkMsg" rows="2" maxlength="1000"
+            style="width:100%;padding:10px 14px;border:1.5px solid #fbbf24;border-radius:12px;font-size:13.5px;font-weight:600;font-family:inherit;background:white;outline:none;resize:vertical;box-sizing:border-box;color:#1e293b;"
             placeholder="e.g. I am heading to ABC site and may not return before 7 PM. My return is expected on [date]."></textarea>
-        <button onclick="submitFieldWorkComment()" id="fieldWorkBtn"
-            style="margin-top:12px;padding:12px 24px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer;width:100%;box-shadow:0 6px 16px rgba(245,158,11,0.35);transition:all 0.2s;">
-            📤 Submit Field Work Note
-        </button>
-        <div id="fieldWorkStatus" style="margin-top:10px;font-size:13px;font-weight:700;min-height:20px;text-align:center;"></div>
+        <div style="display:flex;justify-content:flex-start;margin-top:10px;">
+            <button onclick="submitFieldWorkComment()" id="fieldWorkBtn" class="field-work-submit-btn">
+                📤 Submit Field Work Note
+            </button>
+        </div>
+        <div id="fieldWorkStatus" style="margin-top:8px;font-size:12.5px;font-weight:700;min-height:18px;text-align:left;"></div>
     </div>
 
     <div class="clocking-card">
         <div style="display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:14px;">
+            <div style="display:flex;align-items:center;gap:12px;">
                 <?php if ($staff_photo_ok): ?>
-                    <img src="<?php echo htmlspecialchars($staff_photo); ?>" alt="Profile" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid rgba(79,70,229,.35);">
+                    <img src="<?php echo htmlspecialchars($staff_photo); ?>" alt="Profile" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(79,70,229,.35);flex-shrink:0;">
                 <?php else: ?>
-                    <div style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e2e8f0;font-weight:800;">?</div>
+                    <div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e2e8f0;font-weight:800;flex-shrink:0;">?</div>
                 <?php endif; ?>
                 <div>
-                    <div style="font-weight:800;font-size:16px;"><?php echo htmlspecialchars($display_name); ?></div>
-                    <div style="color:var(--text-muted);font-weight:600;font-size:13px;">
+                    <div style="font-weight:800;font-size:15px;"><?php echo htmlspecialchars($display_name); ?></div>
+                    <div style="color:var(--text-muted);font-weight:600;font-size:12.5px;">
                         <?php echo htmlspecialchars($staff_id); ?>
                         <?php if ($staff_job_title): ?> · <?php echo htmlspecialchars($staff_job_title); ?><?php endif; ?>
                         <?php if ($staff_department): ?> · <?php echo htmlspecialchars($staff_department); ?><?php endif; ?>
                     </div>
                 </div>
             </div>
-            <div class="dashboard-links-container" style="display:flex;gap:10px;flex-wrap:wrap;width:100%;">
-                <a href="my_attendance.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Attendance</a>
-                <a href="my_report.php" style="padding:10px 14px;border-radius:14px;background:var(--surface-alt);border:1px solid var(--border);font-weight:700;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Report</a>
-                <a href="my_profile.php" style="padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border:1px solid transparent;color:#fff;font-weight:800;text-decoration:none;flex:1;min-width:120px;text-align:center;">My Profile</a>
+            <div class="dashboard-links-container">
+                <a href="my_attendance.php" class="dash-quick-link">My Attendance</a>
+                <a href="my_report.php" class="dash-quick-link">My Report</a>
+                <a href="my_profile.php" class="dash-quick-link primary">My Profile</a>
             </div>
         </div>
     </div>
     
-    <div class="recent-table" style="margin-top: 30px;">
-        <h3 style="display:flex;align-items:center;gap:10px;">
-            <div style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(16, 67, 159, 0.2);">🕒</div>
+    <div class="recent-table" style="margin-top: 20px;">
+        <h3 style="display:flex;align-items:center;gap:10px;font-size:15px;">
+            <div style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 4px 10px rgba(16, 67, 159, 0.2);">🕒</div>
             Your Recent Attendance
         </h3>
         
@@ -775,25 +821,25 @@ if ($staff_id) {
         ?>
         
         <!-- Today's Attendance Display -->
-        <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(255,255,255,0.7);">
-            <h4 style="margin: 0 0 12px 0; font-size: 15px; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Today's Record</h4>
+        <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(255,255,255,0.7);">
+            <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">Today's Record</h4>
             <?php if (empty($today_records)): ?>
-                <div style="text-align: center; color: #94a3b8; font-weight: 600; padding: 10px 0;">No clock-in record for today yet.</div>
+                <div style="text-align: center; color: #94a3b8; font-weight: 600; padding: 8px 0; font-size: 13px;">No clock-in record for today yet.</div>
             <?php else: ?>
                 <?php foreach ($today_records as $tr): ?>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 16px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                    <div class="today-record-row" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 18px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 8px; flex-wrap: wrap; gap: 12px;">
                         <div>
-                            <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Clock In</div>
-                            <div style="font-size: 18px; font-weight: 800; color: #10b981;"><?php echo date("h:i A", strtotime($tr['clock_in'])); ?></div>
+                            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">Clock In</div>
+                            <div style="font-size: 16px; font-weight: 800; color: #10b981;"><?php echo date("h:i A", strtotime($tr['clock_in'])); ?></div>
                         </div>
-                        <div style="width: 1px; height: 30px; background: #e2e8f0;"></div>
+                        <div class="record-divider" style="width: 1px; height: 26px; background: #e2e8f0;"></div>
                         <div>
-                            <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Clock Out</div>
-                            <div style="font-size: 18px; font-weight: 800; color: <?php echo $tr['clock_out'] ? '#ef4444' : '#94a3b8'; ?>;">
+                            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">Clock Out</div>
+                            <div style="font-size: 16px; font-weight: 800; color: <?php echo $tr['clock_out'] ? '#ef4444' : '#94a3b8'; ?>;">
                                 <?php echo $tr['clock_out'] ? date("h:i A", strtotime($tr['clock_out'])) : 'Still Working'; ?>
                             </div>
                         </div>
-                        <div style="width: 1px; height: 30px; background: #e2e8f0;"></div>
+                        <div class="record-divider" style="width: 1px; height: 26px; background: #e2e8f0;"></div>
                         <div>
                             <?php
                             $badgeClass = 'badge-warning';
@@ -802,7 +848,7 @@ if ($staff_id) {
                             elseif ($tr['status'] === 'out') { $badgeClass = 'badge-info'; $label = 'COMPLETED'; }
                             elseif ($tr['status'] === 'missed_out') { $badgeClass = 'badge-danger'; $label = 'MISSED OUT'; }
                             ?>
-                            <span class="badge <?php echo $badgeClass; ?>" style="padding: 8px 14px; font-size: 12px; font-weight: 800;"><?php echo $label; ?></span>
+                            <span class="badge <?php echo $badgeClass; ?>" style="padding: 6px 12px; font-size: 11.5px; font-weight: 800;"><?php echo $label; ?></span>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -916,7 +962,7 @@ if ($staff_id) {
         $stmt_missed->close();
     }
     ?>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-top: 24px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-top: 18px;">
         <div class="premium-scorecard green">
             <div class="scorecard-top">
                 <div class="scorecard-icon">⏳</div>
@@ -1070,7 +1116,7 @@ if ($staff_id) {
         }
     }
     ?>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-bottom: 20px;">
         <div class="premium-scorecard blue clickable-card" onclick="openDashboardDetailsModal('total_staff')">
             <div class="scorecard-top">
                 <div class="scorecard-icon">👥</div>
@@ -1298,17 +1344,17 @@ if ($staff_id) {
         </div>
     </div>
 
-    <div style="margin-bottom: 24px; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap;">
-        <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+    <div style="margin-bottom: 20px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+        <a href="backup.php?action=download" target="_blank" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 9px 15px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 12.5px; box-shadow: 0 3px 8px rgba(139, 92, 246, 0.25); display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;">
             <span>💾</span> Download SQL Backup
         </a>
-        <a href="backup.php?action=email" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;" onclick="return confirm('Send the database backup to your email now?');">
+        <a href="backup.php?action=email" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 9px 15px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 12.5px; box-shadow: 0 3px 8px rgba(2, 132, 199, 0.25); display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;" onclick="return confirm('Send the database backup to your email now?');">
             <span>✉️</span> Email SQL Backup
         </a>
-        <a href="backup.php?action=attendance_excel&month=<?php echo date('Y-m'); ?>" target="_blank" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;">
+        <a href="backup.php?action=attendance_excel&month=<?php echo date('Y-m'); ?>" target="_blank" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 9px 15px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 12.5px; box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25); display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;">
             <span>📊</span> Download Attendance Log (.csv)
         </a>
-        <a href="backup.php?action=email_attendance&month=<?php echo date('Y-m'); ?>" style="background: linear-gradient(135deg, #0d9488, #0f766e); color: white; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3); display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;" onclick="return confirm('Email this month\'s compressed attendance records to your inbox now?');">
+        <a href="backup.php?action=email_attendance&month=<?php echo date('Y-m'); ?>" style="background: linear-gradient(135deg, #0d9488, #0f766e); color: white; padding: 9px 15px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 12.5px; box-shadow: 0 3px 8px rgba(13, 148, 136, 0.25); display: inline-flex; align-items: center; gap: 6px; transition: transform 0.2s;" onclick="return confirm('Email this month\'s compressed attendance records to your inbox now?');">
             <span>📧</span> Email Month Records (.zip)
         </a>
     </div>
