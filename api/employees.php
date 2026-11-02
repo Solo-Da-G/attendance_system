@@ -28,10 +28,12 @@ if (isset($_POST['add_employee'])) {
         $photo = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
     }
 
+    $stmt = false;
     $has_mcp = function_exists('db_has_column') && db_has_column($conn, 'staff', 'must_change_password');
     if ($has_mcp) {
         $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
-    } else {
+    }
+    if (!$stmt) {
         $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     }
 
@@ -211,7 +213,7 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             <a href="backup.php?action=employees_excel" target="_blank" class="export-btn" style="padding:12px 20px; background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 10px rgba(16,185,129,0.3);">
                 <span>📊</span> Export to Excel
             </a>
-            <button class="add-btn" onclick="openModal()" style="padding:12px 24px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer;">+ Add New Employee</button>
+            <button type="button" id="openAddEmployeeBtn" class="add-btn" onclick="openModal()" style="padding:12px 24px; background:var(--primary); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 10px rgba(37,99,235,0.25);">+ Add New Employee</button>
         </div>
     </div>
 
@@ -285,44 +287,46 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
 </div>
 
 <!-- Add Employee Modal -->
-<div id="addEmployeeModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:white; padding:32px; border-radius:24px; max-width:500px; width:90%; max-height:90%; overflow-y:auto;">
-        <span class="close-btn" onclick="closeModal()" style="float:right; font-size:28px; cursor:pointer;">&times;</span>
-        <h3 style="margin-bottom:20px;">Add New Employee</h3>
+<div id="addEmployeeModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+    <div class="modal-content" style="background:white; padding:32px; border-radius:24px; max-width:520px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); position:relative; box-sizing:border-box;">
+        <span class="close-btn" onclick="closeModal()" style="position:absolute; top:20px; right:24px; font-size:28px; line-height:1; cursor:pointer; color:#64748b; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px;" title="Close">&times;</span>
+        <h3 style="margin:0 0 20px 0; font-size:20px; color:#0f172a; display:flex; align-items:center; gap:8px;">
+            <span>👤</span> Add New Employee
+        </h3>
         <form method="POST" enctype="multipart/form-data">
             <label>Staff ID *</label>
-            <input type="text" name="staff_id" placeholder="e.g. EMP001" required style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="text" name="staff_id" placeholder="e.g. EMP001" required style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
             <label>Full Name *</label>
-            <input type="text" name="full_name" placeholder="John Doe" required style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="text" name="full_name" placeholder="John Doe" required style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
             <label>Job Title</label>
-            <input type="text" name="job_title" placeholder="Software Engineer" style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="text" name="job_title" placeholder="Software Engineer" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
             <label>Department</label>
-            <input type="text" name="department" placeholder="IT Department" style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="text" name="department" placeholder="IT Department" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
             <label>Branch</label>
             <?php if (!empty($branch_options)): ?>
-            <select name="branch" style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <select name="branch" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
                 <option value="">Select branch</option>
                 <?php foreach ($branch_options as $bn): ?>
                 <option value="<?php echo htmlspecialchars($bn); ?>"><?php echo htmlspecialchars($bn); ?></option>
                 <?php endforeach; ?>
             </select>
             <?php else: ?>
-            <input type="text" name="branch" placeholder="Add branches first" style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="text" name="branch" placeholder="Add branches first" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
             <?php endif; ?>
 
             <label>Email</label>
-            <input type="email" name="email" placeholder="john@example.com" style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="email" name="email" placeholder="john@example.com" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
             <label>Mobile No</label>
-            <input type="text" name="phone" placeholder="+234..." style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="text" name="phone" placeholder="+234..." style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
             <label>Password (Optional)</label>
             <div class="password-input-wrap" style="margin-bottom:6px;">
-                <input type="password" id="addEmpPassField" name="password" placeholder="Leave blank to use Staff ID" style="width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:12px;">
+                <input type="password" id="addEmpPassField" name="password" placeholder="Leave blank to use Staff ID" style="width:100%; box-sizing:border-box; padding:12px; border:1px solid #e2e8f0; border-radius:12px;">
                 <button type="button" class="password-toggle-btn" onclick="togglePassVisibility('addEmpPassField', this)" aria-label="Show password" title="Show password">
                     <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -330,7 +334,7 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             <small style="color:var(--text-muted); display:block; margin-bottom:16px;">Default: Staff ID</small>
 
             <label>Profile Photo (Required for Face Recognition)</label>
-            <input type="file" name="photo" accept="image/jpeg,image/png,image/jpg" style="width:100%; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
+            <input type="file" name="photo" accept="image/jpeg,image/png,image/jpg" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
             <small style="color:var(--text-muted); display:block; margin-bottom:16px;">Upload a clear front-facing photo for face verification</small>
 
             <button type="submit" name="add_employee" style="width:100%; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer;">Add Employee</button>
@@ -340,19 +344,46 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
 
 <script>
     function openModal() {
-        document.getElementById('addEmployeeModal').style.display = 'flex';
+        const modal = document.getElementById('addEmployeeModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            const firstInput = modal.querySelector('input[name="staff_id"]');
+            if (firstInput) {
+                setTimeout(function() { firstInput.focus(); }, 60);
+            }
+        }
     }
 
     function closeModal() {
-        document.getElementById('addEmployeeModal').style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-        let modal = document.getElementById('addEmployeeModal');
-        if (event.target == modal) {
-            modal.style.display = "none";
+        const modal = document.getElementById('addEmployeeModal');
+        if (modal) {
+            modal.style.display = 'none';
         }
     }
+
+    // Attach both click and key events safely
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('openAddEmployeeBtn');
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openModal();
+            });
+        }
+    });
+
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('addEmployeeModal');
+        if (modal && event.target === modal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
 
     function filterEmployees() {
         const input = document.getElementById('employeeSearch');
@@ -370,6 +401,8 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             }
             rows[i].style.display = found ? '' : 'none';
         }
+    }
+
     function togglePassVisibility(inputId, btn) {
         const input = document.getElementById(inputId);
         if (!input) return;
