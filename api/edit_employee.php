@@ -193,6 +193,34 @@ if (isset($_POST['update_employee'])) {
             }
 
             if (strpos($imgType, 'image/') === 0) {
+                // Optimize photo size to keep database lightweight & fast (max 450x450 JPEG)
+                if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
+                    $src = @imagecreatefromstring($imgData);
+                    if ($src !== false) {
+                        $w = imagesx($src);
+                        $h = imagesy($src);
+                        $maxDim = 450;
+                        if ($w > $maxDim || $h > $maxDim || strlen($imgData) > 150000) {
+                            $ratio = min($maxDim / $w, $maxDim / $h);
+                            $nw = max(1, (int)round($w * $ratio));
+                            $nh = max(1, (int)round($h * $ratio));
+                            $dst = imagecreatetruecolor($nw, $nh);
+                            imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+                            ob_start();
+                            imagejpeg($dst, null, 82);
+                            $optimized = ob_get_clean();
+                            imagedestroy($dst);
+                            imagedestroy($src);
+                            if (!empty($optimized)) {
+                                $imgData = $optimized;
+                                $imgType = 'image/jpeg';
+                            }
+                        } else {
+                            imagedestroy($src);
+                        }
+                    }
+                }
+
                 $photo     = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
                 $updates[] = "photo = ?";
                 $params[]  = $photo;
@@ -411,15 +439,23 @@ if (isset($_POST['update_employee'])) {
         
         <label>Current Photo</label><br>
         <?php if (!empty($employee['photo']) && strlen($employee['photo']) > 100): ?>
-            <img src="<?php echo htmlspecialchars($employee['photo']); ?>" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:10px 0;border:2px solid var(--primary);" alt="Current photo">
+            <img src="photo.php?type=staff&id=<?php echo urlencode($employee['staff_id']); ?>" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:10px 0;border:2px solid var(--primary);" alt="Current photo" onerror="this.onerror=null;this.style.display='none';">
             <br>
         <?php else: ?>
             <p style="color:var(--text-muted);">No photo uploaded yet</p>
         <?php endif; ?>
 
         <label>Change Photo (optional)</label>
-        <input type="file" name="photo" accept="image/jpeg,image/png,image/jpg">
-        <small style="color:var(--text-muted); display:block; margin-top:4px;">Upload a clear face photo for face recognition (JPG or PNG)</small>
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
+            <div id="editPhotoPreviewWrap" style="width:64px; height:64px; border-radius:16px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; background:#f8fafc; overflow:hidden; flex-shrink:0;">
+                <span id="editPhotoPlaceholder" style="font-size:24px;">📷</span>
+                <img id="editPhotoPreview" src="" alt="New Photo Preview" style="display:none; width:100%; height:100%; object-fit:cover;">
+            </div>
+            <div style="flex:1;">
+                <input type="file" id="editEmpPhotoInput" name="photo" accept="image/jpeg,image/png,image/webp,image/jpg" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #e2e8f0; border-radius:12px; font-size:13px;" onchange="previewAndCompressPhoto(this, 'editPhotoPreview', 'editPhotoPlaceholder', 'editPhotoSizeHint')">
+                <small id="editPhotoSizeHint" style="color:var(--text-muted); display:block; margin-top:4px;">Upload a clear front-facing photo (auto-optimized for fast face recognition)</small>
+            </div>
+        </div>
 
         <div style="display:flex;gap:12px;margin-top:30px;">
             <button type="submit" name="update_employee" style="background:var(--primary);">💾 Save Changes</button>
@@ -459,6 +495,75 @@ if (staffIdInput && staffIdDisplay) {
     staffIdInput.addEventListener('input', function() {
         staffIdDisplay.textContent = this.value.trim() || '—';
     });
+}
+
+// Client-side canvas image downsampler
+function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId) {
+    const file = input.files && input.files[0];
+    const previewImg = document.getElementById(previewImgId);
+    const placeholder = document.getElementById(placeholderId);
+    const hint = document.getElementById(hintId);
+
+    if (!file) {
+        if (previewImg) previewImg.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'block';
+        if (hint) hint.textContent = 'Upload front-facing photo (auto-optimized)';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const maxDim = 450;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+
+            canvas.toBlob(function(blob) {
+                if (blob) {
+                    const origKb = Math.round(file.size / 1024);
+                    const optKb = Math.round(blob.size / 1024);
+                    try {
+                        const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        const dt = new DataTransfer();
+                        dt.items.add(newFile);
+                        input.files = dt.files;
+                    } catch (err) {
+                        // Older browsers fallback
+                    }
+
+                    if (previewImg) {
+                        previewImg.src = canvas.toDataURL('image/jpeg', 0.82);
+                        previewImg.style.display = 'block';
+                    }
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (hint) {
+                        hint.innerHTML = `<span style="color:#059669; font-weight:600;">✅ Optimized: ${optKb} KB</span> <span style="color:#94a3b8;">(was ${origKb} KB)</span>`;
+                    }
+                }
+            }, 'image/jpeg', 0.82);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 </script>
 </body>

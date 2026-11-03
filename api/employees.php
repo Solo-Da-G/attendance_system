@@ -38,6 +38,35 @@ if (isset($_POST['add_employee'])) {
         if (empty($imgType)) {
             $imgType = $_FILES['photo']['type'] ?? 'image/jpeg';
         }
+
+        // Optimize photo size to keep database lightweight & fast (max 450x450 JPEG)
+        if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
+            $src = @imagecreatefromstring($imgData);
+            if ($src !== false) {
+                $w = imagesx($src);
+                $h = imagesy($src);
+                $maxDim = 450;
+                if ($w > $maxDim || $h > $maxDim || strlen($imgData) > 150000) {
+                    $ratio = min($maxDim / $w, $maxDim / $h);
+                    $nw = max(1, (int)round($w * $ratio));
+                    $nh = max(1, (int)round($h * $ratio));
+                    $dst = imagecreatetruecolor($nw, $nh);
+                    imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+                    ob_start();
+                    imagejpeg($dst, null, 82);
+                    $optimized = ob_get_clean();
+                    imagedestroy($dst);
+                    imagedestroy($src);
+                    if (!empty($optimized)) {
+                        $imgData = $optimized;
+                        $imgType = 'image/jpeg';
+                    }
+                } else {
+                    imagedestroy($src);
+                }
+            }
+        }
+
         $photo = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
     }
 
@@ -78,8 +107,16 @@ if ($br_res) {
     }
 }
 
-// Get all employees (including those with photos)
-$result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id DESC");
+// Get all employees (project lightweight columns; photo streamed on-demand via photo.php)
+$result = $conn->query("
+    SELECT 
+        id, staff_id, full_name, job_title, department, branch, email, phone,
+        (CASE WHEN photo IS NOT NULL AND LENGTH(photo) > 100 THEN 1 ELSE 0 END) AS has_photo
+    FROM staff 
+    WHERE deleted_at IS NULL 
+    ORDER BY id DESC
+");
+$total_employees = $result ? $result->num_rows : 0;
 ?>
 
 <!DOCTYPE html>
@@ -210,6 +247,42 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             font-size: 14px;
         }
     }
+
+    .pagination-btn {
+        padding: 7px 12px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: #1e293b;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        min-height: 34px;
+    }
+    .pagination-btn:hover:not(:disabled) {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+    }
+    .pagination-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+    }
+    .pagination-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+    .filter-select:focus, .search-input:focus {
+        border-color: var(--primary) !important;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
 </style>
 </head>
 <body class="app-page employees-page">
@@ -219,8 +292,13 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
 <div class="content">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
         <div>
-            <h2>📋 Employees</h2>
-            <p class="subtitle">Manage staff records and profile photos for face recognition</p>
+            <h2 style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span>📋 Employees</span>
+                <span style="font-size:13px; background:#e0e7ff; color:#3730a3; padding:4px 12px; border-radius:20px; font-weight:700;">
+                    <?php echo (int)$total_employees; ?> Active Staff
+                </span>
+            </h2>
+            <p class="subtitle">Manage staff records and profile photos for face recognition (Supports 500+ staff)</p>
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <a href="backup.php?action=employees_excel" target="_blank" class="export-btn" style="padding:12px 20px; background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 10px rgba(16,185,129,0.3);">
@@ -230,9 +308,38 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
         </div>
     </div>
 
-    <div class="search-section">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="employeeSearch" class="search-input" placeholder="Search by name, staff ID, branch..." onkeyup="filterEmployees()">
+    <!-- Flexible Search, Branch Filter & Page Size Selector -->
+    <div class="search-filter-container" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+        <div class="search-section" style="flex:2; min-width:240px; margin-bottom:0;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="employeeSearch" class="search-input" placeholder="Search by name, staff ID, branch, job title, email..." oninput="handleSearchFilter()">
+        </div>
+        <div style="flex:1; min-width:180px;">
+            <select id="branchFilter" class="filter-select" onchange="handleSearchFilter()" style="width:100%; height:48px; padding:10px 14px; border-radius:14px; border:1px solid #cbd5e1; background:white; font-size:14px; font-weight:600; color:#334155; cursor:pointer;">
+                <option value="">🏢 All Branches</option>
+                <?php foreach ($branch_options as $bn): ?>
+                <option value="<?php echo htmlspecialchars($bn); ?>"><?php echo htmlspecialchars($bn); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="pageSizeSelect" style="font-size:13px; font-weight:600; color:#64748b; white-space:nowrap;">Show:</label>
+            <select id="pageSizeSelect" onchange="changePageSize(this.value)" style="height:48px; padding:10px 14px; border-radius:14px; border:1px solid #cbd5e1; background:white; font-size:14px; font-weight:700; color:#1e293b; cursor:pointer;">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="all">All</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Pagination & Record Count Summary Bar -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; font-size:13px; color:#64748b;">
+        <div>
+            Showing <strong id="showingCount" style="color:#0f172a;">0</strong> of <strong id="totalCount" style="color:#0f172a;"><?php echo (int)$total_employees; ?></strong> employees
+            <span id="filterNotice" style="display:none; color:#2563eb; margin-left:6px; font-weight:600;">(filtered)</span>
+        </div>
+        <div id="paginationTop" class="pagination-controls" style="display:flex; gap:6px; align-items:center;"></div>
     </div>
 
     <div class="mobile-swipe-hint" style="background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; padding:10px 14px; border-radius:12px; font-size:13px; font-weight:600; margin-bottom:12px; display:none; align-items:center; gap:8px;">
@@ -258,17 +365,18 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             <tbody>
                 <?php if ($result && $result->num_rows > 0): ?>
                     <?php while ($row = $result->fetch_assoc()): 
-                        $hasPhoto = !empty($row['photo']) && strlen($row['photo']) > 500 && strpos($row['photo'], 'data:image') === 0;
+                        $hasPhoto = !empty($row['has_photo']);
+                        $staffId  = htmlspecialchars($row['staff_id'] ?? '');
                     ?>
-                        <tr>
+                        <tr class="employee-row" data-branch="<?php echo htmlspecialchars(strtolower($row['branch'] ?? '')); ?>">
                             <td data-label="Photo">
                                 <?php if ($hasPhoto): ?>
-                                    <img src="<?php echo htmlspecialchars($row['photo']); ?>" class="staff-photo" alt="Photo">
+                                    <img src="photo.php?type=staff&id=<?php echo urlencode($row['staff_id']); ?>" class="staff-photo" alt="Photo" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'no-photo\'>📷</div>';">
                                 <?php else: ?>
                                     <div class="no-photo">📷</div>
                                 <?php endif; ?>
                             </td>
-                            <td data-label="Staff ID"><code><?php echo htmlspecialchars($row['staff_id']); ?></code></td>
+                            <td data-label="Staff ID"><code><?php echo $staffId; ?></code></td>
                             <td data-label="Full Name"><strong><?php echo htmlspecialchars($row['full_name']); ?></strong></td>
                             <td data-label="Job Title"><?php echo htmlspecialchars($row['job_title'] ?? '—'); ?></td>
                             <td data-label="Department"><?php echo htmlspecialchars($row['department'] ?? '—'); ?></td>
@@ -285,13 +393,22 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
                             </td>
                         </tr>
                     <?php endwhile; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="9" style="text-align:center; padding:40px;">No employees found. Click "Add New Employee" to get started.</td>
-                    </tr>
                 <?php endif; ?>
+                <tr id="noResultsRow" style="<?php echo ($total_employees > 0) ? 'display:none;' : ''; ?>">
+                    <td colspan="9" style="text-align:center; padding:40px; color:#64748b;">
+                        <?php echo ($total_employees > 0) ? 'No employees match your search.' : 'No employees found. Click "Add New Employee" to get started.'; ?>
+                    </td>
+                </tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- Bottom Pagination Controls -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px;">
+        <div style="font-size:13px; color:#64748b;">
+            Showing <span id="showingBottomCount" style="font-weight:700; color:#0f172a;">0</span> of <span id="totalBottomCount" style="font-weight:700; color:#0f172a;"><?php echo (int)$total_employees; ?></span> employees
+        </div>
+        <div id="paginationBottom" class="pagination-controls" style="display:flex; gap:6px; align-items:center;"></div>
     </div>
 
     <div class="footer">
@@ -346,9 +463,17 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
             </div>
             <small style="color:var(--text-muted); display:block; margin-bottom:16px;">Default: Staff ID</small>
 
-            <label>Profile Photo (Required for Face Recognition)</label>
-            <input type="file" name="photo" accept="image/jpeg,image/png,image/jpg" style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
-            <small style="color:var(--text-muted); display:block; margin-bottom:16px;">Upload a clear front-facing photo for face verification</small>
+            <label>Profile Photo (for Face Recognition)</label>
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px;">
+                <div id="addPhotoPreviewWrap" style="width:64px; height:64px; border-radius:16px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; background:#f8fafc; overflow:hidden; flex-shrink:0;">
+                    <span id="addPhotoPlaceholder" style="font-size:24px;">👤</span>
+                    <img id="addPhotoPreview" src="" alt="Preview" style="display:none; width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div style="flex:1;">
+                    <input type="file" id="addEmpPhotoInput" name="photo" accept="image/jpeg,image/png,image/webp,image/jpg" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #e2e8f0; border-radius:12px; font-size:13px;" onchange="previewAndCompressPhoto(this, 'addPhotoPreview', 'addPhotoPlaceholder', 'addPhotoSizeHint')">
+                    <small id="addPhotoSizeHint" style="color:var(--text-muted); display:block; margin-top:4px;">Upload front-facing photo (auto-optimized for fast face recognition)</small>
+                </div>
+            </div>
 
             <button type="submit" name="add_employee" style="width:100%; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer;">Add Employee</button>
         </form>
@@ -383,6 +508,8 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
                 openModal();
             });
         }
+        // Initialize table pagination
+        renderPagination();
     });
 
     window.addEventListener('click', function(event) {
@@ -398,22 +525,217 @@ $result = $conn->query("SELECT * FROM staff WHERE deleted_at IS NULL ORDER BY id
         }
     });
 
-    function filterEmployees() {
-        const input = document.getElementById('employeeSearch');
-        const filter = (input.value || '').toUpperCase();
-        const table = document.getElementById('employeesTable');
-        const rows = table.getElementsByTagName('tr');
-        for (let i = 1; i < rows.length; i++) {
-            const tds = rows[i].getElementsByTagName('td');
-            let found = false;
-            for (let j = 0; j < tds.length; j++) {
-                if ((tds[j].textContent || '').toUpperCase().indexOf(filter) > -1) {
-                    found = true;
-                    break;
-                }
-            }
-            rows[i].style.display = found ? '' : 'none';
+    // Client-side instant canvas image downsampler
+    function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId) {
+        const file = input.files && input.files[0];
+        const previewImg = document.getElementById(previewImgId);
+        const placeholder = document.getElementById(placeholderId);
+        const hint = document.getElementById(hintId);
+
+        if (!file) {
+            if (previewImg) previewImg.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'block';
+            if (hint) hint.textContent = 'Upload front-facing photo (auto-optimized)';
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const maxDim = 450;
+                let w = img.width;
+                let h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round((h * maxDim) / w);
+                        w = maxDim;
+                    } else {
+                        w = Math.round((w * maxDim) / h);
+                        h = maxDim;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+
+                canvas.toBlob(function(blob) {
+                    if (blob) {
+                        const origKb = Math.round(file.size / 1024);
+                        const optKb = Math.round(blob.size / 1024);
+                        try {
+                            const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            const dt = new DataTransfer();
+                            dt.items.add(newFile);
+                            input.files = dt.files;
+                        } catch (err) {
+                            // Fallback gracefully if DataTransfer not supported
+                        }
+
+                        if (previewImg) {
+                            previewImg.src = canvas.toDataURL('image/jpeg', 0.82);
+                            previewImg.style.display = 'block';
+                        }
+                        if (placeholder) placeholder.style.display = 'none';
+                        if (hint) {
+                            hint.innerHTML = `<span style="color:#059669; font-weight:600;">✅ Optimized: ${optKb} KB</span> <span style="color:#94a3b8;">(was ${origKb} KB)</span>`;
+                        }
+                    }
+                }, 'image/jpeg', 0.82);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // High performance client-side pagination & live search for 500+ employees
+    let currentPage = 1;
+    let pageSize = 50;
+
+    function changePageSize(newSize) {
+        pageSize = (newSize === 'all') ? 'all' : parseInt(newSize, 10);
+        currentPage = 1;
+        renderPagination();
+    }
+
+    function handleSearchFilter() {
+        currentPage = 1;
+        renderPagination();
+    }
+
+    function getFilteredRows() {
+        const searchVal = (document.getElementById('employeeSearch').value || '').trim().toLowerCase();
+        const branchVal = (document.getElementById('branchFilter').value || '').trim().toLowerCase();
+        const rows = Array.from(document.querySelectorAll('#employeesTable tbody tr.employee-row'));
+
+        return rows.filter(row => {
+            const text = row.textContent.toLowerCase();
+            const branch = (row.getAttribute('data-branch') || '').toLowerCase();
+            const matchSearch = !searchVal || text.indexOf(searchVal) > -1;
+            const matchBranch = !branchVal || branch === branchVal;
+            return matchSearch && matchBranch;
+        });
+    }
+
+    function buildPaginationButtons(containerId, totalPages) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        // Prev Button
+        const prevBtn = document.createElement('button');
+        prevBtn.type = 'button';
+        prevBtn.className = 'pagination-btn';
+        prevBtn.innerHTML = '‹ Prev';
+        prevBtn.disabled = (currentPage === 1);
+        prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderPagination(); } };
+        container.appendChild(prevBtn);
+
+        let startP = Math.max(1, currentPage - 2);
+        let endP = Math.min(totalPages, currentPage + 2);
+
+        if (startP > 1) {
+            const p1 = document.createElement('button');
+            p1.type = 'button';
+            p1.className = 'pagination-btn';
+            p1.textContent = '1';
+            p1.onclick = () => { currentPage = 1; renderPagination(); };
+            container.appendChild(p1);
+            if (startP > 2) {
+                const dots = document.createElement('span');
+                dots.textContent = '...';
+                dots.style.cssText = 'color:#94a3b8; padding:0 4px;';
+                container.appendChild(dots);
+            }
+        }
+
+        for (let p = startP; p <= endP; p++) {
+            const pBtn = document.createElement('button');
+            pBtn.type = 'button';
+            pBtn.className = 'pagination-btn' + (p === currentPage ? ' active' : '');
+            pBtn.textContent = p;
+            pBtn.onclick = ((page) => () => { currentPage = page; renderPagination(); })(p);
+            container.appendChild(pBtn);
+        }
+
+        if (endP < totalPages) {
+            if (endP < totalPages - 1) {
+                const dots = document.createElement('span');
+                dots.textContent = '...';
+                dots.style.cssText = 'color:#94a3b8; padding:0 4px;';
+                container.appendChild(dots);
+            }
+            const pLast = document.createElement('button');
+            pLast.type = 'button';
+            pLast.className = 'pagination-btn';
+            pLast.textContent = totalPages;
+            pLast.onclick = () => { currentPage = totalPages; renderPagination(); };
+            container.appendChild(pLast);
+        }
+
+        // Next Button
+        const nextBtn = document.createElement('button');
+        nextBtn.type = 'button';
+        nextBtn.className = 'pagination-btn';
+        nextBtn.innerHTML = 'Next ›';
+        nextBtn.disabled = (currentPage === totalPages);
+        nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderPagination(); } };
+        container.appendChild(nextBtn);
+    }
+
+    function renderPagination() {
+        const allRows = document.querySelectorAll('#employeesTable tbody tr.employee-row');
+        const matchedRows = getFilteredRows();
+        const totalMatched = matchedRows.length;
+        const totalAll = allRows.length;
+
+        const limit = (pageSize === 'all') ? totalMatched : parseInt(pageSize, 10);
+        const totalPages = (limit > 0) ? Math.ceil(totalMatched / limit) || 1 : 1;
+
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * limit;
+        const endIdx = (pageSize === 'all') ? totalMatched : Math.min(startIdx + limit, totalMatched);
+
+        allRows.forEach(row => { row.style.display = 'none'; });
+
+        matchedRows.forEach((row, idx) => {
+            if (idx >= startIdx && idx < endIdx) {
+                row.style.display = '';
+            }
+        });
+
+        const countText = totalMatched > 0 ? `${startIdx + 1}–${endIdx}` : '0';
+        const sc = document.getElementById('showingCount');
+        const sbc = document.getElementById('showingBottomCount');
+        const tc = document.getElementById('totalCount');
+        const tbc = document.getElementById('totalBottomCount');
+        if (sc) sc.textContent = countText;
+        if (sbc) sbc.textContent = countText;
+        if (tc) tc.textContent = totalMatched;
+        if (tbc) tbc.textContent = totalMatched;
+
+        const filterNotice = document.getElementById('filterNotice');
+        if (filterNotice) {
+            filterNotice.style.display = (totalMatched < totalAll) ? 'inline' : 'none';
+        }
+
+        const noResultRow = document.getElementById('noResultsRow');
+        if (noResultRow) {
+            noResultRow.style.display = (totalMatched === 0) ? '' : 'none';
+        }
+
+        buildPaginationButtons('paginationTop', totalPages);
+        buildPaginationButtons('paginationBottom', totalPages);
     }
 
     function togglePassVisibility(inputId, btn) {

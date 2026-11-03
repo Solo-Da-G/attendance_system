@@ -104,7 +104,56 @@ foreach ($queries as $sql) {
     }
 }
 
+echo "\n--- Staff Photo Optimization ---\n";
+if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
+    $res = $conn->query("SELECT id, staff_id, full_name, photo FROM staff WHERE photo IS NOT NULL AND LENGTH(photo) > 100000");
+    $opt_count = 0;
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $rawPhoto = $row['photo'];
+            if (preg_match('#^data:(image/[a-zA-Z0-9\+\-\.]+);base64,(.+)$#s', $rawPhoto, $matches)) {
+                $binary = base64_decode($matches[2]);
+                if ($binary !== false) {
+                    $src = @imagecreatefromstring($binary);
+                    if ($src !== false) {
+                        $w = imagesx($src);
+                        $h = imagesy($src);
+                        $maxDim = 450;
+                        $ratio = min($maxDim / max($w, 1), $maxDim / max($h, 1));
+                        $nw = max(1, (int)round($w * $ratio));
+                        $nh = max(1, (int)round($h * $ratio));
+                        $dst = imagecreatetruecolor($nw, $nh);
+                        imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+                        ob_start();
+                        imagejpeg($dst, null, 82);
+                        $opt = ob_get_clean();
+                        imagedestroy($dst);
+                        imagedestroy($src);
+                        if (!empty($opt) && strlen($opt) < strlen($binary)) {
+                            $newPhoto = 'data:image/jpeg;base64,' . base64_encode($opt);
+                            $up = $conn->prepare("UPDATE staff SET photo = ? WHERE id = ?");
+                            if ($up) {
+                                $up->bind_param("si", $newPhoto, $row['id']);
+                                $up->execute();
+                                $up->close();
+                                $oldKb = round(strlen($binary) / 1024);
+                                $newKb = round(strlen($opt) / 1024);
+                                echo "⚡ Optimized photo for {$row['full_name']} ({$row['staff_id']}): {$oldKb} KB -> {$newKb} KB\n";
+                                $opt_count++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    echo "Total photos optimized: {$opt_count}\n";
+} else {
+    echo "ℹ️ GD extension not loaded in this environment. Client-side canvas compressor optimizes uploads automatically.\n";
+}
+
 echo "\n</pre>";
-echo "<p style='color:green;font-weight:bold;'>✅ Database fix completed! Now delete this file.</p>";
-echo "<a href='/dashboard.php' style='display:inline-block;margin-top:20px;padding:10px20px;background:#4f46e5;color:white;text-decoration:none;border-radius:8px;'>Go to Dashboard →</a>";
+echo "<p style='color:green;font-weight:bold;'>✅ Database fix & photo optimization completed!</p>";
+echo "<a href='/employees.php' style='display:inline-block;margin-top:20px;margin-right:12px;padding:10px 20px;background:#2563eb;color:white;text-decoration:none;border-radius:8px;'>View Employees →</a>";
+echo "<a href='/dashboard.php' style='display:inline-block;margin-top:20px;padding:10px 20px;background:#4f46e5;color:white;text-decoration:none;border-radius:8px;'>Go to Dashboard →</a>";
 ?>

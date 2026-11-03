@@ -55,9 +55,10 @@ if ($type === 'attendance') {
     $staffId = trim((string)$id);
     if ($staffId === '') render_placeholder('👤');
 
-    $stmt = $conn->prepare("SELECT photo FROM staff WHERE staff_id = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT photo FROM staff WHERE staff_id = ? OR (id = ? AND ? > 0) LIMIT 1");
     if ($stmt) {
-        $stmt->bind_param("s", $staffId);
+        $numId = is_numeric($staffId) ? (int)$staffId : 0;
+        $stmt->bind_param("sii", $staffId, $numId, $numId);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($res && $row = $res->fetch_assoc()) {
@@ -77,6 +78,42 @@ if (preg_match('#^data:(image/[a-zA-Z0-9\+\-\.]+);base64,(.+)$#s', $rawPhoto, $m
     $binary   = base64_decode($matches[2]);
 
     if ($binary !== false) {
+        // If image is larger than 180KB, downsample if GD is available to prevent serverless payload overflow
+        if (strlen($binary) > 180 * 1024 && extension_loaded('gd') && function_exists('imagecreatefromstring')) {
+            $src = @imagecreatefromstring($binary);
+            if ($src !== false) {
+                $w = imagesx($src);
+                $h = imagesy($src);
+                $maxDim = 400;
+                if ($w > $maxDim || $h > $maxDim) {
+                    $ratio = min($maxDim / $w, $maxDim / $h);
+                    $nw = max(1, (int)round($w * $ratio));
+                    $nh = max(1, (int)round($h * $ratio));
+                    $dst = imagecreatetruecolor($nw, $nh);
+                    if ($mimeType === 'image/png') {
+                        imagealphablending($dst, false);
+                        imagesavealpha($dst, true);
+                        imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+                        ob_start();
+                        imagepng($dst, null, 7);
+                        $compressed = ob_get_clean();
+                    } else {
+                        imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+                        ob_start();
+                        imagejpeg($dst, null, 80);
+                        $compressed = ob_get_clean();
+                    }
+                    imagedestroy($dst);
+                    imagedestroy($src);
+                    if (!empty($compressed) && strlen($compressed) < strlen($binary)) {
+                        $binary = $compressed;
+                    }
+                } else {
+                    imagedestroy($src);
+                }
+            }
+        }
+
         header("Content-Type: " . $mimeType);
         header("Cache-Control: public, max-age=86400, stale-while-revalidate=604800");
         header("Content-Length: " . strlen($binary));
