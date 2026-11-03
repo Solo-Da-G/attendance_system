@@ -1,4 +1,7 @@
 <?php
+// Suppress deprecations and notices so minor runtime deprecations in PHP 8.5+ do not break headers or UI output
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_NOTICE);
+
 /**
  * Determine whether the current request is HTTPS.
  * (Vercel sits behind a proxy, so we also check X-Forwarded-Proto.)

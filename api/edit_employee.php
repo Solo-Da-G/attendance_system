@@ -1,9 +1,8 @@
 <?php
 include(__DIR__ . "/includes/config.php");
 
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Error reporting (suppress deprecation warnings on PHP 8.5+)
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_NOTICE);
 
 if (!isset($_SESSION['admin_id'])) {
     header("Location: index.php");
@@ -176,9 +175,22 @@ if (isset($_POST['update_employee'])) {
         // Handle photo upload
         if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
             $imgData = file_get_contents($_FILES['photo']['tmp_name']);
-            $finfo   = finfo_open(FILEINFO_MIME_TYPE);
-            $imgType = finfo_file($finfo, $_FILES['photo']['tmp_name']);
-            finfo_close($finfo);
+            $imgType = "";
+            if (function_exists('mime_content_type')) {
+                $imgType = @mime_content_type($_FILES['photo']['tmp_name']);
+            }
+            if (empty($imgType) && function_exists('finfo_open')) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                if ($finfo) {
+                    $imgType = finfo_file($finfo, $_FILES['photo']['tmp_name']);
+                    if (PHP_VERSION_ID < 80500 && is_resource($finfo)) {
+                        @finfo_close($finfo);
+                    }
+                }
+            }
+            if (empty($imgType)) {
+                $imgType = $_FILES['photo']['type'] ?? 'image/jpeg';
+            }
 
             if (strpos($imgType, 'image/') === 0) {
                 $photo     = 'data:' . $imgType . ';base64,' . base64_encode($imgData);

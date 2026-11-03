@@ -22,9 +22,22 @@ if (isset($_POST['add_employee'])) {
     $photo = "";
     if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
         $imgData = file_get_contents($_FILES['photo']['tmp_name']);
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $imgType = finfo_file($finfo, $_FILES['photo']['tmp_name']);
-        finfo_close($finfo);
+        $imgType = "";
+        if (function_exists('mime_content_type')) {
+            $imgType = @mime_content_type($_FILES['photo']['tmp_name']);
+        }
+        if (empty($imgType) && function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $imgType = finfo_file($finfo, $_FILES['photo']['tmp_name']);
+                if (PHP_VERSION_ID < 80500 && is_resource($finfo)) {
+                    @finfo_close($finfo);
+                }
+            }
+        }
+        if (empty($imgType)) {
+            $imgType = $_FILES['photo']['type'] ?? 'image/jpeg';
+        }
         $photo = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
     }
 
