@@ -172,8 +172,11 @@ if (isset($_POST['update_employee'])) {
             $types    .= "s";
         }
 
-        // Handle photo upload
-        if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        // Handle photo upload (supports both canvas-compressed base64 POST and traditional $_FILES)
+        $newPhotoData = '';
+        if (!empty($_POST['photo_base64']) && strpos($_POST['photo_base64'], 'data:image') === 0) {
+            $newPhotoData = trim($_POST['photo_base64']);
+        } elseif (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
             $imgData = file_get_contents($_FILES['photo']['tmp_name']);
             $imgType = "";
             if (function_exists('mime_content_type')) {
@@ -221,12 +224,15 @@ if (isset($_POST['update_employee'])) {
                     }
                 }
 
-                $photo     = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
-                $updates[] = "photo = ?";
-                $params[]  = $photo;
-                $types    .= "s";
-                $employee['photo'] = $photo;
+                $newPhotoData = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
             }
+        }
+
+        if (!empty($newPhotoData)) {
+            $updates[] = "photo = ?";
+            $params[]  = $newPhotoData;
+            $types    .= "s";
+            $employee['photo'] = $newPhotoData;
         }
 
         // Build final SQL with WHERE clause
@@ -438,8 +444,10 @@ if (isset($_POST['update_employee'])) {
         <h4>📷 Profile Photo</h4>
         
         <label>Current Photo</label><br>
-        <?php if (!empty($employee['photo']) && strlen($employee['photo']) > 100): ?>
-            <img src="photo.php?type=staff&id=<?php echo urlencode($employee['staff_id']); ?>" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:10px 0;border:2px solid var(--primary);" alt="Current photo" onerror="this.onerror=null;this.style.display='none';">
+        <?php if (!empty($employee['photo']) && strlen($employee['photo']) > 100): 
+            $photo_buster = (!empty($employee['photo']) ? crc32($employee['photo']) : '0') . '_' . time();
+        ?>
+            <img src="photo.php?type=staff&id=<?php echo urlencode($employee['staff_id']); ?>&t=<?php echo $photo_buster; ?>" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:10px 0;border:2px solid var(--primary);" alt="Current photo" onerror="this.onerror=null;this.style.display='none';">
             <br>
         <?php else: ?>
             <p style="color:var(--text-muted);">No photo uploaded yet</p>
@@ -452,7 +460,8 @@ if (isset($_POST['update_employee'])) {
                 <img id="editPhotoPreview" src="" alt="New Photo Preview" style="display:none; width:100%; height:100%; object-fit:cover;">
             </div>
             <div style="flex:1;">
-                <input type="file" id="editEmpPhotoInput" name="photo" accept="image/jpeg,image/png,image/webp,image/jpg" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #e2e8f0; border-radius:12px; font-size:13px;" onchange="previewAndCompressPhoto(this, 'editPhotoPreview', 'editPhotoPlaceholder', 'editPhotoSizeHint')">
+                <input type="hidden" name="photo_base64" id="editPhotoBase64" value="">
+                <input type="file" id="editEmpPhotoInput" name="photo" accept="image/jpeg,image/png,image/webp,image/jpg" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #e2e8f0; border-radius:12px; font-size:13px;" onchange="previewAndCompressPhoto(this, 'editPhotoPreview', 'editPhotoPlaceholder', 'editPhotoSizeHint', 'editPhotoBase64')">
                 <small id="editPhotoSizeHint" style="color:var(--text-muted); display:block; margin-top:4px;">Upload a clear front-facing photo (auto-optimized for fast face recognition)</small>
             </div>
         </div>
@@ -498,16 +507,18 @@ if (staffIdInput && staffIdDisplay) {
 }
 
 // Client-side canvas image downsampler
-function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId) {
+function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId, hiddenInputId) {
     const file = input.files && input.files[0];
     const previewImg = document.getElementById(previewImgId);
     const placeholder = document.getElementById(placeholderId);
     const hint = document.getElementById(hintId);
+    const hiddenInput = hiddenInputId ? document.getElementById(hiddenInputId) : null;
 
     if (!file) {
         if (previewImg) previewImg.style.display = 'none';
         if (placeholder) placeholder.style.display = 'block';
         if (hint) hint.textContent = 'Upload front-facing photo (auto-optimized)';
+        if (hiddenInput) hiddenInput.value = '';
         return;
     }
 
@@ -534,6 +545,17 @@ function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
 
+            const base64Data = canvas.toDataURL('image/jpeg', 0.82);
+            if (hiddenInput) {
+                hiddenInput.value = base64Data;
+            }
+
+            if (previewImg) {
+                previewImg.src = base64Data;
+                previewImg.style.display = 'block';
+            }
+            if (placeholder) placeholder.style.display = 'none';
+
             canvas.toBlob(function(blob) {
                 if (blob) {
                     const origKb = Math.round(file.size / 1024);
@@ -550,11 +572,6 @@ function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId) {
                         // Older browsers fallback
                     }
 
-                    if (previewImg) {
-                        previewImg.src = canvas.toDataURL('image/jpeg', 0.82);
-                        previewImg.style.display = 'block';
-                    }
-                    if (placeholder) placeholder.style.display = 'none';
                     if (hint) {
                         hint.innerHTML = `<span style="color:#059669; font-weight:600;">✅ Optimized: ${optKb} KB</span> <span style="color:#94a3b8;">(was ${origKb} KB)</span>`;
                     }

@@ -23,7 +23,7 @@ $id   = $_GET['id'] ?? '';
 
 function render_placeholder($emoji = '👤') {
     header("Content-Type: image/svg+xml");
-    header("Cache-Control: public, max-age=86400");
+    header("Cache-Control: public, max-age=60, must-revalidate");
     echo '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
         <rect width="120" height="120" rx="16" fill="#f1f5f9"/>
         <text x="60" y="68" font-family="Segoe UI Emoji, Apple Color Emoji, sans-serif" font-size="36" text-anchor="middle">' . $emoji . '</text>
@@ -114,8 +114,15 @@ if (preg_match('#^data:(image/[a-zA-Z0-9\+\-\.]+);base64,(.+)$#s', $rawPhoto, $m
             }
         }
 
+        $etag = '"' . md5($binary) . '"';
+        header("ETag: " . $etag);
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
+            http_response_code(304);
+            exit;
+        }
+
         header("Content-Type: " . $mimeType);
-        header("Cache-Control: public, max-age=86400, stale-while-revalidate=604800");
+        header("Cache-Control: public, max-age=60, must-revalidate");
         header("Content-Length: " . strlen($binary));
         echo $binary;
         exit;

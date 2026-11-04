@@ -20,7 +20,9 @@ if (isset($_POST['add_employee'])) {
     $password       = password_hash($plain_password, PASSWORD_DEFAULT);
 
     $photo = "";
-    if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
+    if (!empty($_POST['photo_base64']) && strpos($_POST['photo_base64'], 'data:image') === 0) {
+        $photo = trim($_POST['photo_base64']);
+    } elseif (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === 0) {
         $imgData = file_get_contents($_FILES['photo']['tmp_name']);
         $imgType = "";
         if (function_exists('mime_content_type')) {
@@ -111,7 +113,8 @@ if ($br_res) {
 $result = $conn->query("
     SELECT 
         id, staff_id, full_name, job_title, department, branch, email, phone,
-        (CASE WHEN photo IS NOT NULL AND LENGTH(photo) > 100 THEN 1 ELSE 0 END) AS has_photo
+        (CASE WHEN photo IS NOT NULL AND LENGTH(photo) > 100 THEN 1 ELSE 0 END) AS has_photo,
+        COALESCE(CRC32(photo), 0) AS photo_v
     FROM staff 
     WHERE deleted_at IS NULL 
     ORDER BY id DESC
@@ -371,7 +374,7 @@ $total_employees = $result ? $result->num_rows : 0;
                         <tr class="employee-row" data-branch="<?php echo htmlspecialchars(strtolower($row['branch'] ?? '')); ?>">
                             <td data-label="Photo">
                                 <?php if ($hasPhoto): ?>
-                                    <img src="photo.php?type=staff&id=<?php echo urlencode($row['staff_id']); ?>" class="staff-photo" alt="Photo" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'no-photo\'>📷</div>';">
+                                    <img src="photo.php?type=staff&id=<?php echo urlencode($row['staff_id']); ?>&v=<?php echo $row['photo_v']; ?>" class="staff-photo" alt="Photo" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'no-photo\'>📷</div>';">
                                 <?php else: ?>
                                     <div class="no-photo">📷</div>
                                 <?php endif; ?>
@@ -470,7 +473,8 @@ $total_employees = $result ? $result->num_rows : 0;
                     <img id="addPhotoPreview" src="" alt="Preview" style="display:none; width:100%; height:100%; object-fit:cover;">
                 </div>
                 <div style="flex:1;">
-                    <input type="file" id="addEmpPhotoInput" name="photo" accept="image/jpeg,image/png,image/webp,image/jpg" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #e2e8f0; border-radius:12px; font-size:13px;" onchange="previewAndCompressPhoto(this, 'addPhotoPreview', 'addPhotoPlaceholder', 'addPhotoSizeHint')">
+                    <input type="hidden" name="photo_base64" id="addPhotoBase64" value="">
+                    <input type="file" id="addEmpPhotoInput" name="photo" accept="image/jpeg,image/png,image/webp,image/jpg" style="width:100%; box-sizing:border-box; padding:10px; border:1px solid #e2e8f0; border-radius:12px; font-size:13px;" onchange="previewAndCompressPhoto(this, 'addPhotoPreview', 'addPhotoPlaceholder', 'addPhotoSizeHint', 'addPhotoBase64')">
                     <small id="addPhotoSizeHint" style="color:var(--text-muted); display:block; margin-top:4px;">Upload front-facing photo (auto-optimized for fast face recognition)</small>
                 </div>
             </div>
@@ -526,16 +530,18 @@ $total_employees = $result ? $result->num_rows : 0;
     });
 
     // Client-side instant canvas image downsampler
-    function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId) {
+    function previewAndCompressPhoto(input, previewImgId, placeholderId, hintId, hiddenInputId) {
         const file = input.files && input.files[0];
         const previewImg = document.getElementById(previewImgId);
         const placeholder = document.getElementById(placeholderId);
         const hint = document.getElementById(hintId);
+        const hiddenInput = hiddenInputId ? document.getElementById(hiddenInputId) : null;
 
         if (!file) {
             if (previewImg) previewImg.style.display = 'none';
             if (placeholder) placeholder.style.display = 'block';
             if (hint) hint.textContent = 'Upload front-facing photo (auto-optimized)';
+            if (hiddenInput) hiddenInput.value = '';
             return;
         }
 
@@ -561,6 +567,17 @@ $total_employees = $result ? $result->num_rows : 0;
                 canvas.height = h;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, w, h);
+
+                const base64Data = canvas.toDataURL('image/jpeg', 0.82);
+                if (hiddenInput) {
+                    hiddenInput.value = base64Data;
+                }
+
+                if (previewImg) {
+                    previewImg.src = base64Data;
+                    previewImg.style.display = 'block';
+                }
+                if (placeholder) placeholder.style.display = 'none';
 
                 canvas.toBlob(function(blob) {
                     if (blob) {
