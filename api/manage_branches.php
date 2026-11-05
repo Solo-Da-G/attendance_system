@@ -33,6 +33,55 @@ if (isset($_POST['add_branch'])) {
 }
 
 // ---------------------------------------------------------------
+// EDIT BRANCH & COORDINATES
+// ---------------------------------------------------------------
+if (isset($_POST['edit_branch'])) {
+    $branch_id     = (int)$_POST['branch_id'];
+    $branch_name   = trim($_POST['branch_name']);
+    $latitude      = (float)$_POST['latitude'];
+    $longitude     = (float)$_POST['longitude'];
+    $radius_meters = (int)$_POST['radius_meters'];
+    $sync_staff    = !empty($_POST['sync_staff']);
+
+    // Fetch previous branch name
+    $old_name = '';
+    $chk = $conn->prepare("SELECT branch_name FROM branches WHERE id = ?");
+    if ($chk) {
+        $chk->bind_param("i", $branch_id);
+        $chk->execute();
+        $r = $chk->get_result()->fetch_assoc();
+        $old_name = $r['branch_name'] ?? '';
+        $chk->close();
+    }
+
+    $stmt = $conn->prepare("UPDATE branches SET branch_name = ?, latitude = ?, longitude = ?, radius_meters = ? WHERE id = ?");
+    if ($stmt) {
+        $stmt->bind_param("sddii", $branch_name, $latitude, $longitude, $radius_meters, $branch_id);
+        if ($stmt->execute()) {
+            $message = "Branch '{$branch_name}' updated successfully! (Coords: {$latitude}, {$longitude})";
+            $msg_type = "success";
+
+            if ($sync_staff) {
+                $stUp = $conn->prepare("UPDATE staff SET clock_lat = ?, clock_lng = ?, clock_radius = ?, branch = ? WHERE LOWER(TRIM(branch)) = LOWER(TRIM(?)) OR LOWER(TRIM(branch)) = LOWER(TRIM(?))");
+                if ($stUp) {
+                    $stUp->bind_param("ddisss", $latitude, $longitude, $radius_meters, $branch_name, $old_name, $branch_name);
+                    $stUp->execute();
+                    $aff = $conn->affected_rows;
+                    $stUp->close();
+                    if ($aff > 0) {
+                        $message .= " Also synced coordinates for {$aff} staff member(s).";
+                    }
+                }
+            }
+        } else {
+            $message = "Error updating branch: " . $conn->error;
+            $msg_type = "error";
+        }
+        $stmt->close();
+    }
+}
+
+// ---------------------------------------------------------------
 // DELETE BRANCH
 // ---------------------------------------------------------------
 
@@ -142,7 +191,10 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
     <!-- ADD BRANCH FORM -->
     <div class="geo-box">
         <h3>➕ Add Office Branch</h3>
-        <p class="helper-text">To get coordinates, open Google Maps, right-click on your office, and copy the Latitude/Longitude.</p>
+        <p class="helper-text">
+            To get coordinates, open Google Maps, right-click on your office, and copy the Latitude/Longitude.<br>
+            <span style="color:#b45309;font-weight:600;">⚠️ Important: Only click "Use my device GPS" if you are physically inside the office. If you are creating or updating a Benin City branch from Lagos, do NOT use device GPS — type the real Benin coordinates manually or click the preset button below!</span>
+        </p>
         
         <form method="POST">
             <div class="branch-form-grid">
@@ -163,8 +215,11 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                     <input type="text" id="newBranchLng" name="longitude" placeholder="e.g. 3.3797377" required>
                 </div>
             </div>
-            <button type="button" onclick="fillBranchGps('newBranchLat','newBranchLng')" style="margin-top:12px;background:#0f766e;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;">📍 Use my device GPS</button>
-            <button type="submit" name="add_branch" style="margin-top:12px;margin-left:8px;">Save Branch & Location</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center;">
+                <button type="button" onclick="fillBranchGps('newBranchLat','newBranchLng')" style="background:#0f766e;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600;">📍 Use my device GPS</button>
+                <button type="button" onclick="document.getElementById('newBranchLat').value='6.339722';document.getElementById('newBranchLng').value='5.625278';" style="background:#10b981;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:700;">🏛️ Fill Benin City (6.339722, 5.625278)</button>
+                <button type="submit" name="add_branch" style="margin-left:auto;padding:10px 20px;font-weight:700;">Save Branch & Location</button>
+            </div>
         </form>
     </div>
 
@@ -181,6 +236,7 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                 <h4><?php echo htmlspecialchars($b['branch_name']); ?></h4>
                 <div class="coordinates">
                     LAT: <?php echo $b['latitude']; ?> | LNG: <?php echo $b['longitude']; ?>
+                    <a href="https://www.google.com/maps?q=<?php echo $b['latitude']; ?>,<?php echo $b['longitude']; ?>" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:none;font-weight:700;font-size:12px;margin-left:8px;" title="View on Google Maps">🗺️ Map</a>
                 </div>
                     <div class="radius-controller" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:14px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -195,6 +251,10 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                         </div>
                         <div id="status-msg-<?php echo $b['id']; ?>" style="display:none;font-size:12px;font-weight:600;padding:6px 8px;border-radius:6px;margin-top:6px;"></div>
                     </div>
+                <button type="button" class="action-btn" style="width:100%;margin-bottom:8px;background:#2563eb;color:#fff;border-radius:8px;font-weight:700;padding:10px;cursor:pointer;"
+                    onclick="openEditModal(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>', '<?php echo $b['latitude']; ?>', '<?php echo $b['longitude']; ?>', <?php echo (int)$b['radius_meters']; ?>)">
+                    ✏️ Edit Location & Coordinates
+                </button>
                 <button type="button" class="action-btn edit-btn" style="width:100%;margin-bottom:8px;"
                     onclick="updateBranchGps(<?php echo (int)$b['id']; ?>, '<?php echo htmlspecialchars($b['branch_name'], ENT_QUOTES); ?>')">
                     📍 Set coords from my device GPS
@@ -205,6 +265,66 @@ $branches = $conn->query("SELECT * FROM branches ORDER BY id ASC");
                 </a>
             </div>
         <?php endwhile; ?>
+    </div>
+
+    <!-- EDIT BRANCH MODAL -->
+    <div id="editBranchModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+        <div style="background:var(--surface,#fff);border-radius:16px;max-width:540px;width:100%;padding:24px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.3);border:1px solid var(--border,#cbd5e1);position:relative;max-height:92vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="margin:0;font-size:18px;font-weight:800;color:var(--text,#0f172a);">✏️ Edit Branch Coordinates</h3>
+                <button type="button" onclick="closeEditModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;line-height:1;">&times;</button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="branch_id" id="edit_branch_id">
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px;">Branch Name</label>
+                    <input type="text" name="branch_name" id="edit_branch_name" required style="width:100%;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                </div>
+                <div class="branch-form-grid" style="margin-bottom:14px;">
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px;">Latitude</label>
+                        <input type="text" name="latitude" id="edit_latitude" step="any" placeholder="e.g. 6.339722" required style="width:100%;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px;">Longitude</label>
+                        <input type="text" name="longitude" id="edit_longitude" step="any" placeholder="e.g. 5.625278" required style="width:100%;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                    </div>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:13px;font-weight:700;margin-bottom:4px;">Clock-in Allowed Radius (Meters)</label>
+                    <input type="number" name="radius_meters" id="edit_radius_meters" min="10" max="10000" step="10" required style="width:100%;padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                </div>
+
+                <!-- Quick presets -->
+                <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:16px;">
+                    <div style="font-weight:800;font-size:12px;color:#334155;margin-bottom:8px;">⚡ QUICK PRESETS:</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button type="button" onclick="setEditCoords('6.339722', '5.625278')" style="background:#10b981;color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+                            🏛️ Set Benin City (6.339722, 5.625278)
+                        </button>
+                        <button type="button" onclick="fillBranchGps('edit_latitude', 'edit_longitude')" style="background:#0f766e;color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+                            📍 Use Device GPS (if present in office)
+                        </button>
+                    </div>
+                    <p style="font-size:11px;color:#64748b;margin:6px 0 0;">(Benin City: 66b Mission Road, Benin City, Edo State)</p>
+                </div>
+
+                <div style="margin-bottom:20px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;">
+                    <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer;margin:0;">
+                        <input type="checkbox" name="sync_staff" value="1" checked style="width:18px;height:18px;accent-color:#2563eb;margin-top:2px;">
+                        <div>
+                            <strong style="color:#1e40af;display:block;">Sync all staff assigned to this branch</strong>
+                            <span style="font-size:12px;color:#3b82f6;">Automatically updates the stored GPS coordinates for all staff in this branch so they can clock in/out immediately.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;">
+                    <button type="button" onclick="closeEditModal()" style="padding:10px 18px;background:#e2e8f0;color:#334155;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>
+                    <button type="submit" name="edit_branch" style="padding:10px 22px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">💾 Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div style="background:#fdf4ff; border:1px solid #f5d0fe; padding:24px; border-radius:20px; margin-top:40px;">
@@ -330,6 +450,35 @@ async function saveBranchRadius(branchId, branchName) {
         }
     }
 }
+
+function openEditModal(id, name, lat, lng, radius) {
+    document.getElementById('edit_branch_id').value = id;
+    document.getElementById('edit_branch_name').value = name;
+    document.getElementById('edit_latitude').value = lat;
+    document.getElementById('edit_longitude').value = lng;
+    document.getElementById('edit_radius_meters').value = radius;
+    const modal = document.getElementById('editBranchModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editBranchModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function setEditCoords(lat, lng) {
+    document.getElementById('edit_latitude').value = lat;
+    document.getElementById('edit_longitude').value = lng;
+}
+
+// Close modal when clicking outside or pressing Escape
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeEditModal();
+});
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('editBranchModal');
+    if (modal && e.target === modal) closeEditModal();
+});
 </script>
 
 

@@ -24,9 +24,27 @@ $stmt = $conn->prepare("UPDATE branches SET latitude = ?, longitude = ? WHERE id
 $stmt->bind_param("ddi", $lat, $lng, $branch_id);
 
 if ($stmt->execute()) {
+    // Also sync assigned staff so they can clock in immediately
+    $bNameStmt = $conn->prepare("SELECT branch_name, radius_meters FROM branches WHERE id = ?");
+    if ($bNameStmt) {
+        $bNameStmt->bind_param("i", $branch_id);
+        $bNameStmt->execute();
+        $bRow = $bNameStmt->get_result()->fetch_assoc();
+        $bNameStmt->close();
+        if ($bRow && !empty($bRow['branch_name'])) {
+            $bRad = (int)($bRow['radius_meters'] ?? 300);
+            $sUp = $conn->prepare("UPDATE staff SET clock_lat = ?, clock_lng = ?, clock_radius = ? WHERE LOWER(TRIM(branch)) = LOWER(TRIM(?))");
+            if ($sUp) {
+                $sUp->bind_param("ddis", $lat, $lng, $bRad, $bRow['branch_name']);
+                $sUp->execute();
+                $sUp->close();
+            }
+        }
+    }
+
     echo json_encode([
         'status'  => 'success',
-        'message' => 'Branch location updated to your device GPS.',
+        'message' => 'Branch location updated.',
         'lat'     => $lat,
         'lng'     => $lng,
     ]);

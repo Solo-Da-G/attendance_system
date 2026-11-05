@@ -152,8 +152,44 @@ if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
     echo "ℹ️ GD extension not loaded in this environment. Client-side canvas compressor optimizes uploads automatically.\n";
 }
 
+echo "\n--- Benin City Branch Coordinates Sync (66b Mission Road) ---\n";
+// 1. Look for branch with 'benin' in its name
+$bBeninRes = $conn->query("SELECT id, branch_name, latitude, longitude, radius_meters FROM branches WHERE LOWER(branch_name) LIKE '%benin%'");
+$beninUpdated = false;
+
+if ($bBeninRes && $bBeninRes->num_rows > 0) {
+    while ($br = $bBeninRes->fetch_assoc()) {
+        $brId = (int)$br['id'];
+        $upBr = $conn->prepare("UPDATE branches SET latitude = 6.339722, longitude = 5.625278, radius_meters = GREATEST(COALESCE(radius_meters, 300), 300) WHERE id = ?");
+        if ($upBr) {
+            $upBr->bind_param("i", $brId);
+            $upBr->execute();
+            $upBr->close();
+            echo "✅ Updated branch '{$br['branch_name']}' (ID: {$brId}) coordinates to Lat: 6.339722, Lng: 5.625278 (66b Mission Road, Benin City, Radius: >=300m)\n";
+            $beninUpdated = true;
+        }
+    }
+}
+
+if (!$beninUpdated) {
+    // If no branch with 'benin' exists yet, insert TDS Benin City branch
+    $ins = $conn->prepare("INSERT INTO branches (branch_name, latitude, longitude, radius_meters) VALUES ('TDS Benin City', 6.339722, 5.625278, 300)");
+    if ($ins && $ins->execute()) {
+        echo "✅ Created new branch 'TDS Benin City' at 66b Mission Road (Lat: 6.339722, Lng: 5.625278, Radius: 300m)\n";
+        $ins->close();
+    }
+}
+
+// 2. Also update all staff members assigned to the Benin branch
+$upStaff = $conn->query("UPDATE staff SET clock_lat = 6.339722, clock_lng = 5.625278, clock_radius = 300 WHERE LOWER(branch) LIKE '%benin%'");
+if ($upStaff) {
+    $aff = $conn->affected_rows;
+    echo "✅ Synced GPS coordinates (6.339722, 5.625278) for {$aff} staff member(s) assigned to Benin branch.\n";
+}
+
 echo "\n</pre>";
-echo "<p style='color:green;font-weight:bold;'>✅ Database fix & photo optimization completed!</p>";
+echo "<p style='color:green;font-weight:bold;'>✅ Database fix, Benin coordinates sync & photo optimization completed!</p>";
+echo "<a href='/manage_branches.php' style='display:inline-block;margin-top:20px;margin-right:12px;padding:10px 20px;background:#10b981;color:white;text-decoration:none;border-radius:8px;font-weight:bold;'>View Branches & Geofencing →</a>";
 echo "<a href='/employees.php' style='display:inline-block;margin-top:20px;margin-right:12px;padding:10px 20px;background:#2563eb;color:white;text-decoration:none;border-radius:8px;'>View Employees →</a>";
 echo "<a href='/dashboard.php' style='display:inline-block;margin-top:20px;padding:10px 20px;background:#4f46e5;color:white;text-decoration:none;border-radius:8px;'>Go to Dashboard →</a>";
 ?>
