@@ -62,7 +62,7 @@ try {
             }
         } else {
             // Global credentials lookup across all registered staff
-            $res = $conn->query("SELECT credential_id FROM staff_biometrics LIMIT 10");
+            $res = $conn->query("SELECT credential_id FROM staff_biometrics ORDER BY id DESC LIMIT 100");
             if ($res) {
                 while ($row = $res->fetch_assoc()) {
                     $allowCredentials[] = [

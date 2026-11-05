@@ -30,8 +30,26 @@ $current_time = date("Y-m-d H:i:s");
 $today        = date("Y-m-d");
 $current_hour = (int)date('G');
 
-// 1. Verify that the credential is registered for this staff member
-$stmt = $conn->prepare("SELECT id, device_name FROM staff_biometrics WHERE staff_id = ? AND credential_id = ? LIMIT 1");
+// 1. Verify credential + staff profile + branch geofence settings in ONE single fast query
+$stmt = $conn->prepare("
+    SELECT 
+        b.id AS bio_id,
+        b.device_name,
+        s.full_name,
+        s.branch,
+        s.clock_lat,
+        s.clock_lng,
+        s.clock_radius,
+        br.latitude AS branch_lat,
+        br.longitude AS branch_lng,
+        br.radius_meters AS branch_radius
+    FROM staff_biometrics b
+    JOIN staff s ON b.staff_id = s.staff_id
+    LEFT JOIN branches br ON LOWER(TRIM(s.branch)) = LOWER(TRIM(br.branch_name))
+    WHERE b.staff_id = ? AND b.credential_id = ?
+    LIMIT 1
+");
+
 if (!$stmt) {
     echo json_encode(["status" => "error", "message" => "Database error checking biometrics."]);
     exit;
@@ -52,71 +70,37 @@ if ($current_hour >= 19) {
     exit;
 }
 
-// 3. Geofence & Location Validation
+// 3. Fast Geofence & Location Validation
 $is_geofenced = 0;
-$branch_name = '';
+$branch_name  = $bio['branch'] ?? '';
+$target_lat   = !empty($bio['branch_lat']) ? (float)$bio['branch_lat'] : (!empty($bio['clock_lat']) ? (float)$bio['clock_lat'] : null);
+$target_lng   = !empty($bio['branch_lng']) ? (float)$bio['branch_lng'] : (!empty($bio['clock_lng']) ? (float)$bio['clock_lng'] : null);
+$radius       = !empty($bio['branch_radius']) ? (int)$bio['branch_radius'] : ((int)($bio['clock_radius'] ?? 300) ?: 300);
 
-// Check staff's branch or personal geofence settings
-$s_stmt = $conn->prepare("SELECT branch, clock_lat, clock_lng, clock_radius FROM staff WHERE staff_id = ? LIMIT 1");
-if ($s_stmt) {
-    $s_stmt->bind_param("s", $staff_id);
-    $s_stmt->execute();
-    $s_row = $s_stmt->get_result()->fetch_assoc();
-    $s_stmt->close();
-    
-    if ($s_row) {
-        $branch_name = $s_row['branch'] ?? '';
-        $target_lat = $s_row['clock_lat'];
-        $target_lng = $s_row['clock_lng'];
-        $radius     = $s_row['clock_radius'] ?: 250;
+if ($target_lat !== null && $target_lng !== null && $lat !== null && $lng !== null) {
+    $earthRadius = 6371000; // in meters
+    $latFrom = deg2rad($lat);
+    $lonFrom = deg2rad($lng);
+    $latTo   = deg2rad($target_lat);
+    $lonTo   = deg2rad($target_lng);
 
-        // If staff belongs to a branch, ALWAYS query live branch settings from branches table
-        if (!empty($branch_name)) {
-            $b_stmt = $conn->prepare("SELECT latitude, longitude, radius_meters FROM branches WHERE LOWER(TRIM(branch_name)) = LOWER(TRIM(?)) LIMIT 1");
-            if ($b_stmt) {
-                $b_stmt->bind_param("s", $branch_name);
-                $b_stmt->execute();
-                $b_row = $b_stmt->get_result()->fetch_assoc();
-                $b_stmt->close();
-                if ($b_row) {
-                    if (!empty($b_row['latitude']) && !empty($b_row['longitude'])) {
-                        $target_lat = $b_row['latitude'];
-                        $target_lng = $b_row['longitude'];
-                    }
-                    if (!empty($b_row['radius_meters'])) {
-                        $radius = (int)$b_row['radius_meters'];
-                    }
-                }
-            }
-        }
+    $latDelta = $latTo - $latFrom;
+    $lonDelta = $lonTo - $lonFrom;
 
-        // Validate distance if coords available
-        if ($target_lat && $target_lng && $lat && $lng) {
-            $earthRadius = 6371000; // in meters
-            $latFrom = deg2rad($lat);
-            $lonFrom = deg2rad($lng);
-            $latTo   = deg2rad((float)$target_lat);
-            $lonTo   = deg2rad((float)$target_lng);
+    $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+    $distance = $angle * $earthRadius;
 
-            $latDelta = $latTo - $latFrom;
-            $lonDelta = $lonTo - $lonFrom;
-
-            $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
-            $distance = $angle * $earthRadius;
-
-            if ($distance <= $radius) {
-                $is_geofenced = 1;
-            } else {
-                echo json_encode([
-                    "status" => "error",
-                    "message" => "📍 Geofence Error: You are " . round($distance) . "m away from your assigned branch (" . htmlspecialchars($branch_name ?: 'Office') . "). Allowed radius is {$radius}m."
-                ]);
-                exit;
-            }
-        } elseif ($lat && $lng) {
-            $is_geofenced = 1;
-        }
+    if ($distance <= $radius) {
+        $is_geofenced = 1;
+    } else {
+        echo json_encode([
+            "status" => "error",
+            "message" => "📍 Geofence Error: You are " . round($distance) . "m away from your assigned branch (" . htmlspecialchars($branch_name ?: 'Office') . "). Allowed radius is {$radius}m."
+        ]);
+        exit;
     }
+} elseif ($lat !== null && $lng !== null) {
+    $is_geofenced = 1;
 }
 
 // 4. Auto-close previous day missed clock-outs

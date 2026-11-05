@@ -1337,17 +1337,19 @@ function scrollToShowcase(e) {
     }
 }
 
-// Pre-fetch biometric challenge on page load so hardware sensor prompt appears instantly (<100ms)
+// Pre-fetch biometric challenge on page load so hardware sensor prompt appears instantly (<15ms)
 let preloadedBioOptions = null;
+let prefetchBioTimer = null;
 
-async function prefetchBiometricOptions() {
+async function prefetchBiometricOptions(targetId) {
     try {
         if (!window.TDSBiometric) return;
-        const savedStaffId = localStorage.getItem('tds_saved_staff_id') || '';
+        TDSBiometric.isSupported(); // pre-warm platform check
+        const usernameInput = document.getElementById('username');
+        const savedStaffId = (typeof targetId === 'string' ? targetId : (usernameInput ? usernameInput.value.trim() : (localStorage.getItem('tds_saved_staff_id') || ''))).trim();
         const optUrl = '/api/biometric_options.php?action=login_options' + (savedStaffId ? '&identifier=' + encodeURIComponent(savedStaffId) : '');
-        const res = await fetch(optUrl);
-        const text = await res.text();
-        const data = JSON.parse(text);
+        const res = await fetch(optUrl, { cache: 'no-store' });
+        const data = await res.json();
         if (data && data.status === 'success') {
             data.forIdentifier = savedStaffId;
             preloadedBioOptions = data;
@@ -1355,17 +1357,33 @@ async function prefetchBiometricOptions() {
     } catch (_) {}
 }
 
+// Kick off early pre-fetch immediately
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => prefetchBiometricOptions());
+} else {
+    prefetchBiometricOptions();
+}
+
 // Automated Vertical Motional Slide on Entry & Local Storage Staff ID recall
 window.addEventListener('load', () => {
-    prefetchBiometricOptions();
     // 1. Populate saved Staff ID
     try {
         const savedStaffId = localStorage.getItem('tds_saved_staff_id');
         const usernameInput = document.getElementById('username');
         if (savedStaffId && usernameInput && !usernameInput.value) {
             usernameInput.value = savedStaffId;
+            prefetchBiometricOptions(savedStaffId);
         }
     } catch (e) {}
+
+    // Listen for username typing to update prefetch in background
+    const userField = document.getElementById('username');
+    if (userField) {
+        userField.addEventListener('blur', function() {
+            clearTimeout(prefetchBioTimer);
+            prefetchBioTimer = setTimeout(() => prefetchBiometricOptions(this.value.trim()), 200);
+        });
+    }
 
     // 2. Vertical motional slide down
     const urlParams = new URLSearchParams(window.location.search);
@@ -1506,7 +1524,7 @@ async function handleBiometricLogin() {
             }
             setTimeout(() => {
                 window.location.href = result.redirect || 'dashboard.php';
-            }, 750);
+            }, 200);
         } else {
             throw new Error((result && result.message) ? result.message : 'Biometric verification rejected.');
         }

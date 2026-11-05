@@ -2669,7 +2669,18 @@ function switchClockMode(mode) {
         if (bioBtn) bioBtn.style.display = 'block';
         if (faceStatus) faceStatus.style.display = 'none';
         checkBiometrics();
+        if (window.TDSBiometric) {
+            TDSBiometric.prefetchAuth();
+            TDSBiometric.warmupGps();
+        }
     }
+}
+
+// Pre-warm biometrics and GPS on dashboard load
+if (typeof TDSBiometric !== 'undefined') {
+    TDSBiometric.isSupported();
+    TDSBiometric.prefetchAuth();
+    TDSBiometric.warmupGps();
 }
 
 async function checkBiometrics() {
@@ -2740,7 +2751,7 @@ async function processBiometricClock() {
     if (bioCard) bioCard.classList.add('scanning');
     if (bioBtn) {
         bioBtn.disabled = true;
-        bioBtn.innerHTML = 'Verifying fingerprint &amp; GPS…';
+        bioBtn.innerHTML = '⚡ Verifying fingerprint &amp; GPS…';
     }
     if (statusText) statusText.innerHTML = '👆 <strong>Touch your fingerprint sensor now…</strong>';
 
@@ -2758,7 +2769,7 @@ async function processBiometricClock() {
                 TDSAudio.playClockIn();
             }
         }
-        setTimeout(() => location.reload(), 2200);
+        setTimeout(() => location.reload(), 900);
     } catch (err) {
         if (window.TDSAudio) TDSAudio.playError();
         if (bioCard) bioCard.classList.remove('scanning');

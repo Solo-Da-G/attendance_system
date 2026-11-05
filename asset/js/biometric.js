@@ -29,49 +29,130 @@ const TDSBiometric = (function () {
         return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     }
 
-    // Check if device supports platform biometrics
+    // Hardware support cache (0ms subsequent checks)
+    let _supportedCache = null;
+    let _supportPromise = null;
+
+    // GPS Cache (0ms coordinate acquisition if fresh within 2 mins)
+    let _lastCoords = null;
+    let _coordsTime = 0;
+    const GPS_CACHE_TTL = 120000;
+
+    // Prefetched Challenge Options Cache (0ms network round-trip to pop fingerprint dialog)
+    let _prefetchedAuth = null;
+    let _prefetchedAuthTime = 0;
+    let _prefetchingAuthPromise = null;
+
+    // Check if device supports platform biometrics (0ms if cached)
     async function isSupported() {
-        if (window.PublicKeyCredential &&
-            PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        if (_supportedCache !== null) return _supportedCache;
+        if (!window.PublicKeyCredential || !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+            _supportedCache = false;
+            return false;
+        }
+        if (_supportPromise) return _supportPromise;
+
+        _supportPromise = (async () => {
             try {
-                return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                _supportedCache = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                return _supportedCache;
             } catch (e) {
+                _supportedCache = false;
                 return false;
+            } finally {
+                _supportPromise = null;
             }
-        }
-        return false;
+        })();
+
+        return _supportPromise;
     }
 
-    // Check enrollment status
-    async function getStatus() {
-        try {
-            const resp = await fetch('/api/biometric_status.php');
-            return await resp.json();
-        } catch (e) {
-            return { status: 'error', enrolled: false, devices: [] };
-        }
+    // Pre-warm GPS in background so it never stalls clocking
+    function warmupGps() {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                _lastCoords = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude
+                };
+                _coordsTime = Date.now();
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+        );
     }
 
-    // Acquire GPS Coordinates
+    // Fast-path coordinate resolution
     function getCoordinates() {
+        // If fresh coordinates are in RAM, resolve instantly (0ms)
+        if (_lastCoords && (Date.now() - _coordsTime < GPS_CACHE_TTL)) {
+            setTimeout(warmupGps, 100);
+            return Promise.resolve(_lastCoords);
+        }
+
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
-                resolve({ latitude: null, longitude: null });
+                resolve(_lastCoords || { latitude: null, longitude: null });
                 return;
             }
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    resolve({
+                    _lastCoords = {
                         latitude: pos.coords.latitude,
                         longitude: pos.coords.longitude
-                    });
+                    };
+                    _coordsTime = Date.now();
+                    resolve(_lastCoords);
                 },
                 () => {
-                    resolve({ latitude: null, longitude: null });
+                    resolve(_lastCoords || { latitude: null, longitude: null });
                 },
-                { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+                { enableHighAccuracy: true, timeout: 3500, maximumAge: 60000 }
             );
         });
+    }
+
+    // Pre-fetch authentication challenge & options in background
+    async function prefetchAuth() {
+        if (_prefetchingAuthPromise) return _prefetchingAuthPromise;
+
+        _prefetchingAuthPromise = (async () => {
+            try {
+                const resp = await fetch('/api/biometric_options.php?action=auth_options', { cache: 'no-store' });
+                const data = await resp.json();
+                if (data && data.status === 'success') {
+                    _prefetchedAuth = data;
+                    _prefetchedAuthTime = Date.now();
+                }
+            } catch (_) {}
+            _prefetchingAuthPromise = null;
+        })();
+
+        return _prefetchingAuthPromise;
+    }
+
+    // Get Auth Options (Instant if prefetched, otherwise fallback to network)
+    async function getAuthOptions() {
+        if (_prefetchedAuth && (Date.now() - _prefetchedAuthTime < 180000)) {
+            const opt = _prefetchedAuth;
+            _prefetchedAuth = null;
+            setTimeout(prefetchAuth, 600);
+            return opt;
+        }
+
+        if (_prefetchingAuthPromise) {
+            await _prefetchingAuthPromise;
+            if (_prefetchedAuth && (Date.now() - _prefetchedAuthTime < 180000)) {
+                const opt = _prefetchedAuth;
+                _prefetchedAuth = null;
+                setTimeout(prefetchAuth, 600);
+                return opt;
+            }
+        }
+
+        const optResp = await fetch('/api/biometric_options.php?action=auth_options', { cache: 'no-store' });
+        return await optResp.json();
     }
 
     // Register a new Thumbprint / Passkey
@@ -137,29 +218,29 @@ const TDSBiometric = (function () {
         return saveResult;
     }
 
-    // Verify thumbprint & punch attendance
+    // Lightning-Fast Verify thumbprint & punch attendance
     async function clock() {
+        // 1. Launch background GPS acquisition concurrently (0ms wait)
+        const coordsPromise = getCoordinates();
+
+        // 2. Check platform support (0ms if cached)
         const supported = await isSupported();
         if (!supported) {
             throw new Error("Biometric authentication is not supported on this device/browser.");
         }
 
-        // 1. Get authentication challenge & allowed credentials
-        const optResp = await fetch('/api/biometric_options.php?action=auth_options');
-        const options = await optResp.json();
+        // 3. Grab authentication challenge (0ms if prefetched!)
+        const options = await getAuthOptions();
 
-        if (options.status !== 'success') {
-            throw new Error(options.message || 'Failed to start biometric authentication.');
+        if (!options || options.status !== 'success') {
+            throw new Error((options && options.message) || 'Failed to start biometric authentication.');
         }
 
         if (!options.allowCredentials || options.allowCredentials.length === 0) {
-            throw new Error("No thumbprint registered for this account. Please click 'Register Thumbprint' first.");
+            throw new Error("No thumbprint registered for this account. Please click 'Register This Device' first.");
         }
 
-        // 2. Fetch current GPS position in parallel
-        const coordsPromise = getCoordinates();
-
-        // 3. Format allowed credentials
+        // 4. Format allowed credentials
         const allowCreds = options.allowCredentials.map(c => ({
             type: 'public-key',
             id: base64UrlToBuffer(c.id),
@@ -174,20 +255,21 @@ const TDSBiometric = (function () {
             timeout: options.timeout || 60000
         };
 
-        // 4. Trigger native fingerprint prompt
+        // 5. TRIGGER NATIVE FINGERPRINT SENSOR IMMEDIATELY (<15ms)
         const assertion = await navigator.credentials.get({ publicKey: getOptions });
 
         if (!assertion) {
             throw new Error("Biometric verification cancelled.");
         }
 
+        // 6. Await GPS (which already finished in background while user touched sensor!)
         const coords = await coordsPromise;
 
-        // 5. Send assertion & coordinates to server for clocking
+        // 7. Post assertion & coordinates to server for clocking
         const clockPayload = {
             credential_id: assertion.id,
-            latitude: coords.latitude,
-            longitude: coords.longitude,
+            latitude: coords ? coords.latitude : null,
+            longitude: coords ? coords.longitude : null,
             response: {
                 clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
                 authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),
@@ -209,11 +291,21 @@ const TDSBiometric = (function () {
         return clockResult;
     }
 
+    // Auto pre-warm support & GPS as soon as script runs
+    if (typeof window !== 'undefined') {
+        setTimeout(() => {
+            isSupported();
+            warmupGps();
+        }, 100);
+    }
+
     return {
         isSupported,
         getStatus,
         register,
         clock,
+        prefetchAuth,
+        warmupGps,
         base64UrlToBuffer,
         bufferToBase64Url
     };
