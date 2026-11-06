@@ -182,6 +182,9 @@ if ($bio_stmt) {
 
 <script src="/asset/js/biometric.js?v=<?php echo time(); ?>"></script>
 <script>
+if (typeof TDSBiometric !== 'undefined') {
+    TDSBiometric.prefetchRegister();
+}
 async function enrollNewBiometric() {
     try {
         if (typeof TDSBiometric === 'undefined' || !window.TDSBiometric) {
@@ -190,7 +193,7 @@ async function enrollNewBiometric() {
         }
         const supported = await TDSBiometric.isSupported();
         if (!supported) {
-            alert("Biometric scanning is not supported on this browser/device. Please use Google Chrome or Microsoft Edge on an Android phone or fingerprint-enabled laptop.");
+            alert("Biometric scanning is not supported on this browser/device. Please use Google Chrome, Microsoft Edge, or Safari on an iPhone, Android phone, or laptop.");
             return;
         }
         const res = await TDSBiometric.register();

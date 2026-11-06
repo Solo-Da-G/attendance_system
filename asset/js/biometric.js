@@ -1,6 +1,6 @@
 /**
  * TDS WEBAUTHN THUMBPRINT & BIOMETRIC AUTHENTICATION CLIENT
- * Supports Android Fingerprint Sensors, Windows Hello, and Mac Touch ID
+ * Supports Apple iOS (Face ID & Touch ID), Android Fingerprints, Windows Hello, and Mac Touch ID
  */
 
 const TDSBiometric = (function () {
@@ -38,10 +38,15 @@ const TDSBiometric = (function () {
     let _coordsTime = 0;
     const GPS_CACHE_TTL = 120000;
 
-    // Prefetched Challenge Options Cache (0ms network round-trip to pop fingerprint dialog)
+    // Prefetched Challenge Options Cache for Authentication & Clocking
     let _prefetchedAuth = null;
     let _prefetchedAuthTime = 0;
     let _prefetchingAuthPromise = null;
+
+    // Prefetched Challenge Options Cache for Registration (Preserves iOS Safari user activation)
+    let _prefetchedReg = null;
+    let _prefetchedRegTime = 0;
+    let _prefetchingRegPromise = null;
 
     // Check if device supports platform biometrics (0ms if cached)
     async function isSupported() {
@@ -155,6 +160,48 @@ const TDSBiometric = (function () {
         return await optResp.json();
     }
 
+    // Pre-fetch registration challenge in background to keep iOS Safari user gesture active
+    async function prefetchRegister() {
+        if (_prefetchingRegPromise) return _prefetchingRegPromise;
+
+        _prefetchingRegPromise = (async () => {
+            try {
+                const resp = await fetch('/api/biometric_options.php?action=register_options', { cache: 'no-store' });
+                const data = await resp.json();
+                if (data && data.status === 'success') {
+                    _prefetchedReg = data;
+                    _prefetchedRegTime = Date.now();
+                }
+            } catch (_) {}
+            _prefetchingRegPromise = null;
+        })();
+
+        return _prefetchingRegPromise;
+    }
+
+    // Get Registration Options (Instant if prefetched, preserving iOS transient user activation)
+    async function getRegisterOptions() {
+        if (_prefetchedReg && (Date.now() - _prefetchedRegTime < 180000)) {
+            const opt = _prefetchedReg;
+            _prefetchedReg = null;
+            setTimeout(prefetchRegister, 600);
+            return opt;
+        }
+
+        if (_prefetchingRegPromise) {
+            await _prefetchingRegPromise;
+            if (_prefetchedReg && (Date.now() - _prefetchedRegTime < 180000)) {
+                const opt = _prefetchedReg;
+                _prefetchedReg = null;
+                setTimeout(prefetchRegister, 600);
+                return opt;
+            }
+        }
+
+        const optResp = await fetch('/api/biometric_options.php?action=register_options', { cache: 'no-store' });
+        return await optResp.json();
+    }
+
     // Check enrollment status
     async function getStatus() {
         try {
@@ -165,19 +212,18 @@ const TDSBiometric = (function () {
         }
     }
 
-    // Register a new Thumbprint / Passkey
+    // Register a new Biometric (iOS Face ID/Touch ID, Android Thumbprint, Windows Hello)
     async function register(deviceName = '') {
         const supported = await isSupported();
         if (!supported) {
-            throw new Error("Your browser or device does not support hardware thumbprint scanning. Please ensure biometric hardware (or PIN) is enabled.");
+            throw new Error("Biometric scanning (Touch ID, Face ID, or Fingerprint) is not supported or not enabled on this device/browser.");
         }
 
-        // 1. Fetch challenge & options from server
-        const optResp = await fetch('/api/biometric_options.php?action=register_options', { cache: 'no-store' });
-        const options = await optResp.json();
+        // 1. Fetch challenge & options from server (pre-fetched in RAM for 0ms delay to keep Safari gesture alive)
+        const options = await getRegisterOptions();
 
-        if (options.status !== 'success') {
-            throw new Error(options.message || 'Failed to initialize biometric registration.');
+        if (!options || options.status !== 'success') {
+            throw new Error((options && options.message) || 'Failed to initialize biometric registration.');
         }
 
         // 2. Format options for WebAuthn API
@@ -195,8 +241,21 @@ const TDSBiometric = (function () {
             attestation: options.attestation || 'none'
         };
 
-        // 3. Trigger native browser Biometric prompt (Android thumbprint / Windows Hello)
-        const credential = await navigator.credentials.create({ publicKey: createOptions });
+        // 3. Trigger native browser Biometric prompt (Apple Face ID/Touch ID, Android thumbprint, Windows Hello)
+        let credential;
+        try {
+            credential = await navigator.credentials.create({ publicKey: createOptions });
+        } catch (err) {
+            if (err.name === 'NotAllowedError') {
+                const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+                if (isIOS) {
+                    throw new Error("Biometric registration was not allowed by this iPhone.\n\nPlease verify these iPhone settings:\n1. Face ID or Touch ID & Passcode is turned ON in iPhone Settings.\n2. iCloud Keychain is turned ON in Settings > [Your Name] > iCloud > Passwords & Keychain.\n3. Safari is not in Private Browsing mode.");
+                } else {
+                    throw new Error("Biometric scan was cancelled or not allowed by your device.");
+                }
+            }
+            throw err;
+        }
 
         if (!credential) {
             throw new Error("Biometric scan cancelled or failed.");
@@ -225,10 +284,13 @@ const TDSBiometric = (function () {
             throw new Error(saveResult.message || 'Failed to complete registration on server.');
         }
 
+        // Preload next authentication options immediately
+        setTimeout(prefetchAuth, 200);
+
         return saveResult;
     }
 
-    // Lightning-Fast Verify thumbprint & punch attendance
+    // Lightning-Fast Verify thumbprint / Face ID & punch attendance
     async function clock() {
         // 1. Launch background GPS acquisition concurrently (0ms wait)
         const coordsPromise = getCoordinates();
@@ -247,26 +309,44 @@ const TDSBiometric = (function () {
         }
 
         if (!options.allowCredentials || options.allowCredentials.length === 0) {
-            throw new Error("No thumbprint registered for this account. Please click 'Register This Device' first.");
+            throw new Error("No biometric registered for this account. Please click 'Register This Device' first.");
         }
 
         // 4. Format allowed credentials
-        const allowCreds = options.allowCredentials.map(c => ({
-            type: 'public-key',
-            id: base64UrlToBuffer(c.id),
-            transports: c.transports
-        }));
+        const allowCreds = options.allowCredentials.map(c => {
+            const item = {
+                type: 'public-key',
+                id: base64UrlToBuffer(c.id)
+            };
+            if (c.transports && Array.isArray(c.transports)) {
+                item.transports = c.transports;
+            }
+            return item;
+        });
 
         const getOptions = {
             challenge: base64UrlToBuffer(options.challenge),
             rpId: options.rpId,
             allowCredentials: allowCreds,
-            userVerification: options.userVerification || 'required',
+            userVerification: options.userVerification || 'preferred',
             timeout: options.timeout || 60000
         };
 
-        // 5. TRIGGER NATIVE FINGERPRINT SENSOR IMMEDIATELY (<15ms)
-        const assertion = await navigator.credentials.get({ publicKey: getOptions });
+        // 5. TRIGGER NATIVE FINGERPRINT / FACE ID SENSOR IMMEDIATELY (<15ms)
+        let assertion;
+        try {
+            assertion = await navigator.credentials.get({ publicKey: getOptions });
+        } catch (err) {
+            if (err.name === 'NotAllowedError') {
+                const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+                if (isIOS) {
+                    throw new Error("Biometric verification was not allowed. If using an iPhone, ensure Face ID / Touch ID is permitted in Safari or your Home Screen app.");
+                } else {
+                    throw new Error("Biometric verification was cancelled or timed out.");
+                }
+            }
+            throw err;
+        }
 
         if (!assertion) {
             throw new Error("Biometric verification cancelled.");
@@ -301,11 +381,13 @@ const TDSBiometric = (function () {
         return clockResult;
     }
 
-    // Auto pre-warm support & GPS as soon as script runs
+    // Auto pre-warm support, GPS, and challenges as soon as script runs
     if (typeof window !== 'undefined') {
         setTimeout(() => {
             isSupported();
             warmupGps();
+            prefetchAuth();
+            prefetchRegister();
         }, 100);
     }
 
@@ -315,6 +397,7 @@ const TDSBiometric = (function () {
         register,
         clock,
         prefetchAuth,
+        prefetchRegister,
         warmupGps,
         base64UrlToBuffer,
         bufferToBase64Url

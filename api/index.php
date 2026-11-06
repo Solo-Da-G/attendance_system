@@ -1477,11 +1477,24 @@ async function handleBiometricLogin() {
             challenge: TDSBiometric.base64UrlToBuffer(options.challenge),
             rpId: options.rpId,
             allowCredentials: allowCreds,
-            userVerification: options.userVerification || 'required',
+            userVerification: options.userVerification || 'preferred',
             timeout: options.timeout || 60000
         };
 
-        const assertion = await navigator.credentials.get({ publicKey: getOptions });
+        let assertion;
+        try {
+            assertion = await navigator.credentials.get({ publicKey: getOptions });
+        } catch (authErr) {
+            if (authErr.name === 'NotAllowedError') {
+                const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+                if (isIOS) {
+                    throw new Error("Biometric sign-in was not allowed. If using an iPhone, make sure Face ID / Touch ID is permitted in Safari or your Home Screen app.");
+                } else {
+                    throw new Error("Biometric sign-in was cancelled or timed out.");
+                }
+            }
+            throw authErr;
+        }
         if (!assertion) {
             throw new Error("Biometric verification cancelled.");
         }

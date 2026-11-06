@@ -46,7 +46,7 @@ try {
                     $allowCredentials[] = [
                         "type" => "public-key",
                         "id" => $row['credential_id'],
-                        "transports" => ["internal"]
+                        "transports" => ["internal", "hybrid"]
                     ];
                 }
                 $stmt->close();
@@ -68,7 +68,7 @@ try {
                     $allowCredentials[] = [
                         "type" => "public-key",
                         "id" => $row['credential_id'],
-                        "transports" => ["internal"]
+                        "transports" => ["internal", "hybrid"]
                     ];
                 }
             }
@@ -92,7 +92,7 @@ try {
             "challenge" => base64url_encode($challenge),
             "rpId" => $host,
             "allowCredentials" => $allowCredentials,
-            "userVerification" => "required",
+            "userVerification" => "preferred",
             "timeout" => 60000
         ];
 
@@ -153,8 +153,9 @@ if ($action === 'register_options') {
             ["type" => "public-key", "alg" => -257]  // RS256
         ],
         "authenticatorSelection" => [
-            "authenticatorAttachment" => "platform", // Prompts internal fingerprint/Touch ID
-            "userVerification" => "required",
+            "authenticatorAttachment" => "platform", // Prompts internal fingerprint / Touch ID / Face ID
+            "userVerification" => "preferred",
+            "residentKey" => "preferred",
             "requireResidentKey" => false
         ],
         "timeout" => 60000,
@@ -183,7 +184,7 @@ if ($action === 'auth_options') {
         $allowCredentials[] = [
             "type" => "public-key",
             "id" => $row['credential_id'],
-            "transports" => ["internal"]
+            "transports" => ["internal", "hybrid"]
         ];
     }
     $stmt->close();
@@ -198,7 +199,7 @@ if ($action === 'auth_options') {
         "challenge" => base64url_encode($challenge),
         "rpId" => $host,
         "allowCredentials" => $allowCredentials,
-        "userVerification" => "required",
+        "userVerification" => "preferred",
         "timeout" => 60000
     ];
 

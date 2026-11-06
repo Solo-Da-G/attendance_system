@@ -2671,6 +2671,7 @@ function switchClockMode(mode) {
         checkBiometrics();
         if (window.TDSBiometric) {
             TDSBiometric.prefetchAuth();
+            TDSBiometric.prefetchRegister();
             TDSBiometric.warmupGps();
         }
     }
@@ -2680,6 +2681,7 @@ function switchClockMode(mode) {
 if (typeof TDSBiometric !== 'undefined') {
     TDSBiometric.isSupported();
     TDSBiometric.prefetchAuth();
+    TDSBiometric.prefetchRegister();
     TDSBiometric.warmupGps();
 }
 
