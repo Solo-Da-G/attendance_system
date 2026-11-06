@@ -461,12 +461,11 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
     // ────────────────────────────────────────────────────────────
     // UNIVERSAL PWA APP INSTALL CONTROLLER (Desktop, Laptop, Android, iOS)
     // ────────────────────────────────────────────────────────────
-    let deferredInstallPrompt = null;
+    let deferredInstallPrompt = window.TDS_InstallPrompt || null;
     const desktopInstallBtn = document.getElementById('desktopInstallAppBtn');
     const mobileHeaderInstallBtn = document.getElementById('mobileHeaderInstallBtn');
     const mobileDrawerInstallBtn = document.getElementById('mobileDrawerInstallBtn');
     const desktopInstalledBadge = document.getElementById('desktopAppInstalledBadge');
-    const iosModal = document.getElementById('iosInstallModal');
 
     const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -489,40 +488,63 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredInstallPrompt = e;
+        window.TDS_InstallPrompt = e;
         showInstallTriggers();
     });
 
-    // If on iOS or non-standalone browser, show install triggers
-    if (isIos && !isStandalone) {
-        showInstallTriggers();
-    } else if (!isStandalone) {
-        // Show button on laptops/PCs and mobile so users know it can be installed
-        setTimeout(showInstallTriggers, 800);
-    } else {
+    window.addEventListener('tds:pwa-ready', () => {
+        if (window.TDS_InstallPrompt) {
+            deferredInstallPrompt = window.TDS_InstallPrompt;
+            showInstallTriggers();
+        }
+    });
+
+    // Show triggers if ready or available
+    if (deferredInstallPrompt || isIos || !isStandalone) {
         showInstallTriggers();
     }
 
     async function handleInstallClick(e) {
         if (e) e.preventDefault();
         
-        if (isIos && !isStandalone) {
-            if (iosModal) iosModal.style.display = 'flex';
+        if (isStandalone) {
+            alert("The app is already installed and running on this device!");
             return;
         }
 
-        if (deferredInstallPrompt) {
-            deferredInstallPrompt.prompt();
-            const choiceResult = await deferredInstallPrompt.userChoice;
-            if (choiceResult && choiceResult.outcome === 'accepted') {
-                deferredInstallPrompt = null;
-                if (desktopInstallBtn) desktopInstallBtn.style.display = 'none';
-                if (mobileHeaderInstallBtn) mobileHeaderInstallBtn.style.display = 'none';
-                if (mobileDrawerInstallBtn) mobileDrawerInstallBtn.style.display = 'none';
-                if (desktopInstalledBadge) desktopInstalledBadge.style.display = 'block';
+        const promptEvt = deferredInstallPrompt || window.TDS_InstallPrompt;
+
+        if (promptEvt) {
+            try {
+                promptEvt.prompt();
+                const choiceResult = await promptEvt.userChoice;
+                if (choiceResult && choiceResult.outcome === 'accepted') {
+                    deferredInstallPrompt = null;
+                    window.TDS_InstallPrompt = null;
+                    if (desktopInstallBtn) desktopInstallBtn.style.display = 'none';
+                    if (mobileHeaderInstallBtn) mobileHeaderInstallBtn.style.display = 'none';
+                    if (mobileDrawerInstallBtn) mobileDrawerInstallBtn.style.display = 'none';
+                    if (desktopInstalledBadge) desktopInstalledBadge.style.display = 'block';
+                }
+                return;
+            } catch (err) {
+                console.error("Install prompt error:", err);
             }
+        }
+
+        const modal = document.getElementById('iosInstallModal');
+        if (isIos && modal) {
+            modal.style.display = 'flex';
+            return;
+        }
+
+        const isAndroid = /android/i.test(navigator.userAgent);
+        if (isAndroid) {
+            alert("To install on your Android phone:\n\n1. Tap the three dots (⋮) in the top-right corner of Chrome.\n2. Tap 'Install app' or 'Add to Home screen'.\n3. Tap 'Install' to add it to your home screen.");
+        } else if (isIos) {
+            alert("To install on your iPhone / iPad:\n\n1. Tap the Share button (⎋) at the bottom of Safari.\n2. Scroll down and tap 'Add to Home Screen' (+).\n3. Tap 'Add' in the top right corner.");
         } else {
-            // Inform user how to install directly from browser bar
-            alert("To install this app on your computer or phone:\n\n• Laptop / PC (Chrome or Edge): Click the Install icon (⊕) in the browser address bar.\n• Android: Tap the three dots (⋮) and tap 'Install app' or 'Add to Home screen'.\n• iPhone / iPad: Tap Share (⎋) in Safari and tap 'Add to Home Screen'.");
+            alert("To install on your computer (Chrome or Edge):\n\n1. Click the Install icon (⊕ or computer icon) in the browser address bar at the top-right.\n2. Click 'Install' to install the desktop application.");
         }
     }
 
@@ -531,7 +553,8 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
     });
 
     window.closeIosInstallModal = function() {
-        if (iosModal) iosModal.style.display = 'none';
+        const modal = document.getElementById('iosInstallModal');
+        if (modal) modal.style.display = 'none';
     };
 
     // Global App Navigation Handlers (Back Arrow & Refresh Page)
@@ -564,6 +587,7 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 
     window.addEventListener('appinstalled', () => {
         deferredInstallPrompt = null;
+        window.TDS_InstallPrompt = null;
         if (desktopInstallBtn) desktopInstallBtn.style.display = 'none';
         if (mobileHeaderInstallBtn) mobileHeaderInstallBtn.style.display = 'none';
         if (mobileDrawerInstallBtn) mobileDrawerInstallBtn.style.display = 'none';
@@ -572,11 +596,38 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 
     // Service Worker Registration for PWA Support
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch((err) => {
+        const registerSW = () => {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
                 console.log('PWA Service Worker registration skipped: ', err);
             });
-        });
+        };
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            registerSW();
+        } else {
+            window.addEventListener('DOMContentLoaded', registerSW);
+        }
     }
 })();
 </script>
+
+<!-- Dedicated iOS Install Bottom Sheet Modal -->
+<div id="iosInstallModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:999999; align-items:flex-end; justify-content:center; backdrop-filter:blur(5px); padding:16px;">
+    <div style="background:#0f172a; color:#ffffff; width:100%; max-width:440px; border-radius:24px; padding:24px 20px; border:1px solid rgba(255,255,255,0.15); box-shadow:0 24px 48px rgba(0,0,0,0.6); text-align:center;">
+        <div style="width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg, #10439f, #2563eb); margin:0 auto 12px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(16,67,159,0.4);">
+            <svg viewBox="0 0 24 24" width="28" height="28" stroke="#fff" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <h3 style="font-size:18px; font-weight:800; margin-bottom:8px; color:#ffffff;">Install on iPhone / iPad</h3>
+        <p style="font-size:13px; color:#94a3b8; line-height:1.5; margin-bottom:18px;">Safari installs apps to your home screen in two quick taps:</p>
+        <div style="background:rgba(255,255,255,0.06); border-radius:14px; padding:14px 16px; text-align:left; font-size:13px; color:#e2e8f0; line-height:1.6; margin-bottom:18px; border:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;">
+                <span style="background:#10439f; color:#fff; min-width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; margin-top:1px;">1</span>
+                <span>Tap the <strong>Share</strong> button <svg style="vertical-align:middle; display:inline; margin:0 2px;" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.3"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> at the bottom of Safari.</span>
+            </div>
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+                <span style="background:#10439f; color:#fff; min-width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; margin-top:1px;">2</span>
+                <span>Scroll down and tap <strong>'Add to Home Screen'</strong> (+), then tap <strong>'Add'</strong>.</span>
+            </div>
+        </div>
+        <button type="button" onclick="closeIosInstallModal()" style="width:100%; padding:13px; border-radius:12px; background:linear-gradient(135deg, #10439f, #2563eb); color:#fff; font-weight:700; border:none; cursor:pointer; font-size:14px; box-shadow:0 4px 14px rgba(16,67,159,0.4);">Got It</button>
+    </div>
+</div>

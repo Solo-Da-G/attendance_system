@@ -1,8 +1,11 @@
-const CACHE_NAME = 'tds-attendance-v2';
+const CACHE_NAME = 'tds-attendance-v3';
 const ASSETS = [
   '/',
   '/asset/css/style.css',
   '/asset/img/tds_logo.png',
+  '/asset/img/icon-192.png',
+  '/asset/img/icon-512.png',
+  '/asset/img/icon-maskable-512.png',
   '/manifest.json'
 ];
 

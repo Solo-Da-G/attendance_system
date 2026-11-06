@@ -109,7 +109,15 @@ render_form:
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TDS Attendance">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/asset/img/tds_logo.png">
+<link rel="apple-touch-icon" href="/asset/img/icon-192.png">
+<script>
+window.TDS_InstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  window.TDS_InstallPrompt = e;
+  window.dispatchEvent(new CustomEvent('tds:pwa-ready'));
+});
+</script>
 <title>Sign In — TDS Attendance Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1625,6 +1633,18 @@ if (wrapper) {
 }
 
 startAutoPlay();
+
+// Service Worker Registration for PWA Support
+if ('serviceWorker' in navigator) {
+    const regSW = () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    };
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        regSW();
+    } else {
+        window.addEventListener('DOMContentLoaded', regSW);
+    }
+}
 </script>
 </body>
 </html>
