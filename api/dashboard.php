@@ -2727,6 +2727,9 @@ async function registerCurrentDevice() {
     if (bioCard) bioCard.classList.add('scanning');
 
     try {
+        if (typeof TDSBiometric === 'undefined' || !window.TDSBiometric) {
+            throw new Error("Biometric module is loading. Please refresh the page and try again.");
+        }
         const res = await TDSBiometric.register();
         if (bioCard) bioCard.classList.remove('scanning');
         alert('🎉 Success: ' + (res.message || 'Fingerprint enrolled!'));

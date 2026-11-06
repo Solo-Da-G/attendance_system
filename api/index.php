@@ -1316,8 +1316,8 @@ body {
 </section>
 
 <!-- Audio & Biometric Scripts -->
-<script src="/asset/js/attendance-audio.js"></script>
-<script src="/asset/js/biometric.js"></script>
+<script src="/asset/js/attendance-audio.js?v=<?php echo time(); ?>"></script>
+<script src="/asset/js/biometric.js?v=<?php echo time(); ?>"></script>
 
 <script>
 // Smooth Motional Slide Controller

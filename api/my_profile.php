@@ -184,6 +184,10 @@ if ($bio_stmt) {
 <script>
 async function enrollNewBiometric() {
     try {
+        if (typeof TDSBiometric === 'undefined' || !window.TDSBiometric) {
+            alert("Biometric module is still loading. Please wait a second and tap again.");
+            return;
+        }
         const supported = await TDSBiometric.isSupported();
         if (!supported) {
             alert("Biometric scanning is not supported on this browser/device. Please use Google Chrome or Microsoft Edge on an Android phone or fingerprint-enabled laptop.");

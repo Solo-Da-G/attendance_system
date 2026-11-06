@@ -155,6 +155,16 @@ const TDSBiometric = (function () {
         return await optResp.json();
     }
 
+    // Check enrollment status
+    async function getStatus() {
+        try {
+            const resp = await fetch('/api/biometric_status.php', { cache: 'no-store' });
+            return await resp.json();
+        } catch (e) {
+            return { status: 'error', enrolled: false, devices: [] };
+        }
+    }
+
     // Register a new Thumbprint / Passkey
     async function register(deviceName = '') {
         const supported = await isSupported();
@@ -163,7 +173,7 @@ const TDSBiometric = (function () {
         }
 
         // 1. Fetch challenge & options from server
-        const optResp = await fetch('/api/biometric_options.php?action=register_options');
+        const optResp = await fetch('/api/biometric_options.php?action=register_options', { cache: 'no-store' });
         const options = await optResp.json();
 
         if (options.status !== 'success') {
