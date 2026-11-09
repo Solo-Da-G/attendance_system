@@ -150,6 +150,9 @@ if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
     if (db_has_table($conn, 'admin') && !db_has_column($conn, 'admin', 'must_change_password')) {
         @$conn->query("ALTER TABLE `admin` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0");
     }
+    if (db_has_table($conn, 'staff') && !db_has_column($conn, 'staff', 'card_uid')) {
+        @$conn->query("ALTER TABLE `staff` ADD COLUMN `card_uid` VARCHAR(100) NULL UNIQUE AFTER `fingerprint_id`");
+    }
 }
 
 // ================================================================

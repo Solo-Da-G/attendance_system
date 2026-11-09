@@ -16,6 +16,21 @@ if (isset($_POST['add_employee'])) {
     $email       = trim($_POST['email']);
     $phone       = trim($_POST['phone']);
 
+    $card_uid = !empty($_POST['card_uid']) ? trim($_POST['card_uid']) : null;
+    if ($card_uid !== null) {
+        $dup_card = $conn->prepare("SELECT id, full_name, staff_id FROM staff WHERE card_uid = ? AND deleted_at IS NULL LIMIT 1");
+        if ($dup_card) {
+            $dup_card->bind_param("s", $card_uid);
+            $dup_card->execute();
+            $dup_card_res = $dup_card->get_result();
+            if ($dup_card_row = $dup_card_res->fetch_assoc()) {
+                echo "<script>alert('E-Card UID \'" . addslashes($card_uid) . "\' is already assigned to " . addslashes($dup_card_row['full_name']) . " (" . addslashes($dup_card_row['staff_id']) . "). Each card must be unique.'); window.history.back();</script>";
+                exit;
+            }
+            $dup_card->close();
+        }
+    }
+
     $plain_password = !empty($_POST['password']) ? $_POST['password'] : $staff_id;
     $password       = password_hash($plain_password, PASSWORD_DEFAULT);
 
@@ -72,17 +87,30 @@ if (isset($_POST['add_employee'])) {
         $photo = 'data:' . $imgType . ';base64,' . base64_encode($imgData);
     }
 
-    $stmt = false;
-    $has_mcp = function_exists('db_has_column') && db_has_column($conn, 'staff', 'must_change_password');
-    if ($has_mcp) {
-        $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
+    $has_card = function_exists('db_has_column') && db_has_column($conn, 'staff', 'card_uid');
+    $has_mcp  = function_exists('db_has_column') && db_has_column($conn, 'staff', 'must_change_password');
+
+    $cols = ['staff_id', 'full_name', 'job_title', 'department', 'branch', 'email', 'phone', 'password', 'photo'];
+    $vals = ['?', '?', '?', '?', '?', '?', '?', '?', '?'];
+    $types = "sssssssss";
+    $params = [$staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo];
+
+    if ($has_card && $card_uid !== null) {
+        $cols[] = 'card_uid';
+        $vals[] = '?';
+        $types .= 's';
+        $params[] = $card_uid;
     }
-    if (!$stmt) {
-        $stmt = $conn->prepare("INSERT INTO staff (staff_id, full_name, job_title, department, branch, email, phone, password, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    if ($has_mcp) {
+        $cols[] = 'must_change_password';
+        $vals[] = '1';
     }
 
+    $sql = "INSERT INTO staff (" . implode(", ", $cols) . ") VALUES (" . implode(", ", $vals) . ")";
+    $stmt = $conn->prepare($sql);
+
     if ($stmt) {
-        $stmt->bind_param("sssssssss", $staff_id, $full_name, $job_title, $department, $branch, $email, $phone, $password, $photo);
+        $stmt->bind_param($types, ...$params);
         try {
             if ($stmt->execute()) {
                 echo "<script>alert('Employee added successfully! Default password is: " . addslashes($plain_password) . "'); window.location='employees.php';</script>";
@@ -92,7 +120,7 @@ if (isset($_POST['add_employee'])) {
             }
         } catch (Throwable $e) {
             $errText = (strpos($e->getMessage(), 'Duplicate entry') !== false)
-                ? "A staff member with Staff ID '$staff_id' already exists."
+                ? "A staff member with Staff ID '$staff_id' or E-Card UID '$card_uid' already exists."
                 : "Database error: " . $e->getMessage();
             echo "<script>alert(" . json_encode($errText) . ");</script>";
         }
@@ -112,7 +140,7 @@ if ($br_res) {
 // Get all employees (project lightweight columns; photo streamed on-demand via photo.php)
 $result = $conn->query("
     SELECT 
-        id, staff_id, full_name, job_title, department, branch, email, phone,
+        id, staff_id, full_name, job_title, department, branch, email, phone, card_uid,
         (CASE WHEN photo IS NOT NULL AND LENGTH(photo) > 100 THEN 1 ELSE 0 END) AS has_photo,
         COALESCE(CRC32(photo), 0) AS photo_v
     FROM staff 
@@ -379,7 +407,12 @@ $total_employees = $result ? $result->num_rows : 0;
                                     <div class="no-photo">📷</div>
                                 <?php endif; ?>
                             </td>
-                            <td data-label="Staff ID"><code><?php echo $staffId; ?></code></td>
+                            <td data-label="Staff ID">
+                                <code><?php echo $staffId; ?></code>
+                                <?php if (!empty($row['card_uid'])): ?>
+                                    <span title="Assigned E-Card UID: <?php echo htmlspecialchars($row['card_uid']); ?>" style="display:inline-flex; align-items:center; gap:2px; margin-left:4px; font-size:11px; background:#e0e7ff; color:#4338ca; padding:2px 6px; border-radius:6px; font-weight:600;">💳 Card</span>
+                                <?php endif; ?>
+                            </td>
                             <td data-label="Full Name"><strong><?php echo htmlspecialchars($row['full_name']); ?></strong></td>
                             <td data-label="Job Title"><?php echo htmlspecialchars($row['job_title'] ?? '—'); ?></td>
                             <td data-label="Department"><?php echo htmlspecialchars($row['department'] ?? '—'); ?></td>
@@ -457,6 +490,15 @@ $total_employees = $result ? $result->num_rows : 0;
             <label>Mobile No</label>
             <input type="text" name="phone" placeholder="+234..." style="width:100%; box-sizing:border-box; padding:12px; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px;">
 
+            <label>E-Card / RFID Badge UID (Optional)</label>
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <input type="text" name="card_uid" id="addEmpCardUid" placeholder="e.g. 0012984532 or tap card on reader" maxlength="100" autocomplete="off" style="flex:1; box-sizing:border-box; padding:12px; border:1px solid #e2e8f0; border-radius:12px;">
+                <button type="button" onclick="startCardScan('addEmpCardUid')" style="padding:0 16px; background:#4f46e5; color:white; border:none; border-radius:12px; font-weight:600; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                    💳 Scan
+                </button>
+            </div>
+            <small style="color:var(--text-muted); display:block; margin-top:-10px; margin-bottom:16px;">Tap RFID card on USB desktop reader or phone NFC, or enter card number</small>
+
             <label>Password (Optional)</label>
             <div class="password-input-wrap" style="margin-bottom:6px;">
                 <input type="password" id="addEmpPassField" name="password" placeholder="Leave blank to use Staff ID" style="width:100%; box-sizing:border-box; padding:12px; border:1px solid #e2e8f0; border-radius:12px;">
@@ -522,6 +564,36 @@ $total_employees = $result ? $result->num_rows : 0;
             closeModal();
         }
     });
+
+    async function startCardScan(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.focus();
+        input.select();
+
+        if ('NDEFReader' in window) {
+            try {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                alert('📲 NFC Active: Tap the employee RFID badge or contactless card against the back of this device.');
+                ndef.onreading = event => {
+                    const serial = event.serialNumber || (event.message && event.message.records && event.message.records[0] ? event.message.records[0].data : '');
+                    if (serial) {
+                        input.value = String(serial).replace(/[:\s]/g, '').toUpperCase();
+                        alert('✅ E-Card Detected: ' + input.value);
+                    }
+                };
+                return;
+            } catch (err) {
+                console.log('NFC scan unavailable/declined:', err);
+            }
+        }
+
+        input.placeholder = 'Ready! Tap card on reader now...';
+        input.style.borderColor = '#4f46e5';
+        input.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.2)';
+        alert('💳 Ready for E-Card Tap:\n\nPlease tap the RFID card or badge against your USB desktop card reader now.');
+    }
 
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {

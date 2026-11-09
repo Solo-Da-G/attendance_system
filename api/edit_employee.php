@@ -64,6 +64,7 @@ if (isset($_POST['update_employee'])) {
     $email      = trim($_POST['email'] ?? '');
     $phone      = trim($_POST['phone'] ?? '');
     $finger_id  = trim($_POST['fingerprint_id'] ?? '');
+    $card_uid   = trim($_POST['card_uid'] ?? '');
 
     $old_staff_id = $employee['staff_id'];
     $new_staff_id = $old_staff_id;
@@ -80,6 +81,7 @@ if (isset($_POST['update_employee'])) {
     $employee['email']          = $email;
     $employee['phone']          = $phone;
     $employee['fingerprint_id'] = $finger_id;
+    $employee['card_uid']       = $card_uid;
 
     // Validate staff_id
     if ($new_staff_id === '') {

@@ -67,21 +67,41 @@ function dumpDatabase($conn) {
 // -------------------------------------------------------------
 // HELPER: Fetch detailed attendance records with staff profiles
 // -------------------------------------------------------------
-function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $branch = '') {
+function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $branch = '', $staff_id = '', $search = '') {
     $where = [];
     $params = [];
     $types = '';
 
-    // Month filter (e.g. '2026-10')
-    if (!empty($month) && $month !== 'all') {
-        $where[] = "DATE_FORMAT(a.clock_in, '%Y-%m') = ?";
-        $params[] = $month;
+    // Staff filter (individual staff_id or search string)
+    if (!empty($staff_id) && $staff_id !== 'all') {
+        $where[] = "a.staff_id = ?";
+        $params[] = $staff_id;
         $types .= 's';
-    } elseif (!empty($from) && !empty($to)) {
+    } elseif (!empty($search)) {
+        $where[] = "(s.full_name LIKE ? OR a.staff_id LIKE ?)";
+        $params[] = "%{$search}%";
+        $params[] = "%{$search}%";
+        $types .= 'ss';
+    }
+
+    // Date range filter
+    if (!empty($from) && !empty($to)) {
         $where[] = "DATE(a.clock_in) BETWEEN ? AND ?";
         $params[] = $from;
         $params[] = $to;
         $types .= 'ss';
+    } elseif (!empty($from)) {
+        $where[] = "DATE(a.clock_in) >= ?";
+        $params[] = $from;
+        $types .= 's';
+    } elseif (!empty($to)) {
+        $where[] = "DATE(a.clock_in) <= ?";
+        $params[] = $to;
+        $types .= 's';
+    } elseif (!empty($month) && $month !== 'all') {
+        $where[] = "DATE_FORMAT(a.clock_in, '%Y-%m') = ?";
+        $params[] = $month;
+        $types .= 's';
     }
 
     if (!empty($branch) && $branch !== 'all') {
@@ -143,8 +163,10 @@ function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $bran
             }
 
             $src = strtoupper((string)($row['source'] ?? 'WEB'));
-            if ($src === 'DEVICE') $src = 'Fingerprint / Biometric';
-            elseif ($src === 'MOBILE') $src = 'Mobile App';
+            if ($src === 'DEVICE') $src = 'Fingerprint (Device)';
+            elseif ($src === 'FINGERPRINT') $src = 'WebAuthn Thumbprint';
+            elseif ($src === 'CARD') $src = 'E-Card / RFID Smart Badge';
+            elseif ($src === 'MOBILE') $src = 'Face Recognition';
 
             $selfie = (!empty($row['has_photo_in']) || !empty($row['has_photo_out'])) ? 'Yes' : 'No';
             $geofenced = !empty($row['is_geofenced']) ? 'Yes' : 'No';
@@ -450,23 +472,57 @@ if ($action === 'auto') {
 // ACTION: Download Detailed Attendance Log (Month or All-Time)
 // -------------------------------------------------------------
 if ($action === 'attendance_excel' || $action === 'attendance_download') {
-    $month  = trim($_GET['month'] ?? date('Y-m'));
-    $from   = trim($_GET['from'] ?? '');
-    $to     = trim($_GET['to'] ?? '');
-    $branch = trim($_GET['branch'] ?? '');
-    $isZip  = (!empty($_GET['zip']) && $_GET['zip'] == '1');
+    $month    = trim($_GET['month'] ?? '');
+    $from     = trim($_GET['from'] ?? '');
+    $to       = trim($_GET['to'] ?? '');
+    $branch   = trim($_GET['branch'] ?? '');
+    $staff_id = trim($_GET['staff_id'] ?? '');
+    $search   = trim($_GET['search'] ?? '');
+    $isZip    = (!empty($_GET['zip']) && $_GET['zip'] == '1');
 
-    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch);
+    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch, $staff_id, $search);
     $csvData = generateCsvFromRecords($records, 'No attendance records found for this period.');
 
-    $fileLabel = ($month === 'all') ? 'all_time' : (!empty($month) ? $month : date('Y-m-d'));
+    // Build smart dynamic filename
+    $staffLabel = '';
+    if (!empty($staff_id) || !empty($search)) {
+        $resolvedName = '';
+        if (!empty($records) && !empty($records[0]['Full Name']) && $records[0]['Full Name'] !== 'Unknown Staff') {
+            $resolvedName = $records[0]['Full Name'];
+        } elseif (!empty($staff_id)) {
+            $stQ = $conn->prepare("SELECT full_name FROM staff WHERE staff_id = ? LIMIT 1");
+            if ($stQ) {
+                $stQ->bind_param("s", $staff_id);
+                $stQ->execute();
+                $stRow = $stQ->get_result()->fetch_assoc();
+                if ($stRow) $resolvedName = $stRow['full_name'];
+                $stQ->close();
+            }
+        }
+        $cleanName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $resolvedName ?: ($staff_id ?: $search));
+        $staffLabel = $cleanName . "_";
+    }
+
+    if (!empty($from) && !empty($to)) {
+        $dateLabel = ($from === $to) ? $from : "{$from}_to_{$to}";
+    } elseif (!empty($from)) {
+        $dateLabel = "from_{$from}";
+    } elseif (!empty($to)) {
+        $dateLabel = "to_{$to}";
+    } elseif (!empty($month) && $month !== 'all') {
+        $dateLabel = $month;
+    } else {
+        $dateLabel = ($month === 'all') ? 'all_time' : date('Y-m-d');
+    }
+
+    $fileBase = "attendance_{$staffLabel}{$dateLabel}";
 
     if ($isZip) {
         $zipData = createZipArchive([
-            "attendance_records_{$fileLabel}.csv" => $csvData
+            "{$fileBase}.csv" => $csvData
         ]);
         if ($zipData !== false && strlen($zipData) > 0) {
-            $zipFilename = "attendance_records_{$fileLabel}.zip";
+            $zipFilename = "{$fileBase}.zip";
             header('Content-Type: application/zip');
             header('Content-Disposition: attachment; filename="' . $zipFilename . '"');
             header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
@@ -474,9 +530,8 @@ if ($action === 'attendance_excel' || $action === 'attendance_download') {
             echo $zipData;
             exit;
         }
-        // Fallback: stream uncompressed CSV if ZipArchive is unavailable
     }
-    $filename = "attendance_records_{$fileLabel}.csv";
+    $filename = "{$fileBase}.csv";
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');

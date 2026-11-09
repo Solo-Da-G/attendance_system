@@ -201,7 +201,12 @@ if ($staff_id) {
     .verification-tabs {
         display: flex; gap: 6px; justify-content: center;
         background: var(--surface-alt); padding: 5px; border-radius: 14px;
-        margin: 0 auto 18px; max-width: 320px; border: 1px solid var(--border);
+        margin: 0 auto 18px; max-width: 440px; border: 1px solid var(--border);
+    }
+    @keyframes cardPulse {
+        0% { transform: scale(0.96); opacity: 0.8; }
+        50% { transform: scale(1.08); opacity: 0.2; }
+        100% { transform: scale(0.96); opacity: 0.8; }
     }
     .ver-tab-btn {
         flex: 1; padding: 8px 12px; border: none; border-radius: 10px;
@@ -702,6 +707,9 @@ if ($staff_id) {
             <button type="button" class="ver-tab-btn" id="tabBioBtn" onclick="switchClockMode('thumbprint')">
                 <span>👆</span> Thumbprint
             </button>
+            <button type="button" class="ver-tab-btn" id="tabCardBtn" onclick="switchClockMode('card')">
+                <span>💳</span> E-Card / Badge
+            </button>
         </div>
 
         <!-- 1. FACE VERIFICATION SECTION -->
@@ -727,6 +735,30 @@ if ($staff_id) {
                     </svg>
                 </div>
                 <div id="bioDeviceStatus" style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px;text-align:center;">Checking fingerprint sensor…</div>
+            </div>
+        </div>
+
+        <!-- 3. E-CARD / RFID BADGE SECTION -->
+        <div id="cardSection" style="display:none;">
+            <h3 style="text-align:center;">💳 E-Card &amp; RFID Badge Clocking</h3>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:14px;">Tap your RFID smart card on the USB reader or phone NFC sensor</p>
+            
+            <div id="card-portal" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 0 16px;">
+                <div class="card-tap-pad" id="cardTapPad" onclick="focusCardInput()" title="Tap Card on Reader" style="width:140px; height:140px; border-radius:28px; background:linear-gradient(135deg, #4f46e5, #7c3aed); display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; cursor:pointer; box-shadow:0 12px 28px rgba(79,70,229,0.35); transition:all 0.25s ease; position:relative; overflow:hidden;">
+                    <span style="font-size:46px; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.2));">💳</span>
+                    <span style="font-size:12px; font-weight:800; margin-top:4px; letter-spacing:0.5px; text-transform:uppercase;">TAP CARD</span>
+                    <div class="card-pulse-ring" style="position:absolute; inset:0; border-radius:28px; border:2px solid rgba(255,255,255,0.4); animation:cardPulse 2s infinite;"></div>
+                </div>
+                <div id="cardReaderStatus" style="font-size:13px; font-weight:700; color:#4f46e5; margin:14px 0 10px; text-align:center;">
+                    Ready! Tap card on reader or enter badge ID below
+                </div>
+
+                <div style="width:100%; max-width:320px; display:flex; gap:8px; margin-top:4px;">
+                    <input type="text" id="cardUidInput" placeholder="Card UID or Staff ID..." autocomplete="off" style="flex:1; padding:12px 14px; border:2px solid #cbd5e1; border-radius:12px; font-size:14px; font-weight:600; text-align:center; outline:none; transition:border-color 0.2s;" onkeydown="handleCardInputKey(event)">
+                    <button type="button" id="cardClockSubmitBtn" onclick="submitCardClock()" style="padding:0 18px; background:#4f46e5; color:white; border:none; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; box-shadow:0 4px 12px rgba(79,70,229,0.3);">
+                        Clock
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -2652,8 +2684,10 @@ function switchClockMode(mode) {
     currentClockMode = mode;
     const tabFace = document.getElementById('tabFaceBtn');
     const tabBio = document.getElementById('tabBioBtn');
+    const tabCard = document.getElementById('tabCardBtn');
     const faceSec = document.getElementById('faceSection');
     const bioSec = document.getElementById('thumbprintSection');
+    const cardSec = document.getElementById('cardSection');
     const faceBtn = document.getElementById('clockBtn');
     const bioBtn = document.getElementById('bioClockBtn');
     const bioReg = document.getElementById('bioRegControl');
@@ -2662,17 +2696,21 @@ function switchClockMode(mode) {
     if (mode === 'face') {
         if (tabFace) tabFace.classList.add('active');
         if (tabBio) tabBio.classList.remove('active');
+        if (tabCard) tabCard.classList.remove('active');
         if (faceSec) faceSec.style.display = 'block';
         if (bioSec) bioSec.style.display = 'none';
+        if (cardSec) cardSec.style.display = 'none';
         if (faceBtn) faceBtn.style.display = 'block';
         if (bioBtn) bioBtn.style.display = 'none';
         if (bioReg) bioReg.style.display = 'none';
         if (faceStatus) faceStatus.style.display = 'block';
-    } else {
+    } else if (mode === 'thumbprint') {
         if (tabFace) tabFace.classList.remove('active');
         if (tabBio) tabBio.classList.add('active');
+        if (tabCard) tabCard.classList.remove('active');
         if (faceSec) faceSec.style.display = 'none';
         if (bioSec) bioSec.style.display = 'block';
+        if (cardSec) cardSec.style.display = 'none';
         if (faceBtn) faceBtn.style.display = 'none';
         if (bioBtn) bioBtn.style.display = 'block';
         if (faceStatus) faceStatus.style.display = 'none';
@@ -2682,6 +2720,19 @@ function switchClockMode(mode) {
             TDSBiometric.prefetchRegister();
             TDSBiometric.warmupGps();
         }
+    } else if (mode === 'card') {
+        if (tabFace) tabFace.classList.remove('active');
+        if (tabBio) tabBio.classList.remove('active');
+        if (tabCard) tabCard.classList.add('active');
+        if (faceSec) faceSec.style.display = 'none';
+        if (bioSec) bioSec.style.display = 'none';
+        if (cardSec) cardSec.style.display = 'block';
+        if (faceBtn) faceBtn.style.display = 'none';
+        if (bioBtn) bioBtn.style.display = 'none';
+        if (bioReg) bioReg.style.display = 'none';
+        if (faceStatus) faceStatus.style.display = 'none';
+        focusCardInput();
+        startNfcReader();
     }
 }
 
@@ -2794,6 +2845,180 @@ async function processBiometricClock() {
         if (resultBox) {
             resultBox.innerHTML = '<div style="background:#fef2f2;color:#991b1b;border:1.5px solid #ef4444;padding:12px;border-radius:12px;margin-top:14px;font-weight:600;">❌ ' + err.message + '</div>';
         }
+    }
+}
+
+// ── E-Card / RFID Smart Badge Clocking ──────────────────────────
+let nfcScanning = false;
+let nfcReaderInstance = null;
+
+function focusCardInput() {
+    const input = document.getElementById('cardUidInput');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+
+function handleCardInputKey(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        submitCardClock();
+    }
+}
+
+// Global USB RFID reader keyboard wedge interceptor
+let lastKeyTime = Date.now();
+let readerBuffer = '';
+window.addEventListener('keydown', function(e) {
+    if (currentClockMode !== 'card') return;
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.id === 'cardUidInput') return;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+
+    const now = Date.now();
+    if (now - lastKeyTime > 300) {
+        readerBuffer = '';
+    }
+    lastKeyTime = now;
+
+    if (e.key === 'Enter') {
+        if (readerBuffer.length >= 3) {
+            e.preventDefault();
+            const input = document.getElementById('cardUidInput');
+            if (input) input.value = readerBuffer;
+            readerBuffer = '';
+            submitCardClock();
+        }
+    } else if (e.key && e.key.length === 1) {
+        readerBuffer += e.key;
+    }
+});
+
+async function startNfcReader() {
+    if (!('NDEFReader' in window)) return;
+    if (nfcScanning) return;
+    try {
+        nfcReaderInstance = new NDEFReader();
+        await nfcReaderInstance.scan();
+        nfcScanning = true;
+        const statusText = document.getElementById('cardReaderStatus');
+        if (statusText) statusText.innerHTML = '<span style="color:#10b981;">📲 Contactless NFC Active: Tap card against device</span>';
+        nfcReaderInstance.onreading = event => {
+            const serial = event.serialNumber || (event.message && event.message.records && event.message.records[0] ? event.message.records[0].data : '');
+            if (serial) {
+                const cleanSerial = String(serial).replace(/[:\s]/g, '').toUpperCase();
+                const input = document.getElementById('cardUidInput');
+                if (input) input.value = cleanSerial;
+                submitCardClock();
+            }
+        };
+    } catch (e) {
+        console.log('Web NFC not started/declined:', e);
+    }
+}
+
+async function submitCardClock() {
+    const input = document.getElementById('cardUidInput');
+    const submitBtn = document.getElementById('cardClockSubmitBtn');
+    const pad = document.getElementById('cardTapPad');
+    const statusText = document.getElementById('cardReaderStatus');
+    const resultBox = document.getElementById('apiResult');
+
+    const cardUid = input ? input.value.trim() : '';
+    if (!cardUid) {
+        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">⚠️ Please tap your card on the reader or enter badge ID</span>';
+        if (input) input.focus();
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+    }
+    if (statusText) statusText.innerHTML = '<span style="color:#4f46e5;">⏳ Verifying card with server...</span>';
+    if (pad) {
+        pad.style.transform = 'scale(0.95)';
+        pad.style.boxShadow = '0 0 25px rgba(79,70,229,0.7)';
+    }
+
+    try {
+        let lat = null, lng = null;
+        if (typeof userLat !== 'undefined' && userLat && typeof userLng !== 'undefined' && userLng) {
+            lat = userLat;
+            lng = userLng;
+        } else if (navigator.geolocation) {
+            try {
+                const pos = await new Promise((res, rej) => {
+                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000, maximumAge: 60000 });
+                });
+                lat = pos.coords.latitude;
+                lng = pos.coords.longitude;
+            } catch (gErr) {}
+        }
+
+        const resp = await fetch('card_clock.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ card_uid: cardUid, latitude: lat, longitude: lng })
+        });
+        const res = await resp.json();
+
+        if (res.status === 'success') {
+            if (window.TDSAudio && TDSAudio.playSuccess) TDSAudio.playSuccess();
+            if (pad) {
+                pad.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                pad.style.transform = 'scale(1.05)';
+            }
+            if (statusText) statusText.innerHTML = `<span style="color:#10b981;font-weight:800;">${res.message}</span>`;
+            if (resultBox) {
+                resultBox.innerHTML = `
+                    <div style="background:#ecfdf5; color:#065f46; border:2px solid #10b981; padding:18px; border-radius:18px; margin-top:14px; text-align:center; box-shadow:0 8px 24px rgba(16,185,129,0.2);">
+                        <div style="font-size:32px; margin-bottom:4px;">🎉</div>
+                        <h3 style="margin:0 0 6px; font-size:18px; color:#065f46;">${res.action === 'in' ? 'Clock-In Successful!' : 'Clock-Out Successful!'}</h3>
+                        <p style="margin:0; font-size:15px; font-weight:700;">${res.staff_name} <span style="font-size:13px; opacity:0.8;">(${res.staff_id})</span></p>
+                        <p style="margin:4px 0 0; font-size:13px; opacity:0.85;">⏰ Time: <strong>${res.time}</strong> ${res.total_hours ? '• Total: <strong>' + res.total_hours + ' hrs</strong>' : ''}</p>
+                    </div>
+                `;
+            }
+            if (input) input.value = '';
+            setTimeout(function() {
+                location.reload();
+            }, 2500);
+        } else if (res.status === 'info') {
+            if (statusText) statusText.innerHTML = `<span style="color:#2563eb;font-weight:700;">${res.message}</span>`;
+            if (resultBox) {
+                resultBox.innerHTML = `<div style="background:#eff6ff;color:#1e40af;border:1.5px solid #3b82f6;padding:14px;border-radius:14px;margin-top:14px;font-weight:600;">${res.message}</div>`;
+            }
+            if (input) input.value = '';
+        } else {
+            if (window.TDSAudio && TDSAudio.playError) TDSAudio.playError();
+            if (pad) {
+                pad.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
+                pad.style.transform = 'scale(1)';
+            }
+            if (statusText) statusText.innerHTML = `<span style="color:#ef4444;font-weight:700;">${res.message}</span>`;
+            if (resultBox) {
+                resultBox.innerHTML = `<div style="background:#fef2f2;color:#991b1b;border:1.5px solid #ef4444;padding:14px;border-radius:14px;margin-top:14px;font-weight:600;">${res.message}</div>`;
+            }
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }
+    } catch (e) {
+        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">Connection error: ' + e.message + '</span>';
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Clock';
+        }
+        setTimeout(function() {
+            if (pad && pad.style.background.indexOf('10b981') === -1) {
+                pad.style.background = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
+                pad.style.transform = 'scale(1)';
+            }
+        }, 3000);
     }
 }
 
