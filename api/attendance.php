@@ -382,7 +382,7 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
 
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px; font-size:13px; color:#64748b;">
     <div>Showing <strong><?php echo (int)$rowCount; ?></strong> record(s) <?php if ($totalHoursFiltered > 0) echo "• Total Hours: <strong>" . number_format($totalHoursFiltered, 2) . " hrs</strong>"; ?></div>
-    <div>&copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu</div>
+    <div>&copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon</div>
   </div>
 </div>
 

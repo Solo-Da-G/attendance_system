@@ -2230,6 +2230,131 @@ body.login-page {
   }
 }
 
+
+/* ============================================================
+   BACKGROUND COLOR MOODS (Themes)
+   ============================================================ */
+/* 1. Midnight Dark */
+body.theme-midnight,
+body.dark-mode:not([class*="theme-"]) {
+  --bg: #090d16;
+  --surface: #0f172a;
+  --surface-alt: #1e293b;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --primary: #3b82f6;
+  --primary-glow: rgba(59, 130, 246, 0.35);
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+body.theme-midnight::before,
+body.dark-mode:not([class*="theme-"])::before {
+  background:
+    radial-gradient(900px 600px at 15% 10%, rgba(59, 130, 246, 0.15), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, rgba(99, 102, 241, 0.12), transparent 50%),
+    radial-gradient(900px 600px at 50% 90%, rgba(16, 185, 129, 0.08), transparent 55%) !important;
+}
+
+/* 2. Ocean Blue */
+body.theme-ocean {
+  --bg: #051329;
+  --surface: #0b2249;
+  --surface-alt: #133369;
+  --border: rgba(56, 189, 248, 0.18);
+  --text: #f0f9ff;
+  --text-muted: #7dd3fc;
+  --primary: #0284c7;
+  --primary-glow: rgba(2, 132, 199, 0.4);
+  background-color: #051329 !important;
+  color: #f0f9ff !important;
+}
+
+body.theme-ocean::before {
+  background:
+    radial-gradient(900px 600px at 15% 10%, rgba(14, 165, 233, 0.22), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, rgba(37, 99, 235, 0.18), transparent 50%),
+    radial-gradient(900px 600px at 50% 90%, rgba(6, 182, 212, 0.15), transparent 55%) !important;
+}
+
+/* 3. Emerald Oasis */
+body.theme-emerald {
+  --bg: #031713;
+  --surface: #092e26;
+  --surface-alt: #0f4438;
+  --border: rgba(52, 211, 153, 0.18);
+  --text: #ecfdf5;
+  --text-muted: #6ee7b7;
+  --primary: #059669;
+  --primary-glow: rgba(16, 185, 129, 0.4);
+  background-color: #031713 !important;
+  color: #ecfdf5 !important;
+}
+
+body.theme-emerald::before {
+  background:
+    radial-gradient(900px 600px at 15% 10%, rgba(16, 185, 129, 0.22), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, rgba(5, 150, 105, 0.18), transparent 50%),
+    radial-gradient(900px 600px at 50% 90%, rgba(52, 211, 153, 0.12), transparent 55%) !important;
+}
+
+/* 4. Royal Amethyst */
+body.theme-amethyst {
+  --bg: #0e0724;
+  --surface: #1d1045;
+  --surface-alt: #2c1a63;
+  --border: rgba(192, 132, 252, 0.18);
+  --text: #faf5ff;
+  --text-muted: #d8b4fe;
+  --primary: #7c3aed;
+  --primary-glow: rgba(124, 58, 237, 0.4);
+  background-color: #0e0724 !important;
+  color: #faf5ff !important;
+}
+
+body.theme-amethyst::before {
+  background:
+    radial-gradient(900px 600px at 15% 10%, rgba(139, 92, 246, 0.25), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, rgba(217, 70, 239, 0.18), transparent 50%),
+    radial-gradient(900px 600px at 50% 90%, rgba(124, 58, 237, 0.15), transparent 55%) !important;
+}
+
+/* 5. Sunset Amber */
+body.theme-sunset {
+  --bg: #180d04;
+  --surface: #2c190a;
+  --surface-alt: #442711;
+  --border: rgba(251, 191, 36, 0.18);
+  --text: #fffbeb;
+  --text-muted: #fcd34d;
+  --primary: #d97706;
+  --primary-glow: rgba(217, 119, 6, 0.4);
+  background-color: #180d04 !important;
+  color: #fffbeb !important;
+}
+
+body.theme-sunset::before {
+  background:
+    radial-gradient(900px 600px at 15% 10%, rgba(245, 158, 11, 0.22), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, rgba(234, 88, 12, 0.18), transparent 50%),
+    radial-gradient(900px 600px at 50% 90%, rgba(251, 191, 36, 0.12), transparent 55%) !important;
+}
+
+/* 6. Clean Light */
+body.theme-light {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-alt: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --primary: #10439f;
+  --primary-glow: rgba(16, 67, 159, 0.25);
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
 /* ============================================================
    GLOBAL & COMPREHENSIVE DARK MODE SYSTEM
    ============================================================ */

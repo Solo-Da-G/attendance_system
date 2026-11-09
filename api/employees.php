@@ -448,7 +448,7 @@ $total_employees = $result ? $result->num_rows : 0;
     </div>
 
     <div class="footer">
-        &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu
+        &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon
     </div>
 </div>
 

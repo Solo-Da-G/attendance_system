@@ -669,6 +669,12 @@ if ($staff_id) {
                     </div>
                 </div>
 
+                <!-- Theme Mood Quick Button -->
+                <button type="button" onclick="openThemeMoodModal(event)" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:16px; padding:0 16px; height:48px; display:inline-flex; align-items:center; gap:8px; cursor:pointer; color:white; font-size:13px; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:all 0.2s;" title="Change Dashboard Background Color Mood">
+                    <span style="font-size:18px;">🎨</span>
+                    <span id="dashMoodLabel">Theme Mood</span>
+                </button>
+
                 <!-- Notifications Bell -->
                 <button onclick="toggleInboxModal()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:16px; width:48px; height:48px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; box-shadow:0 4px 12px rgba(0,0,0,0.15); transition:all 0.2s;" aria-label="Notifications">
                     <span style="font-size:20px;">🔔</span>
@@ -1608,7 +1614,7 @@ if ($staff_id) {
     <?php endif; ?>
 
     <div class="footer">
-        &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu
+        &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon
     </div>
   </div>
 

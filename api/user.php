@@ -219,7 +219,7 @@ $staff_users = $conn->query("SELECT id, staff_id, full_name, email, phone, branc
     </div>
 
     <div class="footer">
-      &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu
+      &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon
     </div>
 </div>
 

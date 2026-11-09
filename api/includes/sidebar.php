@@ -223,11 +223,11 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 
         <div class="nav-footer">
             <div class="nav-divider"></div>
-            <a href="#" class="nav-item" id="darkModeToggle">
+            <a href="#" class="nav-item" id="themeMoodBtn" onclick="openThemeMoodModal(event)" title="Choose Dashboard Background Color Mood">
                 <span class="t-icon nav-icon" id="sidebarThemeIcon">
-                    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                 </span>
-                <span class="nav-text" id="sidebarThemeText">Dark Mode</span>
+                <span class="nav-text" id="sidebarThemeText">🎨 Theme Mood</span>
             </a>
             <div class="mobile-drawer-install-wrap" style="margin: 8px 12px 10px;">
                 <button type="button" id="mobileDrawerInstallBtn" class="app-install-trigger" style="width:100%; display:none; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, #10439f, #1e40af); color:#ffffff; padding:11px 14px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.2); font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(16,67,159,0.35);">
@@ -243,6 +243,68 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
             </a>
         </div>
     </nav>
+
+<!-- Global Theme Moods Selector Modal -->
+<div id="themeMoodModal" class="theme-mood-modal" style="display:none; position:fixed; inset:0; background:rgba(6,13,31,0.82); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:10005; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:var(--surface, #ffffff); color:var(--text, #0f172a); border:1px solid var(--border, #e2e8f0); border-radius:26px; padding:30px 24px; max-width:520px; width:100%; box-shadow:0 25px 60px rgba(0,0,0,0.45); position:relative; box-sizing:border-box;">
+        <button type="button" onclick="closeThemeMoodModal()" style="position:absolute; top:16px; right:18px; background:transparent; border:none; font-size:26px; color:var(--text-muted, #64748b); cursor:pointer; line-height:1;" title="Close">&times;</button>
+        <div style="text-align:center; margin-bottom:20px;">
+            <div style="font-size:38px; margin-bottom:6px;">🎨</div>
+            <h3 style="margin:0 0 5px; font-size:21px; font-weight:800; color:var(--text, #0f172a);">Dashboard Theme Moods</h3>
+            <p style="margin:0; font-size:13.5px; color:var(--text-muted, #64748b);">Choose a background color mood that suits your preference</p>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:12px; margin-bottom:22px;">
+            <!-- 1. Daylight -->
+            <div class="mood-card" data-mood="light" onclick="selectThemeMood('light')" style="background:#ffffff; border:2px solid #e2e8f0; border-radius:16px; padding:14px 10px; cursor:pointer; text-align:center; transition:all 0.2s;">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #f8fafc, #e2e8f0); margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:18px; border:1px solid #cbd5e1;">☀️</div>
+                <div style="font-size:13px; font-weight:800; color:#0f172a;">Daylight</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Clean Classic</div>
+            </div>
+
+            <!-- 2. Midnight -->
+            <div class="mood-card" data-mood="midnight" onclick="selectThemeMood('midnight')" style="background:#090d16; border:2px solid rgba(255,255,255,0.1); border-radius:16px; padding:14px 10px; cursor:pointer; text-align:center; transition:all 0.2s;">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #0f172a, #1e293b); margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:18px; border:1px solid #334155;">🌙</div>
+                <div style="font-size:13px; font-weight:800; color:#ffffff;">Midnight</div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">Dark Space</div>
+            </div>
+
+            <!-- 3. Ocean Blue -->
+            <div class="mood-card" data-mood="ocean" onclick="selectThemeMood('ocean')" style="background:#051329; border:2px solid rgba(56,189,248,0.25); border-radius:16px; padding:14px 10px; cursor:pointer; text-align:center; transition:all 0.2s;">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #0284c7, #0369a1); margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:18px; border:1px solid #38bdf8;">🌊</div>
+                <div style="font-size:13px; font-weight:800; color:#ffffff;">Ocean Blue</div>
+                <div style="font-size:11px; color:#7dd3fc; margin-top:2px;">Deep Sapphire</div>
+            </div>
+
+            <!-- 4. Emerald Oasis -->
+            <div class="mood-card" data-mood="emerald" onclick="selectThemeMood('emerald')" style="background:#031713; border:2px solid rgba(52,211,153,0.25); border-radius:16px; padding:14px 10px; cursor:pointer; text-align:center; transition:all 0.2s;">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #059669, #047857); margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:18px; border:1px solid #34d399;">🌲</div>
+                <div style="font-size:13px; font-weight:800; color:#ffffff;">Emerald</div>
+                <div style="font-size:11px; color:#6ee7b7; margin-top:2px;">Forest Oasis</div>
+            </div>
+
+            <!-- 5. Royal Amethyst -->
+            <div class="mood-card" data-mood="amethyst" onclick="selectThemeMood('amethyst')" style="background:#0e0724; border:2px solid rgba(192,132,252,0.25); border-radius:16px; padding:14px 10px; cursor:pointer; text-align:center; transition:all 0.2s;">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #7c3aed, #6d28d9); margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:18px; border:1px solid #c084fc;">🔮</div>
+                <div style="font-size:13px; font-weight:800; color:#ffffff;">Amethyst</div>
+                <div style="font-size:11px; color:#d8b4fe; margin-top:2px;">Cyber Violet</div>
+            </div>
+
+            <!-- 6. Sunset Amber -->
+            <div class="mood-card" data-mood="sunset" onclick="selectThemeMood('sunset')" style="background:#180d04; border:2px solid rgba(251,191,36,0.25); border-radius:16px; padding:14px 10px; cursor:pointer; text-align:center; transition:all 0.2s;">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #d97706, #b45309); margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:18px; border:1px solid #fbbf24;">🌇</div>
+                <div style="font-size:13px; font-weight:800; color:#ffffff;">Sunset</div>
+                <div style="font-size:11px; color:#fcd34d; margin-top:2px;">Warm Amber</div>
+            </div>
+        </div>
+
+        <div style="text-align:center;">
+            <button type="button" onclick="closeThemeMoodModal()" style="padding:10px 28px; border-radius:12px; background:var(--primary, #10439f); color:white; border:none; font-weight:700; font-size:13.5px; cursor:pointer; box-shadow:0 4px 12px rgba(16,67,159,0.3);">
+                Apply &amp; Done
+            </button>
+        </div>
+    </div>
+</div>
 </aside>
 
 <!-- Floating Quick Navigation Pill (For Installed Desktop App & Large Screens) -->
@@ -408,52 +470,89 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         if (e.key === 'Escape') closeDrawer();
     });
 
-    // Dark Mode Controller with SVG Icons & Smooth Transition
-    const themeToggles = [
-        document.getElementById('darkModeToggle'),
-        document.getElementById('mobileThemeToggle')
-    ];
-
-    const sunSvg = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-    const moonSvg = '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-
-    function applyTheme(isDark) {
-        if (isDark) {
-            document.body.classList.add('dark-mode');
-            const sideIcon = document.getElementById('sidebarThemeIcon');
-            const sideText = document.getElementById('sidebarThemeText');
-            const mobIcon = document.getElementById('mobileThemeIcon');
-            if (sideIcon) sideIcon.innerHTML = sunSvg;
-            if (sideText) sideText.textContent = 'Light Mode';
-            if (mobIcon) mobIcon.innerHTML = sunSvg;
-        } else {
-            document.body.classList.remove('dark-mode');
-            const sideIcon = document.getElementById('sidebarThemeIcon');
-            const sideText = document.getElementById('sidebarThemeText');
-            const mobIcon = document.getElementById('mobileThemeIcon');
-            if (sideIcon) sideIcon.innerHTML = moonSvg;
-            if (sideText) sideText.textContent = 'Dark Mode';
-            if (mobIcon) mobIcon.innerHTML = moonSvg;
+    // Theme Mood & Background Controller
+    window.openThemeMoodModal = function(e) {
+        if (e) e.preventDefault();
+        const modal = document.getElementById('themeMoodModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            updateMoodActiveCards();
         }
-    }
+    };
 
-    // Initialize Theme from localStorage or system preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        applyTheme(true);
-    } else {
-        applyTheme(false);
-    }
+    window.closeThemeMoodModal = function() {
+        const modal = document.getElementById('themeMoodModal');
+        if (modal) modal.style.display = 'none';
+    };
 
-    themeToggles.forEach(btn => {
-        if (!btn) return;
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const isDark = !document.body.classList.contains('dark-mode');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            applyTheme(isDark);
+    window.selectThemeMood = function(mood) {
+        applyThemeMood(mood);
+        updateMoodActiveCards();
+    };
+
+    function updateMoodActiveCards() {
+        const currentMood = localStorage.getItem('tds_theme_mood') || (localStorage.getItem('theme') === 'dark' ? 'midnight' : 'light');
+        document.querySelectorAll('.mood-card').forEach(card => {
+            const m = card.getAttribute('data-mood');
+            if (m === currentMood) {
+                card.style.borderColor = '#2563eb';
+                card.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.4)';
+            } else {
+                card.style.borderColor = (m === 'light') ? '#e2e8f0' : 'rgba(255,255,255,0.15)';
+                card.style.boxShadow = 'none';
+            }
         });
+    }
+
+    window.applyThemeMood = function(mood) {
+        document.body.classList.remove('theme-light', 'theme-midnight', 'theme-ocean', 'theme-emerald', 'theme-amethyst', 'theme-sunset', 'dark-mode');
+        document.documentElement.classList.remove('theme-light', 'theme-midnight', 'theme-ocean', 'theme-emerald', 'theme-amethyst', 'theme-sunset', 'dark-mode');
+
+        if (mood === 'light') {
+            document.body.classList.add('theme-light');
+            document.documentElement.classList.add('theme-light');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.body.classList.add('dark-mode', 'theme-' + mood);
+            document.documentElement.classList.add('dark-mode', 'theme-' + mood);
+            localStorage.setItem('theme', 'dark');
+        }
+        localStorage.setItem('tds_theme_mood', mood);
+
+        const moodLabels = {
+            'light': '☀️ Daylight',
+            'midnight': '🌙 Midnight',
+            'ocean': '🌊 Ocean Blue',
+            'emerald': '🌲 Emerald',
+            'amethyst': '🔮 Amethyst',
+            'sunset': '🌇 Sunset'
+        };
+
+        const sideText = document.getElementById('sidebarThemeText');
+        if (sideText) sideText.textContent = moodLabels[mood] || '🎨 Theme Mood';
+        const dashLabel = document.getElementById('dashMoodLabel');
+        if (dashLabel) dashLabel.textContent = moodLabels[mood] || 'Theme Mood';
+    };
+
+    // Initialize Theme Mood from localStorage immediately
+    const initialMood = localStorage.getItem('tds_theme_mood') || (localStorage.getItem('theme') === 'dark' ? 'midnight' : 'light');
+    applyThemeMood(initialMood);
+
+    // Close modal on click outside
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('themeMoodModal');
+        if (modal && e.target === modal) {
+            closeThemeMoodModal();
+        }
     });
+
+    const mobToggle = document.getElementById('mobileThemeToggle');
+    if (mobToggle) {
+        mobToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            openThemeMoodModal(e);
+        });
+    }
 
     window.toggleMobileDrawer = toggleDrawer;
     window.closeMobileDrawer = closeDrawer;

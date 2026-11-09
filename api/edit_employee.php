@@ -475,7 +475,7 @@ if (isset($_POST['update_employee'])) {
     </form>
 
     <div class="footer" style="margin-top: 40px;">
-        &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Mbewu
+        &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon
     </div>
 <script>
 function togglePassVisibility(inputId, btn) {

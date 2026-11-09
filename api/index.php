@@ -530,7 +530,7 @@ body {
 .auth-card {
     background: rgba(255, 255, 255, 0.98);
     border-radius: 28px;
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.25), 0 0 40px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 50px rgba(37, 99, 235, 0.22);
     width: 100%;
     max-width: 470px;
     padding: 38px 34px;
@@ -1178,6 +1178,18 @@ body {
                 <p class="slide-desc">Seamlessly clock in with Android &amp; PC thumbprints, Passkeys, and standalone ZKTeco biometric terminals.</p>
             </div>
 
+            <!-- SLIDE 5: Smart E-Card & RFID Badges -->
+            <div class="carousel-slide" data-slide="4">
+                <div class="slide-visual-card">
+                    <img src="/asset/img/slide_ecard_3d.jpg" alt="Smart E-Card &amp; RFID Badges">
+                    <div class="slide-badge">
+                        <span>💳</span> Sub-Second Card Tap
+                    </div>
+                </div>
+                <h2 class="slide-title">Smart E-Card &amp; <span class="highlight">RFID Badges</span></h2>
+                <p class="slide-desc">Instant touchless attendance verification with physical smart cards, NFC employee tags, and USB desktop badge readers.</p>
+            </div>
+
         </div>
 
         <!-- Carousel Navigation & Thick Modern Arrows -->
@@ -1190,6 +1202,7 @@ body {
                 <div class="carousel-dot" onclick="goToSlide(1)"></div>
                 <div class="carousel-dot" onclick="goToSlide(2)"></div>
                 <div class="carousel-dot" onclick="goToSlide(3)"></div>
+                <div class="carousel-dot" onclick="goToSlide(4)"></div>
             </div>
             <button class="nav-arrow-btn" onclick="nextSlide()" aria-label="Next Slide">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1223,6 +1236,17 @@ body {
             </div>
             <h2>Welcome Back 👋</h2>
             <p>Select your preferred authentication method</p>
+            <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:12px 0 6px;">
+                <span style="background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.22); color:#2563eb; padding:4px 10px; border-radius:99px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+                    📸 Face AI
+                </span>
+                <span style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.22); color:#059669; padding:4px 10px; border-radius:99px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+                    👆 Thumbprint
+                </span>
+                <span style="background:rgba(124,58,237,0.08); border:1px solid rgba(124,58,237,0.22); color:#7c3aed; padding:4px 10px; border-radius:99px; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+                    💳 Smart E-Card
+                </span>
+            </div>
         </div>
 
         <form method="POST" action="index.php" autocomplete="off" id="loginForm">
@@ -1288,6 +1312,15 @@ body {
             </div>
             <div class="bio-hero-badge">Instant</div>
         </button>
+
+        <!-- E-Card Active Notice Banner -->
+        <div style="margin-top:14px; background:linear-gradient(135deg, rgba(79,70,229,0.07), rgba(124,58,237,0.05)); border:1.5px dashed rgba(99,102,241,0.32); border-radius:16px; padding:12px 14px; display:flex; align-items:center; gap:12px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg, #4f46e5, #7c3aed); display:flex; align-items:center; justify-content:center; color:white; font-size:18px; flex-shrink:0; box-shadow:0 4px 10px rgba(79,70,229,0.3);">💳</div>
+            <div style="flex:1; text-align:left;">
+                <div style="font-size:12.5px; font-weight:800; color:#312e81;">E-Card &amp; Smart Badge Active</div>
+                <div style="font-size:11.5px; color:#6366f1; line-height:1.35; margin-top:2px;">Tap card on USB reader or phone NFC to punch attendance in &lt;150ms</div>
+            </div>
+        </div>
 
         <div id="biometricFeedback" class="biometric-feedback-box" style="display:none;"></div>
 

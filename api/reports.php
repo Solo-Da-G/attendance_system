@@ -108,6 +108,23 @@ if (!empty($selected_staff_id)) {
 <title>Attendance Report</title>
 <link rel="stylesheet" href="/asset/css/style.css">
 <style>
+    @media (max-width: 1024px) {
+        .full-screen-report {
+            padding: 16px !important;
+            width: 100% !important;
+        }
+    }
+    .full-screen-report .table-scroll {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    .full-screen-report .table-scroll table {
+        width: 100% !important;
+        min-width: 950px;
+    }
+
     .preset-pill {
         padding: 6px 12px;
         background: #f1f5f9;
@@ -148,17 +165,17 @@ if (!empty($selected_staff_id)) {
     }
 </style>
 </head>
-<body>
+<body class="app-page reports-page">
 
 <?php include(__DIR__ . "/includes/sidebar.php"); ?>
 
-<div class="content">
+<div class="content full-screen-report" style="width: calc(100% - var(--sidebar-w)); max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; min-height: 100vh; padding: 24px 32px;">
   <div style="background: linear-gradient(135deg, #0f172a, #1e293b); color:white; padding:32px; border-radius:24px; margin-bottom:22px;">
     <h2 style="margin:0; font-size:28px;">📊 Attendance Reports &amp; Analytics</h2>
     <p style="opacity:0.75; margin-top:10px;">Select an individual employee, filter date ranges (day-to-day or month-to-month), and export individual Excel records</p>
   </div>
 
-  <div class="cards" style="margin-top:0; margin-bottom:18px;">
+  <div class="cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:18px; width:100%; box-sizing:border-box; margin-top:0; margin-bottom:20px;">
     <div class="card"><h3>Total Records</h3><p><?php echo (int)$stat_total; ?></p></div>
     <div class="card"><h3>Today</h3><p><?php echo (int)$stat_today; ?></p></div>
     <div class="card"><h3>Total Hours (All-Time)</h3><p style="font-size: 20px;"><?php echo formatHours($stat_hours); ?></p></div>
@@ -484,14 +501,14 @@ if (!empty($selected_staff_id)) {
     </div>
   </div>
 
-  <div class="summary" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px;">
+  <div class="summary" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px; padding:12px 0;">
     <div>Total Records: <strong><?php echo $totalRecords; ?></strong> | Total Days Worked: <strong><?php echo $distinctDays; ?></strong></div>
     <div>Total Hours Accumulated: <strong><?php echo formatHours($totalHoursAll); ?></strong></div>
   </div>
-</div>
 
-<div class="footer">
-  &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Collins
+  <div class="footer" style="text-align:center; margin-top:auto; padding:28px 0 16px; color:var(--text-muted); font-size:13px; border-top:1px solid var(--border); width:100%;">
+    &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon
+  </div>
 </div>
 
 <script>

@@ -94,7 +94,7 @@ function formatHours($decimal) {
   ?>
 
   <div class="footer">
-    &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon Collins
+    &copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon
   </div>
 </div>
 </body>
