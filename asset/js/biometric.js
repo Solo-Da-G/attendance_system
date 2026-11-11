@@ -113,7 +113,7 @@ const TDSBiometric = (function () {
                 () => {
                     resolve(_lastCoords || { latitude: null, longitude: null });
                 },
-                { enableHighAccuracy: true, timeout: 3500, maximumAge: 60000 }
+                { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
             );
         });
     }

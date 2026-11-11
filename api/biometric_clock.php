@@ -70,32 +70,100 @@ if ($current_hour >= 19) {
     exit;
 }
 
-// 3. Fast Geofence & Location Validation
+// 3. Fast & Watertight Geofence Validation
 $is_geofenced = 0;
 $branch_name  = $bio['branch'] ?? '';
-$target_lat   = !empty($bio['branch_lat']) ? (float)$bio['branch_lat'] : (!empty($bio['clock_lat']) ? (float)$bio['clock_lat'] : null);
-$target_lng   = !empty($bio['branch_lng']) ? (float)$bio['branch_lng'] : (!empty($bio['clock_lng']) ? (float)$bio['clock_lng'] : null);
-$radius       = !empty($bio['branch_radius']) ? (int)$bio['branch_radius'] : ((int)($bio['clock_radius'] ?? 300) ?: 300);
 
-if ($target_lat !== null && $target_lng !== null && $lat !== null && $lng !== null) {
+// Fetch all configured company branches
+$branchesList = [];
+$bQuery = $conn->query("SELECT branch_name, latitude, longitude, radius_meters FROM branches WHERE latitude IS NOT NULL AND longitude IS NOT NULL");
+if ($bQuery && $bQuery->num_rows > 0) {
+    while ($bRow = $bQuery->fetch_assoc()) {
+        $branchesList[] = $bRow;
+    }
+}
+
+// Also check individual employee coordinates if assigned
+if (!empty($bio['clock_lat']) && !empty($bio['clock_lng'])) {
+    $branchesList[] = [
+        'branch_name' => $branch_name ?: 'Assigned Location',
+        'latitude' => (float)$bio['clock_lat'],
+        'longitude' => (float)$bio['clock_lng'],
+        'radius_meters' => (int)($bio['clock_radius'] ?: 300)
+    ];
+}
+
+if (!empty($branchesList)) {
+    // If office branches are set, GPS location is MANDATORY!
+    if ($lat === null || $lng === null || ($lat == 0 && $lng == 0)) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "📍 Location Required: Please enable GPS / Location Services on your phone and allow location access in your browser to clock in."
+        ]);
+        exit;
+    }
+
     $earthRadius = 6371000; // in meters
     $latFrom = deg2rad($lat);
     $lonFrom = deg2rad($lng);
-    $latTo   = deg2rad($target_lat);
-    $lonTo   = deg2rad($target_lng);
 
+    // 1. Try to match employee's assigned branch specifically (exact or substring)
+    $targetBranch = null;
+    $cleanStaffBranch = strtolower(trim($branch_name));
+    foreach ($branchesList as $b) {
+        $cleanBName = strtolower(trim($b['branch_name']));
+        if ($cleanStaffBranch === $cleanBName || 
+            (!empty($cleanStaffBranch) && !empty($cleanBName) && (strpos($cleanStaffBranch, $cleanBName) !== false || strpos($cleanBName, $cleanStaffBranch) !== false)) ||
+            (strpos($cleanStaffBranch, 'allen') !== false && strpos($cleanBName, 'allen') !== false) ||
+            (strpos($cleanStaffBranch, 'benin') !== false && strpos($cleanBName, 'benin') !== false)) {
+            $targetBranch = $b;
+            break;
+        }
+    }
+
+    // 2. Find the closest branch to the employee's current GPS position
+    $closestBranch = null;
+    $minDistance = -1;
+
+    foreach ($branchesList as $b) {
+        $latTo = deg2rad((float)$b['latitude']);
+        $lonTo = deg2rad((float)$b['longitude']);
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+        $dist = $angle * $earthRadius;
+
+        if ($minDistance === -1 || $dist < $minDistance) {
+            $minDistance = $dist;
+            $closestBranch = $b;
+        }
+    }
+
+    $checkBranch = $targetBranch ?: $closestBranch;
+    $allowedRadius = (int)($checkBranch['radius_meters'] ?? 200);
+
+    // Distance to checkBranch
+    $latTo = deg2rad((float)$checkBranch['latitude']);
+    $lonTo = deg2rad((float)$checkBranch['longitude']);
     $latDelta = $latTo - $latFrom;
     $lonDelta = $lonTo - $lonFrom;
-
     $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
     $distance = $angle * $earthRadius;
 
-    if ($distance <= $radius) {
+    // Verify if inside assigned branch radius OR inside ANY company branch radius
+    if ($distance <= $allowedRadius || ($closestBranch && $minDistance <= (int)($closestBranch['radius_meters'] ?? 200))) {
         $is_geofenced = 1;
+        if ($distance > $allowedRadius && $closestBranch) {
+            $branch_name = $closestBranch['branch_name'];
+        } else {
+            $branch_name = $checkBranch['branch_name'];
+        }
     } else {
+        $distRounded = round($distance);
+        $bLabel = htmlspecialchars($checkBranch['branch_name']);
         echo json_encode([
             "status" => "error",
-            "message" => "📍 Geofence Error: You are " . round($distance) . "m away from your assigned branch (" . htmlspecialchars($branch_name ?: 'Office') . "). Allowed radius is {$radius}m."
+            "message" => "📍 Geofence Error: You are {$distRounded}m away from {$bLabel}. Clock-in is only allowed within {$allowedRadius}m of the office premises."
         ]);
         exit;
     }

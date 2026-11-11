@@ -255,7 +255,7 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
     $query = "SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.id, a.clock_in, a.clock_out, a.status, a.source, a.total_hours,
                      (a.photo_in IS NOT NULL AND a.photo_in != '') AS has_photo_in, 
                      (a.photo_out IS NOT NULL AND a.photo_out != '') AS has_photo_out, 
-                     a.branch_in, a.branch_out
+                     a.branch_in, a.branch_out, a.lat_in, a.lng_in, a.lat_out, a.lng_out, a.is_geofenced
               FROM attendance a
               JOIN staff s ON a.staff_id = s.staff_id WHERE 1=1";
     $params = [];
@@ -345,10 +345,24 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
 
         $b_in = htmlspecialchars($row['branch_in'] ?? 'Unknown Branch');
         $b_out = htmlspecialchars($row['branch_out'] ?? 'Unknown Branch');
-        $timeInHtml = "{$timeIn}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>";
+        
+        $mapInHtml = "";
+        if (!empty($row['lat_in']) && !empty($row['lng_in'])) {
+            $mapUrlIn = "https://www.google.com/maps?q=" . urlencode($row['lat_in'] . ',' . $row['lng_in']);
+            $mapInHtml = " <a href='{$mapUrlIn}' target='_blank' style='display:inline-flex;align-items:center;gap:2px;font-size:10px;background:#e0e7ff;color:#4338ca;padding:1px 5px;border-radius:4px;text-decoration:none;font-weight:700;' title='Click to view exact location on Google Maps'>🗺️ Map</a>";
+        } elseif (($row['source'] ?? '') === 'fingerprint' || ($row['source'] ?? '') === 'mobile') {
+            $mapInHtml = " <span style='font-size:10px;color:#ef4444;font-weight:600;' title='No GPS recorded'>⚠️ No GPS</span>";
+        }
+        $timeInHtml = "{$timeIn}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>{$mapInHtml}";
+
         $timeOutHtml = "—";
         if ($row['clock_out']) {
-            $timeOutHtml = "{$timeOut}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>";
+            $mapOutHtml = "";
+            if (!empty($row['lat_out']) && !empty($row['lng_out'])) {
+                $mapUrlOut = "https://www.google.com/maps?q=" . urlencode($row['lat_out'] . ',' . $row['lng_out']);
+                $mapOutHtml = " <a href='{$mapUrlOut}' target='_blank' style='display:inline-flex;align-items:center;gap:2px;font-size:10px;background:#e0e7ff;color:#4338ca;padding:1px 5px;border-radius:4px;text-decoration:none;font-weight:700;' title='Click to view exact location on Google Maps'>🗺️ Map</a>";
+            }
+            $timeOutHtml = "{$timeOut}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>{$mapOutHtml}";
         }
 
         $displayStatus = ($row['status'] ?? 'In') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'In');

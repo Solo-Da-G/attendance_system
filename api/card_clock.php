@@ -54,7 +54,7 @@ $stmt = $conn->prepare("
         br.radius_meters AS branch_radius
     FROM staff s
     LEFT JOIN branches br ON LOWER(TRIM(s.branch)) = LOWER(TRIM(br.branch_name))
-    WHERE (s.card_uid = ? OR s.staff_id = ?) 
+    WHERE (s.card_uid = ? OR s.staff_id = ? OR s.fingerprint_id = ?) 
       AND s.deleted_at IS NULL
     LIMIT 1
 ");
@@ -64,7 +64,7 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("ss", $card_uid, $card_uid);
+$stmt->bind_param("sss", $card_uid, $card_uid, $card_uid);
 $stmt->execute();
 $staff = $stmt->get_result()->fetch_assoc();
 $stmt->close();

@@ -465,12 +465,25 @@ if (!empty($selected_staff_id)) {
             $b_in = htmlspecialchars($row['branch_in'] ?? 'Office');
             $b_out = htmlspecialchars($row['branch_out'] ?? 'Office');
             
+            $mapInHtml = "";
+            if (!empty($row['lat_in']) && !empty($row['lng_in'])) {
+                $mUrl = "https://www.google.com/maps?q=" . urlencode($row['lat_in'] . ',' . $row['lng_in']);
+                $mapInHtml = " <a href='{$mUrl}' target='_blank' style='display:inline-flex;align-items:center;gap:2px;font-size:10px;background:#e0e7ff;color:#4338ca;padding:1px 5px;border-radius:4px;text-decoration:none;font-weight:700;' title='View exact location on Google Maps'>🗺️ Map</a>";
+            } elseif (($row['source'] ?? '') === 'fingerprint' || ($row['source'] ?? '') === 'mobile') {
+                $mapInHtml = " <span style='font-size:10px;color:#ef4444;font-weight:600;' title='No GPS recorded'>⚠️ No GPS</span>";
+            }
+
             $clockInFormatted = date("h:i A", strtotime($row['clock_in']));
-            $clockInHtml = "{$clockInFormatted}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>";
+            $clockInHtml = "{$clockInFormatted}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_in}</small>{$mapInHtml}";
             $clockOutHtml = "—";
             if (!empty($row['clock_out'])) {
+                $mapOutHtml = "";
+                if (!empty($row['lat_out']) && !empty($row['lng_out'])) {
+                    $mUrl = "https://www.google.com/maps?q=" . urlencode($row['lat_out'] . ',' . $row['lng_out']);
+                    $mapOutHtml = " <a href='{$mUrl}' target='_blank' style='display:inline-flex;align-items:center;gap:2px;font-size:10px;background:#e0e7ff;color:#4338ca;padding:1px 5px;border-radius:4px;text-decoration:none;font-weight:700;' title='View exact location on Google Maps'>🗺️ Map</a>";
+                }
                 $clockOutFormatted = date("h:i A", strtotime($row['clock_out']));
-                $clockOutHtml = "{$clockOutFormatted}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>";
+                $clockOutHtml = "{$clockOutFormatted}<br><small style='color:#4f46e5;font-weight:600;'>📍 {$b_out}</small>{$mapOutHtml}";
             }
 
             $hoursFormatted = !empty($row['clock_out']) ? formatHours($hours) : "<span style='color:#f59e0b;font-weight:600;'>In Progress</span>";
