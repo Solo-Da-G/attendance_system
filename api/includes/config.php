@@ -207,4 +207,6 @@ if (empty($_SESSION['admin_id']) && empty($_SESSION['staff_id']) && isset($_COOK
         }
     }
 }
+
+require_once __DIR__ . '/auto_detect_branch.php';
 ?>

@@ -142,77 +142,18 @@ try {
 // GEOFENCE VALIDATION & BRANCH DETECTION
 // ──────────────────────────────────────────────────────────────────
 $staffHasClockLat    = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lat');
-$staffHasClockLng    = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lng');
-$staffHasClockRadius = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_radius');
-$hasBranchesTable    = function_exists('db_has_table') && db_has_table($conn, 'branches');
-
-$clock_branch       = null;
-$min_distance       = -1;
-$is_near            = false;
-$closest_branch_limit = 200;
-$actual_distance    = 0;
-
-if ($hasBranchesTable) {
-    $res = $conn->query("SELECT branch_name, latitude, longitude, radius_meters FROM branches");
-    if ($res) {
-        while ($b = $res->fetch_assoc()) {
-            $dist = Geolocation::getDistance($lat, $lng, $b['latitude'], $b['longitude']);
-            if ($dist <= ($b['radius_meters'] ?? 200)) {
-                if ($min_distance === -1 || $dist < $min_distance) {
-                    $min_distance = $dist;
-                    $clock_branch = $b['branch_name'];
-                    $closest_branch_limit = $b['radius_meters'] ?? 200;
-                    $actual_distance = $dist;
-                }
-            }
-        }
-    }
-}
-
-if ($clock_branch) {
-    $is_near = true;
-} else {
-    $stmt = $conn->prepare("SELECT s.clock_lat, s.clock_lng, s.clock_radius, COALESCE(NULLIF(TRIM(s.branch),''), 'No Branch') as branch FROM staff s WHERE s.staff_id = ? LIMIT 1");
-    if ($stmt) {
-        $stmt->bind_param("s", $staff_id);
-        $stmt->execute();
-        $locationRow = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-        if ($locationRow && $locationRow['clock_lat'] !== null && $locationRow['clock_lng'] !== null) {
-            $rad  = (int)($locationRow['clock_radius'] ?? 300);
-            if (!empty($locationRow['branch']) && $locationRow['branch'] !== 'No Branch') {
-                $bCheck = $conn->prepare("SELECT radius_meters FROM branches WHERE LOWER(TRIM(branch_name)) = LOWER(TRIM(?)) LIMIT 1");
-                if ($bCheck) {
-                    $bCheck->bind_param("s", $locationRow['branch']);
-                    $bCheck->execute();
-                    $bCRow = $bCheck->get_result()->fetch_assoc();
-                    $bCheck->close();
-                    if (!empty($bCRow['radius_meters'])) {
-                        $rad = (int)$bCRow['radius_meters'];
-                    }
-                }
-            }
-            $dist = Geolocation::getDistance($lat, $lng, $locationRow['clock_lat'], $locationRow['clock_lng']);
-            if ($dist <= $rad) {
-                $is_near = true;
-                $clock_branch = $locationRow['branch'];
-                $actual_distance = $dist;
-            } else {
-                $actual_distance = $dist;
-                $closest_branch_limit = $rad;
-            }
-        }
-    }
-}
-
-if (!$is_near) {
-    audit_clock_event($conn, $staff_id, $staff_full_name, 'location_rejected', "Attempted $action — dist: " . round($actual_distance) . "m, limit: {$closest_branch_limit}m");
+// ── UNIVERSAL GPS BRANCH AUTO-DETECTION & GEOFENCE ENFORCEMENT ──
+$geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
+if (!$geo['success']) {
+    audit_clock_event($conn, $staff_id, $staff_full_name, 'location_rejected', "Attempted $action — " . $geo['error']);
     json_response([
         "status"  => "error",
-        "message" => "You are too far from any office branch to clock in/out.",
-        "debug"   => ["dist" => round($actual_distance), "limit" => $closest_branch_limit, "gps_accuracy" => $gps_accuracy]
+        "message" => $geo['error'],
+        "debug"   => ["dist" => $geo['distance'], "limit" => $geo['radius'], "gps_accuracy" => $gps_accuracy]
     ], 400);
 }
+$clock_branch = $geo['branch_name'];
+$is_near      = true;
 
 // ──────────────────────────────────────────────────────────────────
 // PROCESS CLOCKING (one session per day)

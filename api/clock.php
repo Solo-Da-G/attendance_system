@@ -57,6 +57,19 @@ if ($current_hour >= 19) {
     exit;
 }
 
+// ---------------------------------------------------------------
+// Universal GPS Branch Auto-Detection & Geofence Enforcement
+// ---------------------------------------------------------------
+$lat = isset($_POST['lat']) ? (float)$_POST['lat'] : (isset($_POST['latitude']) ? (float)$_POST['latitude'] : null);
+$lng = isset($_POST['lng']) ? (float)$_POST['lng'] : (isset($_POST['longitude']) ? (float)$_POST['longitude'] : null);
+
+$geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
+if (!$geo['success']) {
+    echo json_encode(["status" => "error", "message" => $geo['error']]);
+    exit;
+}
+$branch_name = $geo['branch_name'];
+
 // Check today's attendance record
 $stmt = $conn->prepare("SELECT id, clock_in, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
 $stmt->bind_param("ss", $staff_id, $today);
@@ -67,11 +80,11 @@ $stmt->close();
 
 if (!$record) {
     // Clock in
-    $stmt2 = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status) VALUES (?, ?, 'in')");
-    $stmt2->bind_param("ss", $staff_id, $current_time);
+    $stmt2 = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, source, lat_in, lng_in, is_geofenced, branch_in) VALUES (?, ?, 'in', 'web', ?, ?, 1, ?)");
+    $stmt2->bind_param("ssdds", $staff_id, $current_time, $lat, $lng, $branch_name);
     $stmt2->execute();
     $stmt2->close();
-    echo json_encode(["status" => "success", "message" => "Clock-in recorded at $current_time"]);
+    echo json_encode(["status" => "success", "message" => "Clock-in recorded at $current_time 📍 $branch_name"]);
 } elseif ($record['clock_out'] === null) {
     // Clock out
     $clock_in_time = strtotime($record['clock_in']);
@@ -79,11 +92,11 @@ if (!$record) {
     $diff_seconds = $clock_out_time - $clock_in_time;
     $total_hours = round($diff_seconds / 3600, 2);
 
-    $stmt3 = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ? WHERE id = ?");
-    $stmt3->bind_param("sdi", $current_time, $total_hours, $record['id']);
+    $stmt3 = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', total_hours = ?, lat_out = ?, lng_out = ?, branch_out = ? WHERE id = ?");
+    $stmt3->bind_param("sdddsi", $current_time, $total_hours, $lat, $lng, $branch_name, $record['id']);
     $stmt3->execute();
     $stmt3->close();
-    echo json_encode(["status" => "success", "message" => "Clock-out recorded at $current_time. Total hours: $total_hours"]);
+    echo json_encode(["status" => "success", "message" => "Clock-out recorded at $current_time 📍 $branch_name. Total hours: $total_hours"]);
 } else {
     // Already completed attendance for today
     echo json_encode(["status" => "error", "message" => "Already clocked in and out today. The system will reset at 12:00 AM."]);

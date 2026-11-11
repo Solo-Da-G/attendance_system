@@ -81,37 +81,17 @@ $staff_id   = $staff['staff_id'];
 $full_name  = $staff['full_name'];
 $branch_name = $staff['branch'] ?? '';
 
-// 3. Geofence & Location Validation (if branch coordinates are defined)
-$is_geofenced = 0;
-$target_lat   = !empty($staff['branch_lat']) ? (float)$staff['branch_lat'] : (!empty($staff['clock_lat']) ? (float)$staff['clock_lat'] : null);
-$target_lng   = !empty($staff['branch_lng']) ? (float)$staff['branch_lng'] : (!empty($staff['clock_lng']) ? (float)$staff['clock_lng'] : null);
-$radius       = !empty($staff['branch_radius']) ? (int)$staff['branch_radius'] : ((int)($staff['clock_radius'] ?? 300) ?: 300);
-
-if ($target_lat !== null && $target_lng !== null && $lat !== null && $lng !== null) {
-    $earthRadius = 6371000; // in meters
-    $latFrom = deg2rad($lat);
-    $lonFrom = deg2rad($lng);
-    $latTo   = deg2rad($target_lat);
-    $lonTo   = deg2rad($target_lng);
-
-    $latDelta = $latTo - $latFrom;
-    $lonDelta = $lonTo - $lonFrom;
-
-    $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
-    $distance = $angle * $earthRadius;
-
-    if ($distance <= $radius) {
-        $is_geofenced = 1;
-    } else {
-        echo json_encode([
-            "status" => "error",
-            "message" => "📍 Geofence Error: You are " . round($distance) . "m away from your assigned branch (" . htmlspecialchars($branch_name ?: 'Office') . "). Allowed radius is {$radius}m."
-        ]);
-        exit;
-    }
-} elseif ($lat !== null && $lng !== null) {
-    $is_geofenced = 1;
+// 3. Universal GPS Branch Auto-Detection & Geofence Enforcement
+$geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
+if (!$geo['success']) {
+    echo json_encode([
+        "status"  => "error",
+        "message" => $geo['error']
+    ]);
+    exit;
 }
+$branch_name  = $geo['branch_name'];
+$is_geofenced = 1;
 
 // 4. Auto-close previous day missed clock-outs
 try {
