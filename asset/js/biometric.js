@@ -83,7 +83,17 @@ const TDSBiometric = (function () {
                 };
                 _coordsTime = Date.now();
             },
-            () => {},
+            () => {
+                // Indoor fallback: Wi-Fi/Cellular via Google Location Services
+                navigator.geolocation.getCurrentPosition(
+                    (p) => {
+                        _lastCoords = { latitude: p.coords.latitude, longitude: p.coords.longitude };
+                        _coordsTime = Date.now();
+                    },
+                    () => {},
+                    { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+                );
+            },
             { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
         );
     }
@@ -111,9 +121,23 @@ const TDSBiometric = (function () {
                     resolve(_lastCoords);
                 },
                 () => {
-                    resolve(_lastCoords || { latitude: null, longitude: null });
+                    // Indoor fallback: Wi-Fi/Cellular via Google Location Services
+                    navigator.geolocation.getCurrentPosition(
+                        (p2) => {
+                            _lastCoords = {
+                                latitude: p2.coords.latitude,
+                                longitude: p2.coords.longitude
+                            };
+                            _coordsTime = Date.now();
+                            resolve(_lastCoords);
+                        },
+                        () => {
+                            resolve(_lastCoords || { latitude: null, longitude: null });
+                        },
+                        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+                    );
                 },
-                { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
             );
         });
     }

@@ -150,7 +150,7 @@ img { max-width: 100%; height: auto; }
    ============================================================ */
 .sidebar {
   width: var(--sidebar-w);
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.82);
   color: #e2e8f0;
   height: 100vh;
   position: fixed;
@@ -159,13 +159,15 @@ img { max-width: 100%; height: auto; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 28px 0 18px;
+  padding: 24px 0 18px;
   z-index: 100;
   overflow-y: auto;
-  transition: width .3s var(--ease);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255,255,255,0.06);
+  overflow-x: hidden;
+  transition: width .28s cubic-bezier(0.4, 0, 0.2, 1), transform .28s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
 }
 
 .sidebar h2 {
@@ -234,6 +236,97 @@ img { max-width: 100%; height: auto; }
   min-height: 100vh;
   min-width: 0;
   box-sizing: border-box;
+  transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1), width .28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   DESKTOP COLLAPSIBLE SIDEBAR
+   ============================================================ */
+@media (min-width: 769px) {
+  body.sidebar-collapsed {
+    --sidebar-w: 68px;
+  }
+  body.sidebar-collapsed .sidebar {
+    width: 68px !important;
+    padding: 16px 0 14px !important;
+  }
+  body.sidebar-collapsed .sidebar .sidebar-brand {
+    padding: 8px 4px !important;
+    margin: 0 8px 10px !important;
+    justify-content: center !important;
+  }
+  body.sidebar-collapsed .sidebar .sidebar-brand img,
+  body.sidebar-collapsed .sidebar .desktop-brand.app-nav-controls-desktop,
+  body.sidebar-collapsed .sidebar .app-install-trigger,
+  body.sidebar-collapsed .sidebar #desktopAppInstalledBadge,
+  body.sidebar-collapsed .sidebar .nav-text,
+  body.sidebar-collapsed .sidebar .sidebar-footer {
+    display: none !important;
+  }
+  body.sidebar-collapsed .sidebar .sidebar-brand .mini-brand-icon {
+    display: block !important;
+  }
+  body.sidebar-collapsed .sidebar .desktop-sidebar-toggle-btn svg {
+    transform: rotate(180deg);
+  }
+  body.sidebar-collapsed .sidebar a {
+    justify-content: center !important;
+    padding: 12px 0 !important;
+    gap: 0 !important;
+    border-left: none !important;
+    border-radius: 12px !important;
+    margin: 3px 8px !important;
+  }
+  body.sidebar-collapsed .sidebar a .nav-icon {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+  body.sidebar-collapsed .sidebar a.active {
+    background: var(--primary) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(16, 67, 159, 0.35);
+  }
+  body.sidebar-collapsed .sidebar .logout {
+    margin: 8px !important;
+    padding: 10px 0 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  body.sidebar-collapsed .sidebar .logout span:not(.logout-icon) {
+    display: none !important;
+  }
+  body.sidebar-collapsed .content {
+    margin-left: 68px !important;
+    width: calc(100% - 68px) !important;
+    max-width: calc(100% - 68px) !important;
+  }
+}
+
+/* ============================================================
+   STICKY FIRST COLUMN IN ATTENDANCE TABLES
+   ============================================================ */
+@media (min-width: 769px) {
+  #attendanceTable th:first-child,
+  #attendanceTable td:first-child,
+  #staffAttendanceTable th:first-child,
+  #staffAttendanceTable td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 5 !important;
+    background: #ffffff !important;
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.06) !important;
+  }
+  #attendanceTable th:first-child,
+  #staffAttendanceTable th:first-child {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light)) !important;
+    color: #ffffff !important;
+    z-index: 6 !important;
+  }
+  #attendanceTable tr:hover td:first-child,
+  #staffAttendanceTable tr:hover td:first-child {
+    background: #f1f5f9 !important;
+  }
 }
 
 .content > * {
