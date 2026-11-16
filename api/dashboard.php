@@ -755,6 +755,11 @@ if ($staff_id) {
                     </svg>
                 </div>
                 <div id="bioDeviceStatus" style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px;text-align:center;">Checking fingerprint sensor…</div>
+                <div id="bioRegControl" style="display:none; margin:6px auto 14px; text-align:center;">
+                    <button type="button" onclick="registerCurrentDevice()" style="background:linear-gradient(135deg, #10439f, #2563eb); color:white; border:none; padding:10px 20px; border-radius:12px; font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(16,67,159,0.3); display:inline-flex; align-items:center; gap:8px;">
+                        <span>📲</span> Register This Device's Fingerprint
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -851,7 +856,7 @@ if ($staff_id) {
         </div>
         
         <!-- Registration button for biometric when in thumbprint tab -->
-        <div id="bioRegControl" style="display:none;margin-top:10px;text-align:center;">
+        <div id="bioRegControlFooter" style="display:none;margin-top:10px;text-align:center;">
             <button type="button" class="geo-register-btn" onclick="registerCurrentDevice()" style="background:linear-gradient(135deg,#2563eb,#10439f);">
                 ✨ Register This Device's Thumbprint
             </button>
@@ -1897,6 +1902,10 @@ if ($staff_id) {
     }
 
     async function updateGeoStatusText(coords) {
+        if (coords) {
+            window.currentCoords = coords;
+            window._lastCoordTime = Date.now();
+        }
         const geoBox = document.getElementById('gpsCoordsBox');
         const geoText = document.getElementById('liveGpsText');
         if (geoBox && geoText && coords) {
@@ -2819,6 +2828,7 @@ function switchClockMode(mode) {
     const faceBtn = document.getElementById('clockBtn');
     const bioBtn = document.getElementById('bioClockBtn');
     const bioReg = document.getElementById('bioRegControl');
+    const bioRegFooter = document.getElementById('bioRegControlFooter');
     const faceStatus = document.getElementById('faceStatus');
 
     if (mode === 'face') {
@@ -2831,6 +2841,7 @@ function switchClockMode(mode) {
         if (faceBtn) faceBtn.style.display = 'block';
         if (bioBtn) bioBtn.style.display = 'none';
         if (bioReg) bioReg.style.display = 'none';
+        if (bioRegFooter) bioRegFooter.style.display = 'none';
         if (faceStatus) faceStatus.style.display = 'block';
     } else if (mode === 'thumbprint') {
         if (tabFace) tabFace.classList.remove('active');
@@ -2858,11 +2869,13 @@ function switchClockMode(mode) {
         if (faceBtn) faceBtn.style.display = 'none';
         if (bioBtn) bioBtn.style.display = 'none';
         if (bioReg) bioReg.style.display = 'none';
+        if (bioRegFooter) bioRegFooter.style.display = 'none';
         if (faceStatus) faceStatus.style.display = 'none';
         focusCardInput();
         startNfcReader();
     }
 }
+window.switchClockMode = switchClockMode;
 
 // Pre-warm biometrics and GPS on dashboard load
 if (typeof TDSBiometric !== 'undefined') {
@@ -2875,6 +2888,7 @@ if (typeof TDSBiometric !== 'undefined') {
 async function checkBiometrics() {
     const statusText = document.getElementById('bioDeviceStatus');
     const bioReg = document.getElementById('bioRegControl');
+    const bioRegFooter = document.getElementById('bioRegControlFooter');
     const bioBtn = document.getElementById('bioClockBtn');
 
     try {
@@ -2889,31 +2903,47 @@ async function checkBiometrics() {
             bioEnrolled = true;
             if (statusText) statusText.innerHTML = `<span style="color:#10b981;">✅ Sensor Ready (${res.count} registered device${res.count > 1 ? 's' : ''}). Touch sensor to clock.</span>`;
             if (bioReg) bioReg.style.display = 'none';
-            if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = false;
+            if (bioRegFooter) bioRegFooter.style.display = 'none';
+            if (bioBtn && !bioBtn.dataset.preventEnable) {
+                bioBtn.disabled = false;
+                bioBtn.onclick = processBiometricClock;
+            }
         } else {
             bioEnrolled = false;
-            if (statusText) statusText.innerHTML = '<span style="color:#2563eb;">ℹ️ No thumbprint enrolled on this account yet. Click below to register this device.</span>';
+            if (statusText) statusText.innerHTML = '<span style="color:#2563eb;">ℹ️ No thumbprint enrolled on this device yet. Touch sensor below to register &amp; clock.</span>';
             if (bioReg) bioReg.style.display = 'block';
-            if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = true;
+            if (bioRegFooter) bioRegFooter.style.display = 'block';
+            if (bioBtn && !bioBtn.dataset.preventEnable) {
+                bioBtn.disabled = false;
+                bioBtn.innerHTML = '📲 Touch Sensor to Register & Clock';
+                bioBtn.onclick = handleBioTouch;
+            }
         }
     } catch (e) {
         if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">Status: ' + e.message + '</span>';
     }
 }
+window.checkBiometrics = checkBiometrics;
 
 async function handleBioTouch() {
     if (!bioEnrolled) {
-        registerCurrentDevice();
+        await registerCurrentDevice();
     } else {
-        processBiometricClock();
+        await processBiometricClock();
     }
 }
+window.handleBioTouch = handleBioTouch;
 
 async function registerCurrentDevice() {
     const statusText = document.getElementById('bioDeviceStatus');
     const bioCard = document.getElementById('bioTouchCard');
+    const bioBtn = document.getElementById('bioClockBtn');
     if (statusText) statusText.innerHTML = '🔄 Prompting fingerprint sensor… Please touch your scanner.';
     if (bioCard) bioCard.classList.add('scanning');
+    if (bioBtn) {
+        bioBtn.disabled = true;
+        bioBtn.innerHTML = '🔄 Touch scanner to register…';
+    }
 
     try {
         if (typeof TDSBiometric === 'undefined' || !window.TDSBiometric) {
@@ -2921,14 +2951,25 @@ async function registerCurrentDevice() {
         }
         const res = await TDSBiometric.register();
         if (bioCard) bioCard.classList.remove('scanning');
-        alert('🎉 Success: ' + (res.message || 'Fingerprint enrolled!'));
-        checkBiometrics();
+        bioEnrolled = true;
+        if (statusText) statusText.innerHTML = '<span style="color:#10b981;">🎉 Fingerprint enrolled! Verifying attendance now…</span>';
+        if (bioBtn && !bioBtn.dataset.preventEnable) {
+            bioBtn.disabled = false;
+            bioBtn.onclick = processBiometricClock;
+        }
+        // Auto clock immediately after registration
+        await processBiometricClock();
     } catch (err) {
         if (bioCard) bioCard.classList.remove('scanning');
+        if (bioBtn && !bioBtn.dataset.preventEnable) {
+            bioBtn.disabled = false;
+            bioBtn.innerHTML = '📲 Touch Sensor to Register & Clock';
+        }
+        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">❌ ' + err.message + '</span>';
         alert('❌ Registration failed: ' + err.message);
-        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">' + err.message + '</span>';
     }
 }
+window.registerCurrentDevice = registerCurrentDevice;
 
 async function processBiometricClock() {
     if (window.TDSAudio) {
@@ -2965,7 +3006,7 @@ async function processBiometricClock() {
     } catch (err) {
         if (window.TDSAudio) TDSAudio.playError();
         if (bioCard) bioCard.classList.remove('scanning');
-        if (bioBtn) {
+        if (bioBtn && !bioBtn.dataset.preventEnable) {
             bioBtn.disabled = false;
             bioBtn.innerHTML = '👆 Touch Sensor to Clock';
         }
@@ -2975,6 +3016,7 @@ async function processBiometricClock() {
         }
     }
 }
+window.processBiometricClock = processBiometricClock;
 
 // ── E-Card / RFID Smart Badge Clocking ──────────────────────────
 let nfcScanning = false;
@@ -3072,13 +3114,19 @@ async function submitCardClock() {
 
     try {
         let lat = null, lng = null;
-        if (typeof userLat !== 'undefined' && userLat && typeof userLng !== 'undefined' && userLng) {
+        if (typeof window !== 'undefined' && window.currentCoords && window.currentCoords.latitude && window.currentCoords.longitude) {
+            lat = window.currentCoords.latitude;
+            lng = window.currentCoords.longitude;
+        } else if (typeof currentCoords !== 'undefined' && currentCoords && currentCoords.latitude && currentCoords.longitude) {
+            lat = currentCoords.latitude;
+            lng = currentCoords.longitude;
+        } else if (typeof userLat !== 'undefined' && userLat && typeof userLng !== 'undefined' && userLng) {
             lat = userLat;
             lng = userLng;
         } else if (navigator.geolocation) {
             try {
                 const pos = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000, maximumAge: 60000 });
+                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000, maximumAge: 120000 });
                 });
                 lat = pos.coords.latitude;
                 lng = pos.coords.longitude;
@@ -3149,6 +3197,10 @@ async function submitCardClock() {
         }, 3000);
     }
 }
+window.submitCardClock = submitCardClock;
+window.focusCardInput = focusCardInput;
+window.handleCardInputKey = handleCardInputKey;
+window.startNfcReader = startNfcReader;
 
 // Auto update and synchronize dashboard with database
 (function() {
@@ -3172,6 +3224,8 @@ async function submitCardClock() {
             }
         }
     }, 120000);
+})();
+
 // ── Location & GPS Troubleshooting Modal Handlers ──
 function openLocationGuideModal(defaultTab) {
     const modal = document.getElementById('locationGuideModal');

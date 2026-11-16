@@ -82,16 +82,23 @@ $full_name  = $staff['full_name'];
 $branch_name = $staff['branch'] ?? '';
 
 // 3. Universal GPS Branch Auto-Detection & Geofence Enforcement
-$geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
-if (!$geo['success']) {
-    echo json_encode([
-        "status"  => "error",
-        "message" => $geo['error']
-    ]);
-    exit;
+if ($lat !== null && $lng !== null && is_numeric($lat) && is_numeric($lng) && ($lat != 0.0 || $lng != 0.0)) {
+    $geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
+    if (!$geo['success']) {
+        echo json_encode([
+            "status"  => "error",
+            "message" => $geo['error']
+        ]);
+        exit;
+    }
+    $branch_name  = $geo['branch_name'];
+    $is_geofenced = 1;
+} else {
+    // If device (e.g. fixed front-desk USB RFID reader) does not transmit GPS coordinates,
+    // accept the physical card tap and clock in at the employee's assigned branch
+    $branch_name  = !empty($staff['branch']) ? $staff['branch'] : 'Main Office';
+    $is_geofenced = 0;
 }
-$branch_name  = $geo['branch_name'];
-$is_geofenced = 1;
 
 // 4. Auto-close previous day missed clock-outs
 try {

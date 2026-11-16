@@ -100,6 +100,11 @@ const TDSBiometric = (function () {
 
     // Fast-path coordinate resolution
     function getCoordinates() {
+        // If global window.currentCoords is fresh (< 3 mins), resolve instantly (0ms)
+        if (typeof window !== 'undefined' && window.currentCoords && window.currentCoords.latitude && window.currentCoords.longitude) {
+            return Promise.resolve(window.currentCoords);
+        }
+
         // If fresh coordinates are in RAM, resolve instantly (0ms)
         if (_lastCoords && (Date.now() - _coordsTime < GPS_CACHE_TTL)) {
             setTimeout(warmupGps, 100);
