@@ -61,15 +61,9 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
 <!-- APP SIDEBAR / MOBILE DRAWER                                    -->
 <!-- ──────────────────────────────────────────────────────────── -->
 <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
-    <!-- Desktop Brand Logo & Collapse Toggle -->
-    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 14px; padding: 10px 12px; margin: 0 14px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid rgba(255,255,255,0.08);">
-        <a href="dashboard.php" style="display:flex; align-items:center; text-decoration:none; min-width:0; padding:0; background:none; border:none;">
-            <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 40px; max-width: 100%; width: auto; object-fit: contain; display: block;">
-        </a>
-        <span class="mini-brand-icon" style="display:none; font-size:18px; font-weight:800; color:#10439f;">TDS</span>
-        <button type="button" class="desktop-sidebar-toggle-btn" onclick="toggleDesktopSidebar()" title="Collapse / Expand Sidebar (Ctrl+B)" aria-label="Toggle Sidebar" style="background:rgba(16,67,159,0.08); border:none; border-radius:8px; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; color:#10439f; flex-shrink:0; transition:all 0.2s ease;">
-            <svg class="toggle-icon-svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
+    <!-- Desktop Brand Logo -->
+    <div class="sidebar-brand desktop-brand" style="background: #ffffff; border-radius: 14px; padding: 10px 14px; margin: 0 14px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08);">
+        <img src="/asset/img/tds_logo.png" alt="TDS Logo" style="max-height: 44px; max-width: 100%; width: auto; object-fit: contain; display: block;">
     </div>
 
     <!-- Desktop App Navigation Controls (Back & Refresh for computer installed app & browser) -->
@@ -682,30 +676,11 @@ $user_role_label = $is_admin ? 'Administrator' : 'Staff Employee';
         }, 60);
     };
 
-    // Desktop Sidebar Collapse Toggle
-    window.toggleDesktopSidebar = function() {
-        const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
-        try {
-            localStorage.setItem('tds_sidebar_collapsed', isCollapsed ? '1' : '0');
-        } catch(_) {}
-    };
-
-    // Auto-restore collapsed state on desktop
-    try {
-        if (localStorage.getItem('tds_sidebar_collapsed') === '1' && window.innerWidth >= 769) {
-            document.body.classList.add('sidebar-collapsed');
-        }
-    } catch(_) {}
-
-    // Keyboard shortcut: Alt+Left Arrow for back, Ctrl+B for sidebar toggle
+    // Keyboard shortcut: Alt+Left Arrow for back
     document.addEventListener('keydown', function(e) {
         if (e.altKey && e.key === 'ArrowLeft') {
             e.preventDefault();
             window.appGoBack();
-        }
-        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
-            e.preventDefault();
-            window.toggleDesktopSidebar();
         }
     });
 

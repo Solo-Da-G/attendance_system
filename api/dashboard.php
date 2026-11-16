@@ -144,13 +144,6 @@ if ($staff_id) {
         margin-left: var(--sidebar-w);
         width: calc(100% - var(--sidebar-w));
         max-width: calc(100% - var(--sidebar-w));
-        transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1), width .28s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow-x: hidden;
-    }
-    body.sidebar-collapsed.dashboard-page .content {
-        margin-left: 68px !important;
-        width: calc(100% - 68px) !important;
-        max-width: calc(100% - 68px) !important;
     }
 
     /* Executive Top Header */
@@ -611,13 +604,6 @@ if ($staff_id) {
   </style>
 </head>
 <body class="app-page dashboard-page">
-  <script>
-    try {
-      if (localStorage.getItem('tds_sidebar_collapsed') === '1' && window.innerWidth >= 769) {
-        document.body.classList.add('sidebar-collapsed');
-      }
-    } catch(e) {}
-  </script>
   <div id="topNotification" class="top-notification"></div>
 
   <?php include(__DIR__ . "/includes/sidebar.php"); ?>
@@ -755,11 +741,6 @@ if ($staff_id) {
                     </svg>
                 </div>
                 <div id="bioDeviceStatus" style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px;text-align:center;">Checking fingerprint sensor…</div>
-                <div id="bioRegControl" style="display:none; margin:6px auto 14px; text-align:center;">
-                    <button type="button" onclick="registerCurrentDevice()" style="background:linear-gradient(135deg, #10439f, #2563eb); color:white; border:none; padding:10px 20px; border-radius:12px; font-weight:700; font-size:13px; cursor:pointer; box-shadow:0 4px 14px rgba(16,67,159,0.3); display:inline-flex; align-items:center; gap:8px;">
-                        <span>📲</span> Register This Device's Fingerprint
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -856,7 +837,7 @@ if ($staff_id) {
         </div>
         
         <!-- Registration button for biometric when in thumbprint tab -->
-        <div id="bioRegControlFooter" style="display:none;margin-top:10px;text-align:center;">
+        <div id="bioRegControl" style="display:none;margin-top:10px;text-align:center;">
             <button type="button" class="geo-register-btn" onclick="registerCurrentDevice()" style="background:linear-gradient(135deg,#2563eb,#10439f);">
                 ✨ Register This Device's Thumbprint
             </button>
@@ -1719,19 +1700,12 @@ if ($staff_id) {
         const result = document.getElementById('apiResult');
         if (overlay) overlay.style.display = 'none';
         if (cam) cam.style.borderColor = '#ef4444';
-        
-        const isGeoError = /geolocation|gps|location/i.test(msg);
-        let displayMsg = msg;
-        if (isGeoError) {
-            displayMsg += ' &nbsp;<button type="button" onclick="openLocationGuideModal()" style="background:#dc2626;color:white;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px;">Fix Permission</button>';
-        }
-
         if (result) {
             result.style.color = '#ef4444';
-            result.innerHTML = '❌ ' + displayMsg;
+            result.innerHTML = '❌ ' + msg;
             setTimeout(() => {
                 if (result && result.textContent.startsWith('❌')) result.innerHTML = '';
-            }, 8000);
+            }, 5000);
         }
         showTopNotification(msg, false);
     }
@@ -1748,106 +1722,30 @@ if ($staff_id) {
     function getPosition(options) {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
-                reject({ code: 0, message: 'Geolocation not supported on this device' });
+                reject(new Error('Geolocation not supported on this device'));
                 return;
             }
             navigator.geolocation.getCurrentPosition(resolve, reject, options);
         });
     }
 
-    function updateGeoStatusError(err) {
-        const geoStatus = document.getElementById('geoStatus');
-        if (!geoStatus) return;
-        
-        if (err && err.code === 1) { // PERMISSION_DENIED
-            geoStatus.innerHTML = `
-                <div style="background:#fef2f2; border:1.5px solid #f87171; border-radius:12px; padding:10px 14px; margin:8px auto; max-width:440px; text-align:center; box-shadow:0 2px 8px rgba(239,68,68,0.15);">
-                    <div style="color:#b91c1c; font-weight:800; font-size:13px; margin-bottom:4px;">⚠️ GPS Blocked: Permission Denied</div>
-                    <div style="color:#7f1d1d; font-size:12px; margin-bottom:8px; line-height:1.4;">Chrome or Samsung Settings is blocking location for this site.</div>
-                    <button type="button" onclick="openLocationGuideModal('chrome')" style="background:linear-gradient(135deg, #dc2626, #b91c1c); color:white; border:none; padding:6px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; box-shadow:0 2px 6px rgba(220,38,38,0.3);">
-                        🛠️ How to Unblock (30 Seconds)
-                    </button>
-                </div>
-            `;
-            geoStatus.style.color = '#dc2626';
-        } else if (err && (err.code === 2 || err.code === 3)) { // POSITION_UNAVAILABLE or TIMEOUT
-            geoStatus.innerHTML = `
-                <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:12px; padding:10px 14px; margin:8px auto; max-width:440px; text-align:center; box-shadow:0 2px 8px rgba(245,158,11,0.12);">
-                    <div style="color:#b45309; font-weight:800; font-size:13px; margin-bottom:4px;">📡 Weak GPS Signal (Indoors)</div>
-                    <div style="color:#92400e; font-size:12px; margin-bottom:8px; line-height:1.4;">Turn on "Google Location Accuracy" in Samsung settings so Wi-Fi can locate you.</div>
-                    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-                        <button type="button" onclick="retryLocation()" style="background:#d97706; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">
-                            🔄 Retry GPS
-                        </button>
-                        <button type="button" onclick="openLocationGuideModal('samsung')" style="background:#ffffff; color:#b45309; border:1.5px solid #f59e0b; padding:6px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">
-                            ℹ️ Samsung Settings Guide
-                        </button>
-                    </div>
-                </div>
-            `;
-            geoStatus.style.color = '#b45309';
-        } else {
-            geoStatus.innerHTML = `<span style="color:#ef4444;font-weight:700;">⚠️ Location unavailable: ${err?.message || 'Check device settings'}</span>`;
-        }
-    }
-
-    async function retryLocation() {
-        locationWarmupPromise = null;
-        const geoStatus = document.getElementById('geoStatus');
-        if (geoStatus) {
-            geoStatus.innerHTML = '📍 Retrying location detection…';
-            geoStatus.style.color = '';
-        }
-        return warmupLocation();
-    }
-
     function warmupLocation() {
-        if (!navigator.geolocation) {
-            updateGeoStatusError({ code: 0, message: 'Geolocation not supported' });
-            return Promise.resolve(null);
-        }
-        if (locationWarmupPromise) return locationWarmupPromise;
-
-        locationWarmupPromise = (async () => {
-            try {
-                // Try high accuracy (satellite) first with 6s timeout
-                const pos = await getPosition({
-                    enableHighAccuracy: true,
-                    timeout: 6000,
-                    maximumAge: 120000
-                });
-                currentCoords = pos.coords;
-                window._lastCoordTime = Date.now();
-                updateGeoStatusText(pos.coords);
-                return pos;
-            } catch (err) {
-                if (err && err.code === 1) { // User Denied Permission
-                    updateGeoStatusError(err);
-                    return null;
-                }
-                // Try low accuracy indoor fallback (Google Location Accuracy Wi-Fi / Cell tower)
-                try {
-                    const fallbackPos = await getPosition({
-                        enableHighAccuracy: false,
-                        timeout: 9000,
-                        maximumAge: 300000
-                    });
-                    currentCoords = fallbackPos.coords;
-                    window._lastCoordTime = Date.now();
-                    updateGeoStatusText(fallbackPos.coords);
-                    return fallbackPos;
-                } catch (fallbackErr) {
-                    updateGeoStatusError(fallbackErr);
-                    return null;
-                }
-            }
-        })();
-
+        if (!navigator.geolocation || locationWarmupPromise) return locationWarmupPromise;
+        locationWarmupPromise = getPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 120000
+        }).then((pos) => {
+            currentCoords = pos.coords;
+            window._lastCoordTime = Date.now();
+            updateGeoStatusText(pos.coords);
+            return pos;
+        }).catch(() => null);
         return locationWarmupPromise;
     }
 
     async function getBestPosition() {
-        // Fast path: cached fresh coordinates (< 3 mins)
+        // FAST PATH: If location was already warmed up on page load and is fresh (< 3 mins), return immediately (0ms)!
         if (currentCoords && currentCoords.latitude && currentCoords.longitude) {
             const age = Date.now() - (window._lastCoordTime || 0);
             if (age < 180000) {
@@ -1855,57 +1753,28 @@ if ($staff_id) {
             }
         }
 
-        // Try 1: High accuracy quick query (5s)
         try {
             const quick = await getPosition({
                 enableHighAccuracy: true,
-                timeout: 5000,
+                timeout: 6000,
                 maximumAge: 120000
             });
             currentCoords = quick.coords;
-            window._lastCoordTime = Date.now();
             updateGeoStatusText(quick.coords);
             return quick;
-        } catch (e1) {
-            if (e1 && e1.code === 1) {
-                updateGeoStatusError(e1);
-                throw e1;
-            }
-            // Try 2: Indoor fallback (Google Location Accuracy / Wi-Fi / Cell)
-            try {
-                const indoor = await getPosition({
-                    enableHighAccuracy: false,
-                    timeout: 8000,
-                    maximumAge: 300000
-                });
-                currentCoords = indoor.coords;
-                window._lastCoordTime = Date.now();
-                updateGeoStatusText(indoor.coords);
-                return indoor;
-            } catch (e2) {
-                if (e2 && e2.code === 1) {
-                    updateGeoStatusError(e2);
-                    throw e2;
-                }
-                // Try 3: Last resort high accuracy
-                const fresh = await getPosition({
-                    enableHighAccuracy: true,
-                    timeout: 12000,
-                    maximumAge: 0
-                });
-                currentCoords = fresh.coords;
-                window._lastCoordTime = Date.now();
-                updateGeoStatusText(fresh.coords);
-                return fresh;
-            }
+        } catch (_) {
+            const fresh = await getPosition({
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 0
+            });
+            currentCoords = fresh.coords;
+            updateGeoStatusText(fresh.coords);
+            return fresh;
         }
     }
 
     async function updateGeoStatusText(coords) {
-        if (coords) {
-            window.currentCoords = coords;
-            window._lastCoordTime = Date.now();
-        }
         const geoBox = document.getElementById('gpsCoordsBox');
         const geoText = document.getElementById('liveGpsText');
         if (geoBox && geoText && coords) {
@@ -2828,7 +2697,6 @@ function switchClockMode(mode) {
     const faceBtn = document.getElementById('clockBtn');
     const bioBtn = document.getElementById('bioClockBtn');
     const bioReg = document.getElementById('bioRegControl');
-    const bioRegFooter = document.getElementById('bioRegControlFooter');
     const faceStatus = document.getElementById('faceStatus');
 
     if (mode === 'face') {
@@ -2841,7 +2709,6 @@ function switchClockMode(mode) {
         if (faceBtn) faceBtn.style.display = 'block';
         if (bioBtn) bioBtn.style.display = 'none';
         if (bioReg) bioReg.style.display = 'none';
-        if (bioRegFooter) bioRegFooter.style.display = 'none';
         if (faceStatus) faceStatus.style.display = 'block';
     } else if (mode === 'thumbprint') {
         if (tabFace) tabFace.classList.remove('active');
@@ -2869,13 +2736,11 @@ function switchClockMode(mode) {
         if (faceBtn) faceBtn.style.display = 'none';
         if (bioBtn) bioBtn.style.display = 'none';
         if (bioReg) bioReg.style.display = 'none';
-        if (bioRegFooter) bioRegFooter.style.display = 'none';
         if (faceStatus) faceStatus.style.display = 'none';
         focusCardInput();
         startNfcReader();
     }
 }
-window.switchClockMode = switchClockMode;
 
 // Pre-warm biometrics and GPS on dashboard load
 if (typeof TDSBiometric !== 'undefined') {
@@ -2888,7 +2753,6 @@ if (typeof TDSBiometric !== 'undefined') {
 async function checkBiometrics() {
     const statusText = document.getElementById('bioDeviceStatus');
     const bioReg = document.getElementById('bioRegControl');
-    const bioRegFooter = document.getElementById('bioRegControlFooter');
     const bioBtn = document.getElementById('bioClockBtn');
 
     try {
@@ -2903,47 +2767,31 @@ async function checkBiometrics() {
             bioEnrolled = true;
             if (statusText) statusText.innerHTML = `<span style="color:#10b981;">✅ Sensor Ready (${res.count} registered device${res.count > 1 ? 's' : ''}). Touch sensor to clock.</span>`;
             if (bioReg) bioReg.style.display = 'none';
-            if (bioRegFooter) bioRegFooter.style.display = 'none';
-            if (bioBtn && !bioBtn.dataset.preventEnable) {
-                bioBtn.disabled = false;
-                bioBtn.onclick = processBiometricClock;
-            }
+            if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = false;
         } else {
             bioEnrolled = false;
-            if (statusText) statusText.innerHTML = '<span style="color:#2563eb;">ℹ️ No thumbprint enrolled on this device yet. Touch sensor below to register &amp; clock.</span>';
+            if (statusText) statusText.innerHTML = '<span style="color:#2563eb;">ℹ️ No thumbprint enrolled on this account yet. Click below to register this device.</span>';
             if (bioReg) bioReg.style.display = 'block';
-            if (bioRegFooter) bioRegFooter.style.display = 'block';
-            if (bioBtn && !bioBtn.dataset.preventEnable) {
-                bioBtn.disabled = false;
-                bioBtn.innerHTML = '📲 Touch Sensor to Register & Clock';
-                bioBtn.onclick = handleBioTouch;
-            }
+            if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = true;
         }
     } catch (e) {
         if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">Status: ' + e.message + '</span>';
     }
 }
-window.checkBiometrics = checkBiometrics;
 
 async function handleBioTouch() {
     if (!bioEnrolled) {
-        await registerCurrentDevice();
+        registerCurrentDevice();
     } else {
-        await processBiometricClock();
+        processBiometricClock();
     }
 }
-window.handleBioTouch = handleBioTouch;
 
 async function registerCurrentDevice() {
     const statusText = document.getElementById('bioDeviceStatus');
     const bioCard = document.getElementById('bioTouchCard');
-    const bioBtn = document.getElementById('bioClockBtn');
     if (statusText) statusText.innerHTML = '🔄 Prompting fingerprint sensor… Please touch your scanner.';
     if (bioCard) bioCard.classList.add('scanning');
-    if (bioBtn) {
-        bioBtn.disabled = true;
-        bioBtn.innerHTML = '🔄 Touch scanner to register…';
-    }
 
     try {
         if (typeof TDSBiometric === 'undefined' || !window.TDSBiometric) {
@@ -2951,25 +2799,14 @@ async function registerCurrentDevice() {
         }
         const res = await TDSBiometric.register();
         if (bioCard) bioCard.classList.remove('scanning');
-        bioEnrolled = true;
-        if (statusText) statusText.innerHTML = '<span style="color:#10b981;">🎉 Fingerprint enrolled! Verifying attendance now…</span>';
-        if (bioBtn && !bioBtn.dataset.preventEnable) {
-            bioBtn.disabled = false;
-            bioBtn.onclick = processBiometricClock;
-        }
-        // Auto clock immediately after registration
-        await processBiometricClock();
+        alert('🎉 Success: ' + (res.message || 'Fingerprint enrolled!'));
+        checkBiometrics();
     } catch (err) {
         if (bioCard) bioCard.classList.remove('scanning');
-        if (bioBtn && !bioBtn.dataset.preventEnable) {
-            bioBtn.disabled = false;
-            bioBtn.innerHTML = '📲 Touch Sensor to Register & Clock';
-        }
-        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">❌ ' + err.message + '</span>';
         alert('❌ Registration failed: ' + err.message);
+        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">' + err.message + '</span>';
     }
 }
-window.registerCurrentDevice = registerCurrentDevice;
 
 async function processBiometricClock() {
     if (window.TDSAudio) {
@@ -3006,7 +2843,7 @@ async function processBiometricClock() {
     } catch (err) {
         if (window.TDSAudio) TDSAudio.playError();
         if (bioCard) bioCard.classList.remove('scanning');
-        if (bioBtn && !bioBtn.dataset.preventEnable) {
+        if (bioBtn) {
             bioBtn.disabled = false;
             bioBtn.innerHTML = '👆 Touch Sensor to Clock';
         }
@@ -3016,7 +2853,6 @@ async function processBiometricClock() {
         }
     }
 }
-window.processBiometricClock = processBiometricClock;
 
 // ── E-Card / RFID Smart Badge Clocking ──────────────────────────
 let nfcScanning = false;
@@ -3114,19 +2950,13 @@ async function submitCardClock() {
 
     try {
         let lat = null, lng = null;
-        if (typeof window !== 'undefined' && window.currentCoords && window.currentCoords.latitude && window.currentCoords.longitude) {
-            lat = window.currentCoords.latitude;
-            lng = window.currentCoords.longitude;
-        } else if (typeof currentCoords !== 'undefined' && currentCoords && currentCoords.latitude && currentCoords.longitude) {
-            lat = currentCoords.latitude;
-            lng = currentCoords.longitude;
-        } else if (typeof userLat !== 'undefined' && userLat && typeof userLng !== 'undefined' && userLng) {
+        if (typeof userLat !== 'undefined' && userLat && typeof userLng !== 'undefined' && userLng) {
             lat = userLat;
             lng = userLng;
         } else if (navigator.geolocation) {
             try {
                 const pos = await new Promise((res, rej) => {
-                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000, maximumAge: 120000 });
+                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000, maximumAge: 60000 });
                 });
                 lat = pos.coords.latitude;
                 lng = pos.coords.longitude;
@@ -3197,10 +3027,6 @@ async function submitCardClock() {
         }, 3000);
     }
 }
-window.submitCardClock = submitCardClock;
-window.focusCardInput = focusCardInput;
-window.handleCardInputKey = handleCardInputKey;
-window.startNfcReader = startNfcReader;
 
 // Auto update and synchronize dashboard with database
 (function() {
@@ -3225,172 +3051,7 @@ window.startNfcReader = startNfcReader;
         }
     }, 120000);
 })();
-
-// ── Location & GPS Troubleshooting Modal Handlers ──
-function openLocationGuideModal(defaultTab) {
-    const modal = document.getElementById('locationGuideModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        if (defaultTab) switchLocTab(defaultTab);
-    }
-}
-
-function closeLocationGuideModal() {
-    const modal = document.getElementById('locationGuideModal');
-    if (modal) modal.style.display = 'none';
-}
-
-function switchLocTab(tab) {
-    const tabChrome = document.getElementById('locTabChrome');
-    const tabSamsung = document.getElementById('locTabSamsung');
-    const panelChrome = document.getElementById('locPanelChrome');
-    const panelSamsung = document.getElementById('locPanelSamsung');
-    
-    if (tab === 'samsung') {
-        if (tabSamsung) {
-            tabSamsung.style.background = '#ffffff';
-            tabSamsung.style.color = '#10439f';
-            tabSamsung.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)';
-        }
-        if (tabChrome) {
-            tabChrome.style.background = 'transparent';
-            tabChrome.style.color = '#64748b';
-            tabChrome.style.boxShadow = 'none';
-        }
-        if (panelSamsung) panelSamsung.style.display = 'block';
-        if (panelChrome) panelChrome.style.display = 'none';
-    } else {
-        if (tabChrome) {
-            tabChrome.style.background = '#ffffff';
-            tabChrome.style.color = '#10439f';
-            tabChrome.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)';
-        }
-        if (tabSamsung) {
-            tabSamsung.style.background = 'transparent';
-            tabSamsung.style.color = '#64748b';
-            tabSamsung.style.boxShadow = 'none';
-        }
-        if (panelChrome) panelChrome.style.display = 'block';
-        if (panelSamsung) panelSamsung.style.display = 'none';
-    }
-}
-
-async function testLocationPermissionInModal() {
-    const btn = document.getElementById('locTestBtn');
-    const resBox = document.getElementById('locTestResult');
-    if (!btn || !resBox) return;
-
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> Testing GPS Access…';
-    resBox.style.display = 'block';
-    resBox.style.color = '#2563eb';
-    resBox.innerHTML = 'Requesting location from device…';
-
-    try {
-        locationWarmupPromise = null;
-        const pos = await getBestPosition();
-        if (pos && pos.coords) {
-            resBox.style.color = '#10b981';
-            resBox.innerHTML = `✅ Location detected! Lat: ${pos.coords.latitude.toFixed(5)}, Lng: ${pos.coords.longitude.toFixed(5)}<br>You are now ready to clock in.`;
-            btn.innerHTML = '<span>✅</span> Success!';
-            setTimeout(() => {
-                closeLocationGuideModal();
-            }, 1800);
-        }
-    } catch (err) {
-        resBox.style.color = '#dc2626';
-        if (err && err.code === 1) {
-            resBox.innerHTML = '❌ Still Blocked: Permission is still denied. Please check Chrome Site Settings -> Location.';
-        } else {
-            resBox.innerHTML = '⚠️ GPS signal still weak indoors. Please turn on Google Location Accuracy in Samsung settings.';
-        }
-    } finally {
-        setTimeout(() => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<span>🔄</span> Test GPS Permission Now';
-            }
-        }, 3000);
-    }
-}
 </script>
-
-<!-- Location Permission & GPS Troubleshooting Modal for Samsung & Android Devices -->
-<div id="locationGuideModal" style="display:none; position:fixed; inset:0; background:rgba(6,13,31,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:999999; align-items:center; justify-content:center; padding:16px;">
-    <div style="background:#ffffff; color:#0f172a; border-radius:22px; padding:24px 22px; max-width:480px; width:100%; box-shadow:0 24px 50px rgba(0,0,0,0.4); position:relative; max-height:90vh; overflow-y:auto; box-sizing:border-box;">
-        <button type="button" onclick="closeLocationGuideModal()" style="position:absolute; top:14px; right:16px; background:#f1f5f9; border:none; border-radius:50%; width:32px; height:32px; font-size:20px; line-height:1; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
-        
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-            <div style="width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg, #ef4444, #dc2626); color:white; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
-                📍
-            </div>
-            <div>
-                <h3 style="font-size:18px; font-weight:800; margin:0 0 2px; color:#0f172a;">Enable Location Permission</h3>
-                <p style="font-size:12.5px; color:#64748b; margin:0;">Fix "User denied Geolocation" in 30 seconds</p>
-            </div>
-        </div>
-
-        <!-- Guide Tabs -->
-        <div style="display:flex; gap:6px; background:#f1f5f9; padding:4px; border-radius:12px; margin-bottom:16px;">
-            <button type="button" id="locTabChrome" onclick="switchLocTab('chrome')" style="flex:1; padding:8px 10px; border:none; border-radius:9px; font-weight:700; font-size:12.5px; cursor:pointer; background:#ffffff; color:#10439f; box-shadow:0 2px 6px rgba(0,0,0,0.06);">
-                🌐 Chrome / Installed App
-            </button>
-            <button type="button" id="locTabSamsung" onclick="switchLocTab('samsung')" style="flex:1; padding:8px 10px; border:none; border-radius:9px; font-weight:700; font-size:12.5px; cursor:pointer; background:transparent; color:#64748b;">
-                📱 Samsung Galaxy Settings
-            </button>
-        </div>
-
-        <!-- Tab 1: Chrome / PWA -->
-        <div id="locPanelChrome" style="display:block;">
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px 16px; font-size:13px; line-height:1.6; color:#334155; margin-bottom:14px;">
-                <div style="font-weight:700; color:#0f172a; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                    <span>Option A: If using Google Chrome Browser</span>
-                </div>
-                <div style="margin-bottom:8px;">
-                    1. Tap the <strong>Tune / Padlock icon</strong> (🎛️ or 🔒) just to the left of <code>attendance...</code> on the address bar.<br>
-                    2. Tap <strong>Permissions</strong>.<br>
-                    3. Turn <strong>Location</strong> switch to <strong>ALLOW</strong> (or tap <strong>Reset permission</strong>).
-                </div>
-                <div style="border-top:1px solid #e2e8f0; padding-top:8px; margin-top:8px;">
-                    <div style="font-weight:700; color:#0f172a; margin-bottom:6px;">
-                        Option B: If using Installed App (Add to Home Screen)
-                    </div>
-                    1. Open the <strong>Google Chrome</strong> app on your phone.<br>
-                    2. Tap the <strong>3 dots (⋮)</strong> at top right &rarr; Tap <strong>Settings</strong>.<br>
-                    3. Scroll down and tap <strong>Site settings</strong> &rarr; Tap <strong>Location</strong>.<br>
-                    4. Look under <strong>Blocked</strong>, tap the Attendance site, and tap <strong>ALLOW</strong>!
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab 2: Samsung Galaxy Settings -->
-        <div id="locPanelSamsung" style="display:none;">
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px 16px; font-size:13px; line-height:1.6; color:#334155; margin-bottom:14px;">
-                <div style="font-weight:700; color:#0f172a; margin-bottom:8px;">
-                    Why Samsung A-Series phones fail indoors:
-                </div>
-                <p style="font-size:12px; color:#64748b; margin-bottom:10px;">
-                    Samsung Galaxy A-series GPS chips struggle inside concrete buildings unless <strong>Google Location Accuracy</strong> is turned ON:
-                </p>
-                <div style="margin-bottom:6px;">
-                    <strong>Step 1:</strong> Open phone <strong>Settings</strong> &rarr; Tap <strong>Location</strong>.<br>
-                    <strong>Step 2:</strong> Tap <strong>Location Services</strong> &rarr; Tap <strong>Google Location Accuracy</strong> &rarr; Turn switch <strong>ON</strong>.<br>
-                    <strong>Step 3:</strong> Go back to <strong>App permissions</strong> &rarr; Find <strong>Chrome</strong> &rarr; Set to <strong>"Allow only while using the app"</strong> and enable <strong>"Use precise location"</strong>.
-                </div>
-            </div>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button type="button" id="locTestBtn" onclick="testLocationPermissionInModal()" style="flex:1; padding:12px; border-radius:12px; background:linear-gradient(135deg, #10439f, #2563eb); color:white; border:none; font-weight:700; font-size:13.5px; cursor:pointer; box-shadow:0 4px 14px rgba(16,67,159,0.3); display:flex; align-items:center; justify-content:center; gap:8px;">
-                <span>🔄</span> Test GPS Permission Now
-            </button>
-            <button type="button" onclick="closeLocationGuideModal()" style="padding:12px 18px; border-radius:12px; background:#f1f5f9; color:#475569; border:none; font-weight:700; font-size:13.5px; cursor:pointer;">
-                Close
-            </button>
-        </div>
-        <div id="locTestResult" style="margin-top:10px; font-size:12.5px; text-align:center; font-weight:700; display:none;"></div>
-    </div>
-</div>
 
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>
 </body>
