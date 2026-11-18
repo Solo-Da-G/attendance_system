@@ -55,11 +55,15 @@ if (getenv('DB_HOST')) {
     $username   = getenv('DB_USER');
     $password   = getenv('DB_PASSWORD');
     $database   = getenv('DB_NAME');
-    $port       = getenv('DB_PORT') ?: 3306;
+    $port       = (int)(getenv('DB_PORT') ?: 3306);
     
-    // Adjust servername for port if needed
-    if ($port != 3306 && !str_contains($servername, ':')) {
-        $servername .= ":" . $port;
+    // Clean hostname if port was included in DB_HOST
+    if (str_contains($servername, ':')) {
+        $parts = explode(':', $servername, 2);
+        $servername = $parts[0];
+        if (is_numeric($parts[1])) {
+            $port = (int)$parts[1];
+        }
     }
 } else {
     // ---- LOCAL / LAN (XAMPP defaults) ----
@@ -68,6 +72,7 @@ if (getenv('DB_HOST')) {
     $username   = "root";
     $password   = "";
     $database   = "attendance_system";
+    $port       = 3306;
 }
 
 // ================================================================
@@ -86,11 +91,24 @@ date_default_timezone_set("Africa/Lagos");
 // ================================================================
 // DATABASE CONNECTION
 // ================================================================
-$conn = new mysqli($servername, $username, $password, $database);
+$conn = mysqli_init();
+if (!$conn) {
+    die("Database initialization failed.");
+}
+
+if (ENVIRONMENT === 'cloud') {
+    // Enable SSL for cloud database services (TiDB Cloud, Aiven, etc.)
+    $conn->ssl_set(NULL, NULL, NULL, NULL, NULL);
+    $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
+    $conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 15);
+    @$conn->real_connect($servername, $username, $password, $database, $port, NULL, MYSQLI_CLIENT_SSL);
+} else {
+    @$conn->real_connect($servername, $username, $password, $database, $port);
+}
 
 if ($conn->connect_error) {
     if (ENVIRONMENT === 'cloud') {
-        die("Database connection failed. Please check your hosting credentials.");
+        die("Database connection failed. Please check your hosting credentials: " . $conn->connect_error);
     } else {
         die("Database connection failed: " . $conn->connect_error);
     }
