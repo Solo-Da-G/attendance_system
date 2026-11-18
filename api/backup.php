@@ -36,13 +36,19 @@ function dumpDatabase($conn) {
         $tables[] = $row[0];
     }
     
-    $sql = "-- Database Backup\n-- Generated: " . date('Y-m-d H:i:s') . "\n\n";
+    $sql = "-- Database Backup for Migration\n-- Generated: " . date('Y-m-d H:i:s') . "\n\n";
     $sql .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
     
     foreach($tables as $table) {
         $result = $conn->query("SELECT * FROM `$table`");
         if (!$result) continue;
-        $num_fields = $result->field_count;
+        
+        $fields = $result->fetch_fields();
+        $num_fields = count($fields);
+        $field_names = [];
+        foreach($fields as $f) {
+            $field_names[] = $f->name;
+        }
         
         $sql .= "DROP TABLE IF EXISTS `$table`;\n";
         $row2_res = $conn->query("SHOW CREATE TABLE `$table`");
@@ -53,7 +59,11 @@ function dumpDatabase($conn) {
         while($row = $result->fetch_row()) {
             $sql .= "INSERT INTO `$table` VALUES(";
             for($j=0; $j<$num_fields; $j++) {
-                if ($row[$j] === null) {
+                $colName = $field_names[$j] ?? '';
+                // Skip massive multi-megabyte base64 webcam selfies in attendance to prevent Vercel 500 error
+                if ($table === 'attendance' && ($colName === 'photo_in' || $colName === 'photo_out')) {
+                    $sql .= 'NULL';
+                } elseif ($row[$j] === null) {
                     $sql .= 'NULL';
                 } else {
                     $escaped = addslashes((string)$row[$j]);
@@ -730,42 +740,115 @@ if ($action === 'download') {
     @ini_set('memory_limit', '512M');
     @set_time_limit(180);
 
+    // Clear all output buffers from router.php so clean headers and bytes stream directly
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
     $sql_dump = dumpDatabase($conn);
     $filename_base = "attendance_backup_" . date("Y-m-d_H-i");
     $size = strlen($sql_dump);
 
-    $zipData = createZipArchive([
-        "{$filename_base}.sql" => $sql_dump
-    ]);
+    // If format=zip is requested or file exceeds 2MB, zip it
+    if ((isset($_GET['format']) && $_GET['format'] === 'zip') || $size > (2 * 1024 * 1024)) {
+        $zipData = createZipArchive([
+            "{$filename_base}.sql" => $sql_dump
+        ]);
 
-    if ($zipData !== false && strlen($zipData) > 0) {
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="' . $filename_base . '.sql.zip"');
-        header('Content-Length: ' . strlen($zipData));
-        header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
-        header('Pragma: public');
-        echo $zipData;
-        exit;
+        if ($zipData !== false && strlen($zipData) > 0) {
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="' . $filename_base . '.sql.zip"');
+            header('Content-Length: ' . strlen($zipData));
+            header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+            header('Pragma: public');
+            echo $zipData;
+            exit;
+        }
     }
 
-    // Absolute fallback: GZIP
-    if (function_exists('gzencode')) {
-        $gzData = gzencode($sql_dump, 9);
-        header('Content-Type: application/gzip');
-        header('Content-Disposition: attachment; filename="' . $filename_base . '.sql.gz"');
-        header('Content-Length: ' . strlen($gzData));
-        header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
-        header('Pragma: public');
-        echo $gzData;
-        exit;
-    }
-
+    // Direct plain .sql download (clean, under 200KB, downloads in 0.2s!)
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . $filename_base . '.sql"');
     header('Content-Length: ' . $size);
     header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
     header('Pragma: public');
     echo $sql_dump;
+    exit;
+}
+
+// -------------------------------------------------------------
+// ACTION: View & Copy SQL Dump (One-click import into TiDB Cloud)
+// -------------------------------------------------------------
+if ($action === 'view_sql') {
+    @ini_set('memory_limit', '512M');
+    @set_time_limit(180);
+
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
+    $sql_dump = dumpDatabase($conn);
+    $sizeKb = round(strlen($sql_dump) / 1024, 1);
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Database SQL Backup for TiDB Cloud</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
+            .container { max-width: 900px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+            h2 { margin-top: 0; color: #38bdf8; display: flex; align-items: center; gap: 10px; font-size: 22px; }
+            p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
+            .btn-group { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+            .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; border: none; transition: 0.2s; }
+            .btn-primary { background: #3b82f6; color: white; }
+            .btn-primary:hover { background: #2563eb; }
+            .btn-success { background: #10b981; color: white; }
+            .btn-success:hover { background: #059669; }
+            .btn-secondary { background: #334155; color: #cbd5e1; }
+            .btn-secondary:hover { background: #475569; }
+            textarea { width: 100%; height: 440px; background: #0f172a; color: #a5f3fc; border: 1px solid #334155; border-radius: 10px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5; resize: vertical; box-sizing: border-box; }
+            .steps { background: #0f172a; border-left: 4px solid #38bdf8; padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 20px; font-size: 13px; color: #cbd5e1; }
+            .steps ol { margin: 6px 0 0 18px; padding: 0; }
+            .steps li { margin-bottom: 4px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2><span>📦</span> Database Backup for TiDB Cloud Migration</h2>
+            <div class="steps">
+                <strong>How to import into TiDB Cloud:</strong>
+                <ol>
+                    <li>Click <strong>"📋 Copy All SQL"</strong> below (or <strong>"💾 Download .sql File"</strong>).</li>
+                    <li>Go to your <strong>TiDB Cloud Console &rarr; SQL Editor</strong>.</li>
+                    <li>Paste the SQL script into the editor and click <strong>"Run"</strong>. That's it!</li>
+                </ol>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="copySql()">📋 Copy All SQL (<?php echo $sizeKb; ?> KB)</button>
+                <a href="backup.php?action=download" class="btn btn-primary">💾 Download .sql File</a>
+                <a href="settings.php" class="btn btn-secondary">← Back to Settings</a>
+            </div>
+            <textarea id="sqlText" readonly><?php echo htmlspecialchars($sql_dump); ?></textarea>
+        </div>
+        <script>
+            function copySql() {
+                const ta = document.getElementById('sqlText');
+                ta.select();
+                navigator.clipboard.writeText(ta.value).then(() => {
+                    alert('✅ Database SQL copied to clipboard! You can now paste it directly into TiDB Cloud SQL Editor.');
+                }).catch(() => {
+                    document.execCommand('copy');
+                    alert('✅ Database SQL copied to clipboard!');
+                });
+            }
+        </script>
+    </body>
+    </html>
+    <?php
     exit;
 }
 

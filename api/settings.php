@@ -187,6 +187,9 @@ $stmt->close();
                     <a href="backup.php?action=download" target="_blank" class="backup-btn" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);">
                         <span>💾</span> Manual Download Database (.sql)
                     </a>
+                    <a href="backup.php?action=view_sql" target="_blank" class="backup-btn" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);">
+                        <span>📋</span> View &amp; Copy SQL for TiDB
+                    </a>
                     <a href="backup.php?action=email" class="backup-btn" style="background: linear-gradient(135deg, #0284c7, #0369a1); box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);" onclick="return confirm('Send the database SQL backup to your email now?');">
                         <span>✉️</span> Email Database (.sql) Now
                     </a>
