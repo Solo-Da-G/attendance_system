@@ -305,22 +305,87 @@ function generateCsvFromRecords($records, $emptyMsg = 'No records found') {
 }
 
 // -------------------------------------------------------------
-// HELPER: Create ZIP Archive in memory
+// HELPER: Pure PHP ZIP Archive Generator (Zero extension dependency)
+// -------------------------------------------------------------
+function createPurePhpZip(array $files): string {
+    $datasec = [];
+    $ctrl_dir = [];
+    $old_offset = 0;
+
+    foreach ($files as $name => $data) {
+        $name = str_replace('\\', '/', $name);
+        $dtime = dechex(date('Y') - 1980 << 25 | date('m') << 21 | date('d') << 16 | date('H') << 11 | date('i') << 5 | date('s') >> 1);
+        $hexdtime = pack('V', hexdec($dtime));
+
+        $unc_len = strlen($data);
+        $crc = crc32($data);
+        $useDeflate = function_exists('gzdeflate');
+        $zdata = $useDeflate ? gzdeflate($data) : $data;
+        $c_len = strlen($zdata);
+        $method = $useDeflate ? "\x08\x00" : "\x00\x00";
+
+        // Local file header
+        $fr = "\x50\x4b\x03\x04\x14\x00\x00\x00" . $method . $hexdtime
+            . pack('V', $crc)
+            . pack('V', $c_len)
+            . pack('V', $unc_len)
+            . pack('v', strlen($name))
+            . pack('v', 0)
+            . $name
+            . $zdata;
+        $datasec[] = $fr;
+
+        // Central directory entry
+        $cdrec = "\x50\x4b\x01\x02\x00\x00\x14\x00\x00\x00" . $method . $hexdtime
+            . pack('V', $crc)
+            . pack('V', $c_len)
+            . pack('V', $unc_len)
+            . pack('v', strlen($name))
+            . pack('v', 0)
+            . pack('v', 0)
+            . pack('v', 0)
+            . pack('v', 0)
+            . pack('V', 32)
+            . pack('V', $old_offset)
+            . $name;
+        $ctrl_dir[] = $cdrec;
+        $old_offset += strlen($fr);
+    }
+
+    $data = implode('', $datasec);
+    $ctrldir = implode('', $ctrl_dir);
+
+    return $data
+        . $ctrldir
+        . "\x50\x4b\x05\x06\x00\x00\x00\x00"
+        . pack('v', count($ctrl_dir))
+        . pack('v', count($ctrl_dir))
+        . pack('V', strlen($ctrldir))
+        . pack('V', strlen($data))
+        . "\x00\x00";
+}
+
+// -------------------------------------------------------------
+// HELPER: Create ZIP Archive in memory (Supports Vercel serverless)
 // -------------------------------------------------------------
 function createZipArchive($files) {
-    if (!class_exists('ZipArchive')) return false;
-    $tempZip = tempnam(sys_get_temp_dir(), 'att_zip_');
-    $zip = new ZipArchive();
-    if ($zip->open($tempZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
-        foreach ($files as $name => $content) {
-            $zip->addFromString($name, $content);
+    if (class_exists('ZipArchive')) {
+        $tempZip = tempnam(sys_get_temp_dir(), 'att_zip_');
+        $zip = new ZipArchive();
+        if ($zip->open($tempZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+            foreach ($files as $name => $content) {
+                $zip->addFromString($name, $content);
+            }
+            $zip->close();
+            $data = file_get_contents($tempZip);
+            @unlink($tempZip);
+            if ($data !== false && strlen($data) > 0) {
+                return $data;
+            }
         }
-        $zip->close();
-        $data = file_get_contents($tempZip);
-        @unlink($tempZip);
-        return $data;
     }
-    return false;
+    // Universal pure-PHP fallback (works on Vercel without ext-zip)
+    return createPurePhpZip($files);
 }
 
 // -------------------------------------------------------------
@@ -669,26 +734,32 @@ if ($action === 'download') {
     $filename_base = "attendance_backup_" . date("Y-m-d_H-i");
     $size = strlen($sql_dump);
 
-    // Vercel serverless functions strictly enforce a 4.5MB response limit.
-    // If the uncompressed SQL exceeds 3MB, or if format=zip is requested, compress to ZIP (shrinks ~90%).
-    $wantsZip = (isset($_GET['format']) && $_GET['format'] === 'zip') || $size > (3 * 1024 * 1024);
+    $zipData = createZipArchive([
+        "{$filename_base}.sql" => $sql_dump
+    ]);
 
-    if ($wantsZip && class_exists('ZipArchive')) {
-        $zipData = createZipArchive([
-            "{$filename_base}.sql" => $sql_dump
-        ]);
-        if ($zipData !== false && strlen($zipData) > 0) {
-            header('Content-Type: application/zip');
-            header('Content-Disposition: attachment; filename="' . $filename_base . '.sql.zip"');
-            header('Content-Length: ' . strlen($zipData));
-            header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
-            header('Pragma: public');
-            echo $zipData;
-            exit;
-        }
+    if ($zipData !== false && strlen($zipData) > 0) {
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $filename_base . '.sql.zip"');
+        header('Content-Length: ' . strlen($zipData));
+        header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+        header('Pragma: public');
+        echo $zipData;
+        exit;
     }
 
-    // Direct .sql streaming if under 3MB
+    // Absolute fallback: GZIP
+    if (function_exists('gzencode')) {
+        $gzData = gzencode($sql_dump, 9);
+        header('Content-Type: application/gzip');
+        header('Content-Disposition: attachment; filename="' . $filename_base . '.sql.gz"');
+        header('Content-Length: ' . strlen($gzData));
+        header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+        header('Pragma: public');
+        echo $gzData;
+        exit;
+    }
+
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . $filename_base . '.sql"');
     header('Content-Length: ' . $size);
@@ -712,20 +783,14 @@ if ($action === 'email') {
     $subject = "Database Backup - " . date("M d, Y");
     $html = "<h3>Database Backup</h3><p>Attached is your latest attendance database backup (.sql).</p>";
 
-    // If large, compress to zip for fast and reliable email delivery
-    if ($size > (2 * 1024 * 1024) && class_exists('ZipArchive')) {
-        $zipData = createZipArchive([
-            "{$filename_base}.sql" => $sql_dump
-        ]);
-        if ($zipData !== false && strlen($zipData) > 0) {
-            $attachments = [
-                ['name' => "{$filename_base}.sql.zip", 'content' => $zipData]
-            ];
-        } else {
-            $attachments = [
-                ['name' => "{$filename_base}.sql.txt", 'content' => $sql_dump]
-            ];
-        }
+    // Compress to zip for fast and reliable email delivery
+    $zipData = createZipArchive([
+        "{$filename_base}.sql" => $sql_dump
+    ]);
+    if ($zipData !== false && strlen($zipData) > 0) {
+        $attachments = [
+            ['name' => "{$filename_base}.sql.zip", 'content' => $zipData]
+        ];
     } else {
         $attachments = [
             ['name' => "{$filename_base}.sql.txt", 'content' => $sql_dump]
