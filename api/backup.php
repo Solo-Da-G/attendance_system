@@ -25,8 +25,13 @@ $action = $_GET['action'] ?? '';
 // HELPER: Dump database structure & data to SQL
 // -------------------------------------------------------------
 function dumpDatabase($conn) {
+    @ini_set('memory_limit', '512M');
+    @set_time_limit(180);
+
     $tables = [];
     $result = $conn->query("SHOW TABLES");
+    if (!$result) return "-- Error fetching tables: " . $conn->error;
+
     while($row = $result->fetch_row()) {
         $tables[] = $row[0];
     }
@@ -36,23 +41,26 @@ function dumpDatabase($conn) {
     
     foreach($tables as $table) {
         $result = $conn->query("SELECT * FROM `$table`");
+        if (!$result) continue;
         $num_fields = $result->field_count;
         
         $sql .= "DROP TABLE IF EXISTS `$table`;\n";
-        $row2 = $conn->query("SHOW CREATE TABLE `$table`")->fetch_row();
-        $sql .= $row2[1] . ";\n\n";
+        $row2_res = $conn->query("SHOW CREATE TABLE `$table`");
+        if ($row2_res && ($row2 = $row2_res->fetch_row())) {
+            $sql .= $row2[1] . ";\n\n";
+        }
         
         while($row = $result->fetch_row()) {
             $sql .= "INSERT INTO `$table` VALUES(";
             for($j=0; $j<$num_fields; $j++) {
-                $row[$j] = addslashes((string)$row[$j]);
-                $row[$j] = preg_replace("/\n/","\\n",$row[$j]);
-                if (isset($row[$j])) {
-                    $sql .= '"'.$row[$j].'"' ;
+                if ($row[$j] === null) {
+                    $sql .= 'NULL';
                 } else {
-                    $sql .= '""';
+                    $escaped = addslashes((string)$row[$j]);
+                    $escaped = str_replace(["\r", "\n"], ["\\r", "\\n"], $escaped);
+                    $sql .= '"' . $escaped . '"';
                 }
-                if ($j<($num_fields-1)) {
+                if ($j < ($num_fields - 1)) {
                     $sql .= ',';
                 }
             }
@@ -654,10 +662,38 @@ if ($action === 'email_employees') {
 // ACTION: Download SQL Database Backup
 // -------------------------------------------------------------
 if ($action === 'download') {
+    @ini_set('memory_limit', '512M');
+    @set_time_limit(180);
+
     $sql_dump = dumpDatabase($conn);
-    $filename = "attendance_backup_" . date("Y-m-d_H-i") . ".sql";
+    $filename_base = "attendance_backup_" . date("Y-m-d_H-i");
+    $size = strlen($sql_dump);
+
+    // Vercel serverless functions strictly enforce a 4.5MB response limit.
+    // If the uncompressed SQL exceeds 3MB, or if format=zip is requested, compress to ZIP (shrinks ~90%).
+    $wantsZip = (isset($_GET['format']) && $_GET['format'] === 'zip') || $size > (3 * 1024 * 1024);
+
+    if ($wantsZip && class_exists('ZipArchive')) {
+        $zipData = createZipArchive([
+            "{$filename_base}.sql" => $sql_dump
+        ]);
+        if ($zipData !== false && strlen($zipData) > 0) {
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="' . $filename_base . '.sql.zip"');
+            header('Content-Length: ' . strlen($zipData));
+            header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+            header('Pragma: public');
+            echo $zipData;
+            exit;
+        }
+    }
+
+    // Direct .sql streaming if under 3MB
     header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Disposition: attachment; filename="' . $filename_base . '.sql"');
+    header('Content-Length: ' . $size);
+    header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+    header('Pragma: public');
     echo $sql_dump;
     exit;
 }
@@ -666,21 +702,42 @@ if ($action === 'download') {
 // ACTION: Email SQL Database Backup
 // -------------------------------------------------------------
 if ($action === 'email') {
+    @ini_set('memory_limit', '512M');
+    @set_time_limit(180);
+
     $sql_dump = dumpDatabase($conn);
-    $filename = "attendance_backup_" . date("Y-m-d_H-i") . ".sql";
+    $filename_base = "attendance_backup_" . date("Y-m-d_H-i");
+    $size = strlen($sql_dump);
 
     $subject = "Database Backup - " . date("M d, Y");
     $html = "<h3>Database Backup</h3><p>Attached is your latest attendance database backup (.sql).</p>";
-    $attachments = [
-        ['name' => $filename . '.txt', 'content' => $sql_dump]
-    ];
+
+    // If large, compress to zip for fast and reliable email delivery
+    if ($size > (2 * 1024 * 1024) && class_exists('ZipArchive')) {
+        $zipData = createZipArchive([
+            "{$filename_base}.sql" => $sql_dump
+        ]);
+        if ($zipData !== false && strlen($zipData) > 0) {
+            $attachments = [
+                ['name' => "{$filename_base}.sql.zip", 'content' => $zipData]
+            ];
+        } else {
+            $attachments = [
+                ['name' => "{$filename_base}.sql.txt", 'content' => $sql_dump]
+            ];
+        }
+    } else {
+        $attachments = [
+            ['name' => "{$filename_base}.sql.txt", 'content' => $sql_dump]
+        ];
+    }
 
     $res = sendBrevoEmail($conn, $subject, $html, $attachments);
     if ($res['success']) {
-        echo "<!DOCTYPE html><html><body><script>alert('✅ Database backup sent successfully to {$res['email']}'); window.location.href='dashboard.php';</script></body></html>";
+        echo "<!DOCTYPE html><html><body><script>alert('✅ Database backup sent successfully to {$res['email']}'); window.location.href='settings.php';</script></body></html>";
     } else {
         $safeResp = json_encode($res['error']);
-        echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send database backup.\\n\\nDetails: ' + " . $safeResp . "); window.location.href='dashboard.php';</script></body></html>";
+        echo "<!DOCTYPE html><html><body><script>alert('❌ Failed to send database backup.\\n\\nDetails: ' + " . $safeResp . "); window.location.href='settings.php';</script></body></html>";
     }
     exit;
 }
