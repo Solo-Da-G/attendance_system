@@ -28,6 +28,9 @@ function dumpDatabase($conn) {
     @ini_set('memory_limit', '512M');
     @set_time_limit(180);
 
+    // Ensure standard MySQL mode without ANSI_QUOTES so backticks are used
+    @$conn->query("SET SESSION sql_mode=''");
+
     $tables = [];
     $result = $conn->query("SHOW TABLES");
     if (!$result) return "-- Error fetching tables: " . $conn->error;
@@ -54,7 +57,10 @@ function dumpDatabase($conn) {
         $sql .= "DROP TABLE IF EXISTS `$table`;\n";
         $row2_res = $conn->query("SHOW CREATE TABLE `$table`");
         if ($row2_res && ($row2 = $row2_res->fetch_row())) {
-            $sql .= $row2[1] . ";\n\n";
+            $createTableSql = $row2[1];
+            // Convert any double-quoted identifiers to standard MySQL backticks for full TiDB Cloud compatibility
+            $createTableSql = preg_replace('/"([a-zA-Z0-9_]+)"/', '`$1`', $createTableSql);
+            $sql .= $createTableSql . ";\n\n";
         }
         
         while($row = $result->fetch_row()) {
@@ -67,9 +73,8 @@ function dumpDatabase($conn) {
                 } elseif ($row[$j] === null) {
                     $sql .= 'NULL';
                 } else {
-                    $escaped = addslashes((string)$row[$j]);
-                    $escaped = str_replace(["\r", "\n"], ["\\r", "\\n"], $escaped);
-                    $sql .= '"' . $escaped . '"';
+                    $escaped = $conn->real_escape_string((string)$row[$j]);
+                    $sql .= "'" . $escaped . "'";
                 }
                 if ($j < ($num_fields - 1)) {
                     $sql .= ',';
