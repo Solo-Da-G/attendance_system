@@ -48,16 +48,42 @@ if (session_status() === PHP_SESSION_NONE) {
 // ================================================================
 // DATABASE CREDENTIALS (Auto-detect environment)
 // ================================================================
-if (getenv('DB_HOST')) {
+$envDbHost = getenv('DB_HOST') ?: getenv('HOST');
+if ($envDbHost) {
     // ---- VERCEL / CLOUD ENVIRONMENT ----
     define('ENVIRONMENT', 'cloud');
-    $servername = getenv('DB_HOST');
-    $username   = getenv('DB_USER');
-    $password   = getenv('DB_PASSWORD');
-    $database   = getenv('DB_NAME');
-    $port       = (int)(getenv('DB_PORT') ?: 3306);
     
-    // Clean hostname if port was included in DB_HOST
+    // Support both standard names (DB_HOST, DB_USER, etc.) and TiDB names (HOST, USERNAME, etc.)
+    // If TiDB host was entered in HOST or DB_HOST, prioritize TiDB
+    if (getenv('HOST') && stripos(getenv('HOST'), 'tidb') !== false) {
+        $servername = getenv('HOST');
+    } elseif (getenv('DB_HOST') && stripos(getenv('DB_HOST'), 'tidb') !== false) {
+        $servername = getenv('DB_HOST');
+    } else {
+        $servername = getenv('DB_HOST') ?: getenv('HOST');
+    }
+
+    if (getenv('USERNAME') && stripos(getenv('USERNAME'), '.root') !== false) {
+        $username = getenv('USERNAME');
+    } elseif (getenv('DB_USER') && stripos(getenv('DB_USER'), '.root') !== false) {
+        $username = getenv('DB_USER');
+    } else {
+        $username = getenv('DB_USER') ?: getenv('USERNAME');
+    }
+
+    // Password: if HOST is TiDB and PASSWORD is set, use it
+    if (getenv('HOST') && stripos(getenv('HOST'), 'tidb') !== false && getenv('PASSWORD')) {
+        $password = getenv('PASSWORD');
+    } elseif (getenv('DB_HOST') && stripos(getenv('DB_HOST'), 'tidb') !== false && getenv('DB_PASSWORD')) {
+        $password = getenv('DB_PASSWORD');
+    } else {
+        $password = getenv('DB_PASSWORD') ?: getenv('PASSWORD');
+    }
+
+    $database = getenv('DB_NAME') ?: (getenv('DATABASE') ?: 'test');
+    $port     = (int)(getenv('DB_PORT') ?: (getenv('PORT') ?: 4000));
+    
+    // Clean hostname if port was included in servername
     if (str_contains($servername, ':')) {
         $parts = explode(':', $servername, 2);
         $servername = $parts[0];

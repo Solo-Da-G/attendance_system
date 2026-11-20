@@ -124,7 +124,7 @@ $stmt->close();
         <h2 style="margin-bottom:20px;">⚙️ Admin Settings</h2>
 
         <?php
-        $rawHost = getenv('DB_HOST') ?: 'localhost';
+        $rawHost = $servername ?? (getenv('DB_HOST') ?: (getenv('HOST') ?: 'localhost'));
         $dbVerQuery = $conn->query("SELECT VERSION()");
         $dbVerString = ($dbVerQuery && $vRow = $dbVerQuery->fetch_row()) ? $vRow[0] : '';
         $isTiDB = stripos($dbVerString, 'tidb') !== false || stripos($rawHost, 'tidbcloud') !== false;
