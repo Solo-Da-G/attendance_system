@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * ONE-CLICK DIRECT CLOUD-TO-CLOUD SYNC (Aiven -> TiDB Cloud)
  * Transfers all staff, biometrics, and devices directly into TiDB Cloud!
@@ -44,25 +44,25 @@ foreach ($tablesToSync as $tbl) {
 
     $checkTarget = $tidb->query("SHOW TABLES LIKE '$tbl'");
     if (!$checkTarget || $checkTarget->num_rows === 0) {
-        $cRow = $conn->query("SHOW CREATE TABLE `$tbl")->fetch_row();
-        $createSql = preg_replace('/"([a-zA-Z0-9_]+)"/', '`$1', $cRow[1]);
+        $cRow = $conn->query("SHOW CREATE TABLE `{$tbl}`")->fetch_row();
+        $createSql = preg_replace('/"([a-zA-Z0-9_]+)"/', '`$1`', $cRow[1]);
         $tidb->query($createSql);
-        echo "📁 Created table `$tbl in TiDB Cloud.\n";
+        echo "📁 Created table `{$tbl}` in TiDB Cloud.\n";
     }
 
-    $targetCount = (int)$tidb->query("SELECT COUNT(*) FROM `$tbl")->fetch_row()[0];
-    $sourceCount = (int)$conn->query("SELECT COUNT(*) FROM `$tbl")->fetch_row()[0];
+    $targetCount = (int)$tidb->query("SELECT COUNT(*) FROM `{$tbl}`")->fetch_row()[0];
+    $sourceCount = (int)$conn->query("SELECT COUNT(*) FROM `{$tbl}`")->fetch_row()[0];
 
     if ($targetCount >= $sourceCount && $targetCount > 0) {
-        echo "✔️  Table `$tbl is already up to date ($targetCount rows).\n";
+        echo "✔️  Table `{$tbl}` is already up to date ({$targetCount} rows).\n";
         continue;
     }
 
-    $sRes = $conn->query("SELECT * FROM `$tbl");
+    $sRes = $conn->query("SELECT * FROM `{$tbl}`");
     $fields = $sRes->fetch_fields();
     $numFields = count($fields);
     
-    $tidb->query("TRUNCATE TABLE `$tbl");
+    $tidb->query("TRUNCATE TABLE `{$tbl}`");
     $copied = 0;
 
     while ($r = $sRes->fetch_row()) {
@@ -78,10 +78,10 @@ foreach ($tablesToSync as $tbl) {
                 $vals[] = "'" . $tidb->real_escape_string((string)$r[$j]) . "'";
             }
         }
-        $tidb->query("INSERT INTO `$tbl VALUES(" . implode(',', $vals) . ")");
+        $tidb->query("INSERT INTO `{$tbl}` VALUES(" . implode(',', $vals) . ")");
         $copied++;
     }
-    echo "🚀 Table `$tbl: copied $copied / $sourceCount rows to TiDB.\n";
+    echo "🚀 Table `{$tbl}`: copied {$copied} / {$sourceCount} rows to TiDB.\n";
 }
 
 $tidb->query("SET FOREIGN_KEY_CHECKS=1");

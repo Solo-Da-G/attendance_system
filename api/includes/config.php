@@ -196,16 +196,24 @@ if (!function_exists('db_has_table')) {
     }
 }
 
-// Auto-heal schema for password change requirements
+// Auto-heal schema for password change requirements and cards (TiDB & MySQL safe)
 if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
-    if (db_has_table($conn, 'staff') && !db_has_column($conn, 'staff', 'must_change_password')) {
-        @$conn->query("ALTER TABLE `staff` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0");
-    }
-    if (db_has_table($conn, 'admin') && !db_has_column($conn, 'admin', 'must_change_password')) {
-        @$conn->query("ALTER TABLE `admin` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0");
-    }
-    if (db_has_table($conn, 'staff') && !db_has_column($conn, 'staff', 'card_uid')) {
-        @$conn->query("ALTER TABLE `staff` ADD COLUMN `card_uid` VARCHAR(100) NULL UNIQUE AFTER `fingerprint_id`");
+    try {
+        if (db_has_table($conn, 'staff') && !db_has_column($conn, 'staff', 'must_change_password')) {
+            $conn->query("ALTER TABLE `staff` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0");
+        }
+        if (db_has_table($conn, 'admin') && !db_has_column($conn, 'admin', 'must_change_password')) {
+            $conn->query("ALTER TABLE `admin` ADD COLUMN `must_change_password` TINYINT(1) NOT NULL DEFAULT 0");
+        }
+        if (db_has_table($conn, 'staff') && !db_has_column($conn, 'staff', 'card_uid')) {
+            // TiDB safe: add column first, then optional unique index
+            $conn->query("ALTER TABLE `staff` ADD COLUMN `card_uid` VARCHAR(100) NULL AFTER `fingerprint_id`");
+            try {
+                $conn->query("ALTER TABLE `staff` ADD UNIQUE INDEX `uq_card_uid` (`card_uid`)");
+            } catch (Throwable $t) {}
+        }
+    } catch (Throwable $t) {
+        // Suppress schema auto-heal errors so they never interrupt normal page loading
     }
 }
 
