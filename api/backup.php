@@ -67,8 +67,9 @@ function dumpDatabase($conn) {
             $sql .= "INSERT INTO `$table` VALUES(";
             for($j=0; $j<$num_fields; $j++) {
                 $colName = $field_names[$j] ?? '';
-                // Skip massive multi-megabyte base64 webcam selfies in attendance to prevent Vercel 500 error
-                if ($table === 'attendance' && ($colName === 'photo_in' || $colName === 'photo_out')) {
+                // Skip massive multi-megabyte base64 photos in attendance and staff to prevent Vercel 500 payload limit
+                if (($table === 'attendance' && ($colName === 'photo_in' || $colName === 'photo_out')) ||
+                    ($table === 'staff' && $colName === 'photo')) {
                     $sql .= 'NULL';
                 } elseif ($row[$j] === null) {
                     $sql .= 'NULL';
