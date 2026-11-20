@@ -123,6 +123,28 @@ $stmt->close();
     <div class="settings-box" style="max-width:800px; margin: 0 auto; background:var(--surface); padding:30px; border-radius:var(--radius-lg); box-shadow:var(--shadow);">
         <h2 style="margin-bottom:20px;">⚙️ Admin Settings</h2>
 
+        <?php
+        $rawHost = getenv('DB_HOST') ?: 'localhost';
+        $dbVerQuery = $conn->query("SELECT VERSION()");
+        $dbVerString = ($dbVerQuery && $vRow = $dbVerQuery->fetch_row()) ? $vRow[0] : '';
+        $isTiDB = stripos($dbVerString, 'tidb') !== false || stripos($rawHost, 'tidbcloud') !== false;
+        $isAiven = stripos($rawHost, 'aiven') !== false;
+        ?>
+        <div style="background: <?php echo $isTiDB ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)'; ?>; border: 1.5px solid <?php echo $isTiDB ? '#10b981' : '#3b82f6'; ?>; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <div style="font-size: 13px; font-weight: 800; color: <?php echo $isTiDB ? '#065f46' : '#1e40af'; ?>; display: flex; align-items: center; gap: 6px;">
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:<?php echo $isTiDB ? '#10b981' : '#3b82f6'; ?>;"></span>
+                    Current Live Database: <?php echo $isTiDB ? 'TiDB Cloud (Serverless Free)' : ($isAiven ? 'Aiven Cloud MySQL' : 'Connected Database'); ?>
+                </div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                    Host: <code><?php echo htmlspecialchars($rawHost); ?></code> &bull; Engine: <code><?php echo htmlspecialchars($dbVerString ?: 'MySQL'); ?></code>
+                </div>
+            </div>
+            <span style="font-size: 11px; font-weight: 700; background: <?php echo $isTiDB ? '#d1fae5' : '#dbeafe'; ?>; color: <?php echo $isTiDB ? '#065f46' : '#1e40af'; ?>; padding: 4px 10px; border-radius: 6px;">
+                <?php echo $isTiDB ? '✅ TiDB Live & Active' : 'ℹ️ Running on Aiven'; ?>
+            </span>
+        </div>
+
         <?php if ($success) { ?>
             <p class="badge badge-success" style="display:block; margin-bottom:15px; text-align:center; padding:10px;"><?php echo $success; ?></p>
         <?php } ?>
