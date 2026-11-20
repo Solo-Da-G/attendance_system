@@ -91,6 +91,16 @@ if ($envDbHost) {
             $port = (int)$parts[1];
         }
     }
+
+    // TiDB Cloud auto-correction: if old Aiven port (12323) or database (defaultdb) lingered in Vercel, enforce TiDB defaults
+    if (stripos($servername, 'tidb') !== false) {
+        if ($port === 12323 || $port === 3306 || empty($port)) {
+            $port = 4000;
+        }
+        if ($database === 'defaultdb' || empty($database)) {
+            $database = 'test';
+        }
+    }
 } else {
     // ---- LOCAL / LAN (XAMPP defaults) ----
     define('ENVIRONMENT', 'local');
