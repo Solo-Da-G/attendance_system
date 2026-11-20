@@ -37,6 +37,7 @@ function dumpDatabase($conn) {
     }
     
     $sql = "-- Database Backup for Migration\n-- Generated: " . date('Y-m-d H:i:s') . "\n\n";
+    $sql .= "USE test;\n";
     $sql .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
     
     foreach($tables as $table) {
