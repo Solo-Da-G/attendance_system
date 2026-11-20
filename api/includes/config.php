@@ -127,6 +127,9 @@ date_default_timezone_set("Africa/Lagos");
 // ================================================================
 // DATABASE CONNECTION
 // ================================================================
+// Suppress unhandled driver exceptions and handle connection retries gracefully
+mysqli_report(MYSQLI_REPORT_OFF);
+
 $conn = mysqli_init();
 if (!$conn) {
     die("Database initialization failed.");
@@ -136,8 +139,23 @@ if (ENVIRONMENT === 'cloud') {
     // Enable SSL for cloud database services (TiDB Cloud, Aiven, etc.)
     $conn->ssl_set(NULL, NULL, NULL, NULL, NULL);
     $conn->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-    $conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 15);
-    @$conn->real_connect($servername, $username, $password, $database, $port, NULL, MYSQLI_CLIENT_SSL);
+    $conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+    
+    // Resilient serverless connection retry (up to 3 attempts with 200ms backoff)
+    $connected = false;
+    for ($attempt = 1; $attempt <= 3; $attempt++) {
+        try {
+            $connected = @$conn->real_connect($servername, $username, $password, $database, $port, NULL, MYSQLI_CLIENT_SSL);
+            if ($connected && !$conn->connect_error) {
+                break;
+            }
+        } catch (Throwable $t) {
+            $connected = false;
+        }
+        if ($attempt < 3) {
+            usleep(200000); // 200ms backoff
+        }
+    }
 } else {
     @$conn->real_connect($servername, $username, $password, $database, $port);
 }
