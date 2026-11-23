@@ -47,6 +47,18 @@ $queries = [
     "ALTER TABLE `attendance` ADD COLUMN `is_geofenced` TINYINT(1) DEFAULT 0",
     "ALTER TABLE `attendance` ADD COLUMN `branch_in` VARCHAR(100) NULL",
     "ALTER TABLE `attendance` ADD COLUMN `branch_out` VARCHAR(100) NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `work_mode` VARCHAR(20) NOT NULL DEFAULT 'office'",
+    "ALTER TABLE `attendance` ADD COLUMN `wfh_task` TEXT NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `wfh_address_in` VARCHAR(255) NULL",
+    "ALTER TABLE `attendance` ADD COLUMN `wfh_address_out` VARCHAR(255) NULL",
+    
+    // Create system_settings table if not exists
+    "CREATE TABLE IF NOT EXISTS `system_settings` (
+        `setting_key` VARCHAR(50) NOT NULL PRIMARY KEY,
+        `setting_value` TEXT NULL,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    "INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`) VALUES ('wfh_days', 'Tuesday,Thursday'), ('wfh_task_required', '0')",
     
     // Create branches table if not exists
     "CREATE TABLE IF NOT EXISTS `branches` (

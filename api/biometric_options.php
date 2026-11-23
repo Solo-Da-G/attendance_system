@@ -23,14 +23,33 @@ try {
     // 0. LOGIN OPTIONS (Public - no active session required)
     // -------------------------------------------------------------
     if ($action === 'login_options') {
-        $identifier = trim($_GET['identifier'] ?? $_POST['identifier'] ?? '');
+        $identifier  = trim($_GET['identifier'] ?? $_POST['identifier'] ?? '');
+        $device_cred = trim($_GET['device_cred'] ?? $_POST['device_cred'] ?? '');
         
         $challenge = random_bytes(32);
         $_SESSION['webauthn_login_challenge'] = base64url_encode($challenge);
 
         $allowCredentials = [];
 
-        if (!empty($identifier)) {
+        // Fast-path: device-specific credential saved in client localStorage
+        if (!empty($device_cred)) {
+            $stmt = $conn->prepare("SELECT credential_id FROM staff_biometrics WHERE credential_id = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param("s", $device_cred);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $allowCredentials[] = [
+                        "type" => "public-key",
+                        "id" => $row['credential_id'],
+                        "transports" => ["internal", "hybrid"]
+                    ];
+                }
+                $stmt->close();
+            }
+        }
+
+        if (empty($allowCredentials) && !empty($identifier)) {
             // Find credentials for this staff_id, email, or username
             $stmt = $conn->prepare("
                 SELECT b.credential_id 
@@ -60,9 +79,9 @@ try {
                 ]);
                 exit;
             }
-        } else {
-            // Global credentials lookup across all registered staff
-            $res = $conn->query("SELECT credential_id FROM staff_biometrics ORDER BY id DESC LIMIT 100");
+        } elseif (empty($allowCredentials)) {
+            // Global credentials lookup across registered staff (capped to 50 most recent)
+            $res = $conn->query("SELECT credential_id FROM staff_biometrics ORDER BY id DESC LIMIT 50");
             if ($res) {
                 while ($row = $res->fetch_assoc()) {
                     $allowCredentials[] = [
@@ -173,9 +192,11 @@ if ($action === 'auth_options') {
     $challenge = random_bytes(32);
     $_SESSION['webauthn_auth_challenge'] = base64url_encode($challenge);
 
-    // Retrieve all registered credential IDs for this staff
-    $stmt = $conn->prepare("SELECT credential_id FROM staff_biometrics WHERE staff_id = ?");
-    $stmt->bind_param("s", $staff_id);
+    $device_cred = trim($_GET['device_cred'] ?? $_POST['device_cred'] ?? '');
+
+    // Retrieve registered credential IDs for this staff
+    $stmt = $conn->prepare("SELECT credential_id FROM staff_biometrics WHERE staff_id = ? ORDER BY (credential_id = ?) DESC, id DESC");
+    $stmt->bind_param("ss", $staff_id, $device_cred);
     $stmt->execute();
     $res = $stmt->get_result();
     

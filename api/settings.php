@@ -50,6 +50,16 @@ if (isset($_POST['update_settings'])) {
         }
 
         if ($stmt->execute()) {
+            // Save Work From Home (WFH) settings
+            $selected_wfh_days = isset($_POST['wfh_days']) && is_array($_POST['wfh_days']) ? $_POST['wfh_days'] : [];
+            $valid_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            $clean_wfh_days = array_values(array_intersect($selected_wfh_days, $valid_days));
+            $wfh_days_str = implode(',', $clean_wfh_days);
+            set_system_setting($conn, 'wfh_days', $wfh_days_str);
+
+            $wfh_task_req = isset($_POST['wfh_task_required']) ? '1' : '0';
+            set_system_setting($conn, 'wfh_task_required', $wfh_task_req);
+
             $success = "Settings updated successfully";
             $_SESSION['admin'] = $username;
         } else {
@@ -68,6 +78,10 @@ $admin = $stmt->get_result()->fetch_assoc();
 if (!isset($admin['auto_backup_freq'])) $admin['auto_backup_freq'] = 'never';
 if (!isset($admin['auto_backup_type'])) $admin['auto_backup_type'] = 'both';
 $stmt->close();
+
+/* FETCH CURRENT WFH SETTINGS */
+$current_wfh_days = get_wfh_days($conn);
+$current_wfh_req  = get_system_setting($conn, 'wfh_task_required', '0') === '1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -261,6 +275,59 @@ $stmt->close();
                         <span>👥</span> Staff Directory (.csv)
                     </a>
                 </div>
+            <!-- ── SECTION 3: WORK FROM HOME (WFH) SCHEDULE & REMOTE POLICY ── -->
+            <div class="backup-box" style="background: rgba(14, 165, 233, 0.08); border: 1.5px solid rgba(14, 165, 233, 0.35);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                    <h4 style="margin: 0; color: #0284c7; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                        <span>🏠</span> Work From Home (WFH) Schedule &amp; Remote Attendance
+                    </h4>
+                    <span id="wfhStatusPill" style="font-size:11px; font-weight:700; background:<?php echo empty($current_wfh_days) ? '#fee2e2' : '#e0f2fe'; ?>; color:<?php echo empty($current_wfh_days) ? '#dc2626' : '#0369a1'; ?>; padding:3px 8px; border-radius:6px;">
+                        <?php echo empty($current_wfh_days) ? '⚠️ 100% Strict On-Site Only' : 'Active: ' . implode(', ', $current_wfh_days); ?>
+                    </span>
+                </div>
+                <p style="font-size: 13px; color: #4b5563; margin: 0 0 14px; line-height: 1.45;">
+                    Select the days of the week when staff are permitted to clock in remotely from home. 
+                    <strong>Physical office geofencing is always active 24/7</strong> for cleaners, drivers, rotating staff, and emergency on-site visits.
+                </p>
+
+                <label style="font-size: 13px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">
+                    1. Select Active Work From Home Days:
+                </label>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                    <?php
+                    $all_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    foreach ($all_days as $day):
+                        $isChecked = in_array($day, $current_wfh_days, true);
+                    ?>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: white; border: 1.5px solid <?php echo $isChecked ? '#0284c7' : '#cbd5e1'; ?>; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; font-size: 13px; font-weight: 600; color: #1e293b;" class="wfh-day-label">
+                        <input type="checkbox" name="wfh_days[]" value="<?php echo $day; ?>" <?php echo $isChecked ? 'checked' : ''; ?> onchange="updateWfhPreview()" style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
+                        <span><?php echo $day; ?></span>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
+
+                <div id="wfhKillSwitchNotice" style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:12.5px; color:#9f1239; line-height:1.4; <?php echo !empty($current_wfh_days) ? 'display:none;' : ''; ?>">
+                    <strong>🛑 Master Kill Switch Active:</strong> When no days are selected, Work From Home is completely disabled company-wide. All staff must be physically inside an authorized branch geofence (200m) to clock in or out.
+                </div>
+
+                <div id="wfhActiveNotice" style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:12.5px; color:#0369a1; line-height:1.4; <?php echo empty($current_wfh_days) ? 'display:none;' : ''; ?>">
+                    <strong>💡 Smart Transition Rule:</strong> Staff clocking in from home who later report to the office for emergencies can clock out at the office branch. The system seamlessly records this as a <strong>🔄 Hybrid (Home ➔ Office)</strong> session with exact hours.
+                </div>
+
+                <!-- Require Task Summary Toggle -->
+                <div style="background: white; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <div>
+                        <div style="font-size: 13px; font-weight: 700; color: #1e293b;">Require Daily Work Focus / Task Summary</div>
+                        <div style="font-size: 12px; color: #64748b;">Staff must type a 1-line note of what they accomplished or planned when clocking WFH.</div>
+                    </div>
+                    <label style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;">
+                        <input type="checkbox" name="wfh_task_required" value="1" <?php echo $current_wfh_req ? 'checked' : ''; ?> style="opacity: 0; width: 0; height: 0;">
+                        <span style="position: absolute; cursor: pointer; inset: 0; background-color: <?php echo $current_wfh_req ? '#0284c7' : '#cbd5e1'; ?>; transition: .3s; border-radius: 24px;" onclick="this.previousElementSibling.click(); this.style.backgroundColor = this.previousElementSibling.checked ? '#0284c7' : '#cbd5e1';">
+                            <span style="position: absolute; content: ''; height: 18px; width: 18px; left: <?php echo $current_wfh_req ? '23px' : '3px'; ?>; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%;"></span>
+                        </span>
+                    </label>
+                </div>
             </div>
 
             <button type="submit" name="update_settings" style="margin-top:25px; width:100%;">Save Settings</button>
@@ -335,6 +402,44 @@ function refreshExportUrls() {
     document.getElementById('btnAttZip').href = 'backup.php?action=attendance_excel&month=' + encodeURIComponent(monthVal) + '&zip=1';
     document.getElementById('btnAttEmail').href = 'backup.php?action=email_attendance&month=' + encodeURIComponent(monthVal);
 }
+
+function updateWfhPreview() {
+    const checked = Array.from(document.querySelectorAll('input[name="wfh_days[]"]:checked')).map(cb => cb.value);
+    const pill = document.getElementById('wfhStatusPill');
+    const killNotice = document.getElementById('wfhKillSwitchNotice');
+    const activeNotice = document.getElementById('wfhActiveNotice');
+
+    // Update label styles
+    document.querySelectorAll('.wfh-day-label').forEach(lbl => {
+        const cb = lbl.querySelector('input');
+        if (cb && cb.checked) {
+            lbl.style.borderColor = '#0284c7';
+            lbl.style.background = '#f0f9ff';
+        } else {
+            lbl.style.borderColor = '#cbd5e1';
+            lbl.style.background = '#ffffff';
+        }
+    });
+
+    if (checked.length === 0) {
+        if (pill) {
+            pill.style.background = '#fee2e2';
+            pill.style.color = '#dc2626';
+            pill.textContent = '⚠️ 100% Strict On-Site Only';
+        }
+        if (killNotice) killNotice.style.display = 'block';
+        if (activeNotice) activeNotice.style.display = 'none';
+    } else {
+        if (pill) {
+            pill.style.background = '#e0f2fe';
+            pill.style.color = '#0369a1';
+            pill.textContent = 'Active: ' + checked.join(', ');
+        }
+        if (killNotice) killNotice.style.display = 'none';
+        if (activeNotice) activeNotice.style.display = 'block';
+    }
+}
+
 function togglePassVisibility(inputId, btn) {
     const input = document.getElementById(inputId);
     if (!input) return;

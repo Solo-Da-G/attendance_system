@@ -1380,22 +1380,34 @@ function scrollToShowcase(e) {
 
 // Pre-fetch biometric challenge on page load so hardware sensor prompt appears instantly (<15ms)
 let preloadedBioOptions = null;
+let activePrefetchPromise = null;
 let prefetchBioTimer = null;
 
 async function prefetchBiometricOptions(targetId) {
-    try {
-        if (!window.TDSBiometric) return;
-        TDSBiometric.isSupported(); // pre-warm platform check
-        const usernameInput = document.getElementById('username');
-        const savedStaffId = (typeof targetId === 'string' ? targetId : (usernameInput ? usernameInput.value.trim() : (localStorage.getItem('tds_saved_staff_id') || ''))).trim();
-        const optUrl = '/api/biometric_options.php?action=login_options' + (savedStaffId ? '&identifier=' + encodeURIComponent(savedStaffId) : '');
-        const res = await fetch(optUrl, { cache: 'no-store' });
-        const data = await res.json();
-        if (data && data.status === 'success') {
-            data.forIdentifier = savedStaffId;
-            preloadedBioOptions = data;
-        }
-    } catch (_) {}
+    if (activePrefetchPromise) return activePrefetchPromise;
+    activePrefetchPromise = (async () => {
+        try {
+            if (!window.TDSBiometric) return;
+            TDSBiometric.isSupported(); // pre-warm platform check
+            const usernameInput = document.getElementById('username');
+            const savedStaffId = (typeof targetId === 'string' ? targetId : (usernameInput ? usernameInput.value.trim() : (localStorage.getItem('tds_saved_staff_id') || ''))).trim();
+            let savedCred = '';
+            try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
+
+            let optUrl = '/api/biometric_options.php?action=login_options';
+            if (savedStaffId) optUrl += '&identifier=' + encodeURIComponent(savedStaffId);
+            if (savedCred) optUrl += '&device_cred=' + encodeURIComponent(savedCred);
+
+            const res = await fetch(optUrl, { cache: 'no-store' });
+            const data = await res.json();
+            if (data && data.status === 'success') {
+                data.forIdentifier = savedStaffId;
+                preloadedBioOptions = data;
+            }
+        } catch (_) {}
+        activePrefetchPromise = null;
+    })();
+    return activePrefetchPromise;
 }
 
 // Kick off early pre-fetch immediately
@@ -1492,8 +1504,21 @@ async function handleBiometricLogin() {
         if (preloadedBioOptions && (!identifier || preloadedBioOptions.forIdentifier === identifier)) {
             options = preloadedBioOptions;
             preloadedBioOptions = null; // consume once
-        } else {
-            const optUrl = '/api/biometric_options.php?action=login_options' + (identifier ? '&identifier=' + encodeURIComponent(identifier) : '');
+        } else if (activePrefetchPromise) {
+            await activePrefetchPromise;
+            if (preloadedBioOptions && (!identifier || preloadedBioOptions.forIdentifier === identifier)) {
+                options = preloadedBioOptions;
+                preloadedBioOptions = null;
+            }
+        }
+
+        if (!options) {
+            let savedCred = '';
+            try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
+            let optUrl = '/api/biometric_options.php?action=login_options';
+            if (identifier) optUrl += '&identifier=' + encodeURIComponent(identifier);
+            if (savedCred) optUrl += '&device_cred=' + encodeURIComponent(savedCred);
+
             const optRes = await fetch(optUrl);
             const optText = await optRes.text();
             try {
@@ -1508,18 +1533,29 @@ async function handleBiometricLogin() {
             throw new Error((options && options.message) ? options.message : 'Could not start biometric authentication.');
         }
 
+        let savedCred = '';
+        try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
+
         const allowCreds = (options.allowCredentials || []).map(c => ({
             type: 'public-key',
             id: TDSBiometric.base64UrlToBuffer(c.id),
             transports: c.transports
         }));
 
+        if (savedCred) {
+            allowCreds.sort((a, b) => {
+                const aMatch = TDSBiometric.bufferToBase64Url(a.id) === savedCred;
+                const bMatch = TDSBiometric.bufferToBase64Url(b.id) === savedCred;
+                return bMatch - aMatch;
+            });
+        }
+
         const getOptions = {
             challenge: TDSBiometric.base64UrlToBuffer(options.challenge),
             rpId: options.rpId,
             allowCredentials: allowCreds,
             userVerification: options.userVerification || 'preferred',
-            timeout: options.timeout || 60000
+            timeout: options.timeout || 30000
         };
 
         let assertion;
@@ -1543,6 +1579,9 @@ async function handleBiometricLogin() {
         if (fb) {
             fb.innerHTML = '⚡ <strong>Verifying fingerprint sensor token…</strong>';
         }
+
+        // Cache device credential ID locally
+        try { localStorage.setItem('tds_bio_cred_id', assertion.id); } catch (e) {}
 
         // 2. Post assertion to biometric_login.php
         const payload = {
@@ -1576,6 +1615,7 @@ async function handleBiometricLogin() {
             if (result.staff_id) {
                 try { localStorage.setItem('tds_saved_staff_id', result.staff_id); } catch (e) {}
             }
+            try { localStorage.setItem('tds_bio_cred_id', assertion.id); } catch (e) {}
             setTimeout(() => {
                 window.location.href = result.redirect || 'dashboard.php';
             }, 200);

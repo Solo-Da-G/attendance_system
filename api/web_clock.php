@@ -139,21 +139,51 @@ try {
 // Columns branch_in and branch_out already verified in schema
 
 // ──────────────────────────────────────────────────────────────────
-// GEOFENCE VALIDATION & BRANCH DETECTION
+// GEOFENCE VALIDATION, WFH SCHEDULE & BRANCH DETECTION
 // ──────────────────────────────────────────────────────────────────
-$staffHasClockLat    = function_exists('db_has_column') && db_has_column($conn, 'staff', 'clock_lat');
+$wfh_task = trim((string)($_POST['task'] ?? $_POST['wfh_task'] ?? ''));
+
+// Check if today is a company-approved Work From Home day (e.g. Tue, Thu)
+$is_wfh_day = is_wfh_day_today($conn);
+
 // ── UNIVERSAL GPS BRANCH AUTO-DETECTION & GEOFENCE ENFORCEMENT ──
 $geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
-if (!$geo['success']) {
-    audit_clock_event($conn, $staff_id, $staff_full_name, 'location_rejected', "Attempted $action — " . $geo['error']);
-    json_response([
-        "status"  => "error",
-        "message" => $geo['error'],
-        "debug"   => ["dist" => $geo['distance'], "limit" => $geo['radius'], "gps_accuracy" => $gps_accuracy]
-    ], 400);
+
+$work_mode    = 'office';
+$clock_branch = '';
+$is_geofenced = 1;
+
+if ($geo['success']) {
+    // Physical presence inside an authorized office branch (ALWAYS active 24/7!)
+    $work_mode    = 'office';
+    $clock_branch = $geo['branch_name'];
+    $is_geofenced = 1;
+} else {
+    // Outside branch perimeter: Check WFH eligibility
+    if (!$is_wfh_day) {
+        // Non-WFH day or WFH master-disabled: STRICTLY REJECT!
+        audit_clock_event($conn, $staff_id, $staff_full_name, 'location_rejected', "Attempted $action outside geofence on non-WFH day — " . $geo['error']);
+        json_response([
+            "status"  => "error",
+            "message" => $geo['error'],
+            "debug"   => ["dist" => $geo['distance'], "limit" => $geo['radius'], "gps_accuracy" => $gps_accuracy]
+        ], 400);
+    }
+
+    // Today IS a permitted WFH day: Remote punch accepted
+    $work_mode    = 'wfh';
+    $clock_branch = 'Remote / WFH';
+    $is_geofenced = 0;
+
+    // Check if task summary is mandatory
+    $task_required = get_system_setting($conn, 'wfh_task_required', '0') === '1';
+    if ($task_required && empty($wfh_task) && $action === 'clock_in') {
+        json_response([
+            "status"  => "error",
+            "message" => "📝 Daily Task Summary Required: Please enter a brief summary of what you will be working on today."
+        ], 400);
+    }
 }
-$clock_branch = $geo['branch_name'];
-$is_near      = true;
 
 // ──────────────────────────────────────────────────────────────────
 // PROCESS CLOCKING (one session per day)
@@ -191,10 +221,12 @@ if ($action === 'clock_in') {
     $insertParams  = [$staff_id, $now];
 
     if (in_array('source', $attendanceColumns, true)) { $insertColumns[] = 'source'; $insertValues[] = "'mobile'"; }
+    if (in_array('work_mode', $attendanceColumns, true)) { $insertColumns[] = 'work_mode'; $insertValues[] = '?'; $insertTypes .= 's'; $insertParams[] = $work_mode; }
+    if (in_array('wfh_task', $attendanceColumns, true) && !empty($wfh_task)) { $insertColumns[] = 'wfh_task'; $insertValues[] = '?'; $insertTypes .= 's'; $insertParams[] = $wfh_task; }
     if (in_array('photo_in', $attendanceColumns, true)) { $insertColumns[] = 'photo_in'; $insertValues[] = '?'; $insertTypes .= 's'; $insertParams[] = $photo; }
     if (in_array('lat_in', $attendanceColumns, true))  { $insertColumns[] = 'lat_in';  $insertValues[] = '?'; $insertTypes .= 'd'; $insertParams[] = $lat; }
     if (in_array('lng_in', $attendanceColumns, true))  { $insertColumns[] = 'lng_in';  $insertValues[] = '?'; $insertTypes .= 'd'; $insertParams[] = $lng; }
-    if (in_array('is_geofenced', $attendanceColumns, true)) { $insertColumns[] = 'is_geofenced'; $insertValues[] = '1'; }
+    if (in_array('is_geofenced', $attendanceColumns, true)) { $insertColumns[] = 'is_geofenced'; $insertValues[] = $is_geofenced ? "'1'" : "'0'"; }
     if (in_array('branch_in', $attendanceColumns, true)) { $insertColumns[] = 'branch_in'; $insertValues[] = '?'; $insertTypes .= 's'; $insertParams[] = $clock_branch; }
 
     $sql  = "INSERT INTO attendance (" . implode(', ', $insertColumns) . ") VALUES (" . implode(', ', $insertValues) . ")";
@@ -204,10 +236,20 @@ if ($action === 'clock_in') {
     }
     $stmt->bind_param($insertTypes, ...$insertParams);
     if ($stmt->execute()) {
-        audit_clock_event($conn, $staff_id, $staff_full_name, 'clock_in', "Daily clock-in at branch: $clock_branch");
+        $auditDetail = ($work_mode === 'wfh') 
+            ? "Remote clock-in (Work From Home). Lat: $lat, Lng: $lng" 
+            : "Daily clock-in at branch: $clock_branch";
+        audit_clock_event($conn, $staff_id, $staff_full_name, 'clock_in', $auditDetail);
+
+        $successMsg = ($work_mode === 'wfh')
+            ? "✅ Clocked in successfully from home! (Remote WFH Mode)"
+            : "✅ Clocked in successfully at $clock_branch.";
+
         json_response([
-            "status"   => "success",
-            "message"  => "✅ Clocked in successfully for today."
+            "status"    => "success",
+            "work_mode" => $work_mode,
+            "branch"    => $clock_branch,
+            "message"   => $successMsg
         ]);
     } else {
         json_response(["status" => "error", "message" => "Database error. Please try again."], 500);
@@ -216,7 +258,7 @@ if ($action === 'clock_in') {
 
 } else if ($action === 'clock_out') {
     // Find the latest open clock-in for today (no clock_out set)
-    $stmt = $conn->prepare("SELECT id, clock_in FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, clock_in, work_mode, branch_in, wfh_task FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? AND clock_out IS NULL ORDER BY id DESC LIMIT 1");
     $stmt->bind_param("ss", $staff_id, $date);
     $stmt->execute();
     $record = $stmt->get_result()->fetch_assoc();
@@ -226,12 +268,34 @@ if ($action === 'clock_in') {
         $clock_in_time = strtotime($record['clock_in']);
         $total_hours   = round((time() - $clock_in_time) / 3600, 2);
 
+        // ── HYBRID DAY-SHIFT RESOLUTION ──
+        $prev_mode   = $record['work_mode'] ?? 'office';
+        $prev_branch = $record['branch_in'] ?? 'Office';
+        $final_mode  = $prev_mode;
+
+        if ($prev_mode === 'wfh' && $geo['success']) {
+            // Started shift from home, reported to office for emergency/rotation -> HYBRID!
+            $final_mode = 'hybrid';
+        } elseif ($prev_mode === 'office' && !$geo['success'] && $is_wfh_day) {
+            // Started shift at office, finished at home on WFH day -> HYBRID!
+            $final_mode = 'hybrid';
+        } elseif ($prev_mode === 'wfh' && !$geo['success']) {
+            $final_mode = 'wfh';
+        } else {
+            $final_mode = 'office';
+        }
+
         $attendanceColumns = function_exists('db_table_columns') ? db_table_columns($conn, 'attendance') : [];
         $updateParts  = ['clock_out = ?', "status = 'out'", 'total_hours = ?'];
         $updateTypes  = 'sd';
         $updateParams = [$now, $total_hours];
 
         if (in_array('source', $attendanceColumns, true)) { $updateParts[] = "source = 'mobile'"; }
+        if (in_array('work_mode', $attendanceColumns, true)) { $updateParts[] = 'work_mode = ?'; $updateTypes .= 's'; $updateParams[] = $final_mode; }
+        if (in_array('wfh_task', $attendanceColumns, true) && !empty($wfh_task)) {
+            $combinedTask = !empty($record['wfh_task']) ? $record['wfh_task'] . " | Evening: " . $wfh_task : $wfh_task;
+            $updateParts[] = 'wfh_task = ?'; $updateTypes .= 's'; $updateParams[] = $combinedTask;
+        }
         if (in_array('photo_out', $attendanceColumns, true)) { $updateParts[] = 'photo_out = ?'; $updateTypes .= 's'; $updateParams[] = $photo; }
         if (in_array('lat_out', $attendanceColumns, true))  { $updateParts[] = 'lat_out = ?';  $updateTypes .= 'd'; $updateParams[] = $lat; }
         if (in_array('lng_out', $attendanceColumns, true))  { $updateParts[] = 'lng_out = ?';  $updateTypes .= 'd'; $updateParams[] = $lng; }
@@ -245,10 +309,18 @@ if ($action === 'clock_in') {
         }
         $stmt->bind_param($updateTypes, ...$updateParams);
         if ($stmt->execute()) {
-            audit_clock_event($conn, $staff_id, $staff_full_name, 'clock_out', "Session closed. Duration: {$total_hours}h. Branch: $clock_branch");
+            $auditDetail = "Session closed. Duration: {$total_hours}h. Mode: {$final_mode}. In: {$prev_branch}, Out: {$clock_branch}";
+            audit_clock_event($conn, $staff_id, $staff_full_name, 'clock_out', $auditDetail);
+
+            $modeTag = ($final_mode === 'hybrid') 
+                ? '🔄 Hybrid Shift (Home ➔ Office)' 
+                : (($final_mode === 'wfh') ? '🏠 Remote WFH' : "🏢 {$clock_branch}");
+
             json_response([
-                "status"  => "success",
-                "message" => "✅ Clocked out successfully! Duration: $total_hours hours. Today's attendance is complete."
+                "status"    => "success",
+                "work_mode" => $final_mode,
+                "branch"    => $clock_branch,
+                "message"   => "✅ Clocked out successfully! ({$modeTag}) Duration: {$total_hours} hrs. Today's attendance is complete."
             ]);
         } else {
             json_response(["status" => "error", "message" => "Database error. Please try again."], 500);

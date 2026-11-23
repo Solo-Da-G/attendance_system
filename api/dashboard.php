@@ -43,6 +43,12 @@ $clock_face_version = @filemtime(dirname(__DIR__) . "/asset/js/clock-face.js") ?
 $audio_version = @filemtime(dirname(__DIR__) . "/asset/js/attendance-audio.js") ?: time();
 $idle_logout_version = @filemtime(dirname(__DIR__) . "/asset/js/idle-logout.js") ?: time();
 
+// WFH Schedule & Remote Policy Check
+$is_wfh_day_today = function_exists('is_wfh_day_today') ? is_wfh_day_today($conn) : false;
+$active_wfh_days = function_exists('get_wfh_days') ? get_wfh_days($conn) : [];
+$wfh_task_required = function_exists('get_system_setting') ? (get_system_setting($conn, 'wfh_task_required', '0') === '1') : false;
+
+
 // Determine greeting based on hour of the day
 $current_hour = (int)date('H');
 if ($current_hour < 12) {
@@ -195,6 +201,70 @@ if ($staff_id) {
         0% { transform: scale(0.96); opacity: 0.6; }
         50% { transform: scale(1.02); opacity: 1; }
         100% { transform: scale(0.96); opacity: 0.6; }
+    }
+
+    /* WFH Traffic-Light Visual Indicator */
+    .wfh-status-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 18px;
+        border-radius: 16px;
+        margin-bottom: 18px;
+        transition: all 0.25s ease;
+    }
+    .wfh-status-banner.ready-office {
+        background: #f0fdf4;
+        border: 1.5px solid #22c55e;
+        color: #166534;
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.12);
+    }
+    .wfh-status-banner.ready-wfh {
+        background: #f0f9ff;
+        border: 1.5px solid #0284c7;
+        color: #0369a1;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+    }
+    .wfh-status-banner.locked-geofence {
+        background: #fef2f2;
+        border: 1.5px solid #ef4444;
+        color: #991b1b;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.12);
+    }
+    .wfh-banner-icon {
+        font-size: 26px;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+    .wfh-banner-body {
+        flex: 1;
+        min-width: 0;
+    }
+    .wfh-banner-title {
+        font-size: 13.5px;
+        font-weight: 800;
+        letter-spacing: -0.2px;
+        line-height: 1.3;
+    }
+    .wfh-banner-sub {
+        font-size: 12px;
+        opacity: 0.9;
+        margin-top: 2px;
+        line-height: 1.35;
+    }
+    .wfh-pulse-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        animation: wfhDotPulse 1.6s infinite;
+    }
+    .wfh-pulse-dot.green { background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25); }
+    .wfh-pulse-dot.blue { background: #0284c7; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.25); }
+    .wfh-pulse-dot.red { background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25); }
+    @keyframes wfhDotPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.25); opacity: 0.7; }
     }
 
     /* Biometric Verification Tabs */
@@ -705,6 +775,20 @@ if ($staff_id) {
     <?php endif; ?>
     
     <div class="clocking-card">
+        <!-- Intelligent Traffic-Light Work Mode Banner (Ultra-Visual for all staff) -->
+        <div id="wfhIndicatorBanner" class="wfh-status-banner <?php echo $is_wfh_day_today ? 'ready-wfh' : 'ready-office'; ?>">
+            <span class="wfh-banner-icon" id="wfhBannerIcon"><?php echo $is_wfh_day_today ? '🏠' : '🏢'; ?></span>
+            <div class="wfh-banner-body">
+                <div class="wfh-banner-title" id="wfhBannerTitle">
+                    <?php echo $is_wfh_day_today ? '🏠 Work From Home Day Active' : '🏢 On-Site Office Attendance'; ?>
+                </div>
+                <div class="wfh-banner-sub" id="wfhBannerSub">
+                    <?php echo $is_wfh_day_today ? 'Tuesday &amp; Thursday remote schedule &bull; Verifying GPS location…' : 'Detecting your branch location…'; ?>
+                </div>
+            </div>
+            <span class="wfh-pulse-dot <?php echo $is_wfh_day_today ? 'blue' : 'green'; ?>" id="wfhBannerDot"></span>
+        </div>
+
         <!-- Multi-Modal Biometric Verification Tabs -->
         <div class="verification-tabs">
             <button type="button" class="ver-tab-btn active" id="tabFaceBtn" onclick="switchClockMode('face')">
@@ -813,6 +897,14 @@ if ($staff_id) {
             // 7PM cutoff
             $past_7pm = (int)date('G') >= 19;
         ?>
+
+        <!-- Optional / Required WFH Daily Task Focus -->
+        <div id="wfhTaskWrap" style="display: <?php echo ($is_wfh_day_today && !$attendance_done && !$past_7pm) ? 'block' : 'none'; ?>; margin: 10px 0 16px;">
+            <label for="wfhTaskInput" style="display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#0369a1; margin-bottom:5px;">
+                <span>📝</span> Today's Work Focus / Tasks <?php if($wfh_task_required): ?><span style="color:#ef4444; font-size:11px;">(Required)</span><?php else: ?><span style="color:#64748b; font-weight:500; font-size:11px;">(Optional)</span><?php endif; ?>:
+            </label>
+            <input type="text" id="wfhTaskInput" placeholder="e.g. Preparing sales report, client support, code review..." autocomplete="off" style="width:100%; padding:10px 14px; border:1.5px solid #bae6fd; border-radius:12px; font-size:13.5px; outline:none; background:#f0f9ff; transition:border-color .2s;">
+        </div>
 
         <div id="clockControls">
             <?php if ($past_7pm): ?>
@@ -1967,6 +2059,11 @@ if ($staff_id) {
         formData.append('face_verified', '1');
         formData.append('face_distance', String(faceResult.distance));
 
+        const taskInput = document.getElementById('wfhTaskInput');
+        if (taskInput && taskInput.value.trim()) {
+            formData.append('task', taskInput.value.trim());
+        }
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -2817,6 +2914,7 @@ async function processBiometricClock() {
     const bioCard = document.getElementById('bioTouchCard');
     const bioBtn = document.getElementById('bioClockBtn');
     const resultBox = document.getElementById('apiResult');
+    const originalBioText = bioBtn ? bioBtn.innerHTML : '👆 Touch Sensor to Clock';
 
     if (bioCard) bioCard.classList.add('scanning');
     if (bioBtn) {
@@ -2826,7 +2924,9 @@ async function processBiometricClock() {
     if (statusText) statusText.innerHTML = '👆 <strong>Touch your fingerprint sensor now…</strong>';
 
     try {
-        const res = await TDSBiometric.clock();
+        const taskInput = document.getElementById('wfhTaskInput');
+        const taskVal = taskInput ? taskInput.value.trim() : '';
+        const res = await TDSBiometric.clock(taskVal);
         if (bioCard) bioCard.classList.remove('scanning');
         if (statusText) statusText.innerHTML = '<span style="color:#10b981;">' + res.message + '</span>';
         if (resultBox) {
@@ -2845,7 +2945,7 @@ async function processBiometricClock() {
         if (bioCard) bioCard.classList.remove('scanning');
         if (bioBtn) {
             bioBtn.disabled = false;
-            bioBtn.innerHTML = '👆 Touch Sensor to Clock';
+            bioBtn.innerHTML = originalBioText;
         }
         if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">' + err.message + '</span>';
         if (resultBox) {
@@ -2853,6 +2953,65 @@ async function processBiometricClock() {
         }
     }
 }
+
+// ── Smart Live Location & WFH Mode Auto-Detection ──────────────
+async function checkLiveLocationStatus() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const res = await fetch(`/api/check_location.php?lat=${lat}&lng=${lng}`);
+            const data = await res.json();
+            
+            const banner = document.getElementById('wfhIndicatorBanner');
+            const icon = document.getElementById('wfhBannerIcon');
+            const title = document.getElementById('wfhBannerTitle');
+            const sub = document.getElementById('wfhBannerSub');
+            const dot = document.getElementById('wfhBannerDot');
+            const taskWrap = document.getElementById('wfhTaskWrap');
+
+            if (!banner || !data) return;
+
+            if (data.work_mode === 'office') {
+                // Inside company branch perimeter: Physical presence always welcomed!
+                banner.className = 'wfh-status-banner ready-office';
+                if (icon) icon.textContent = '🏢';
+                if (title) title.textContent = `🏢 Inside ${data.branch || 'Office Branch'} (Ready to Clock)`;
+                const distText = data.distance ? ` (${Math.round(data.distance)}m inside radius)` : '';
+                if (sub) sub.textContent = `On-site branch perimeter verified${distText} • Full 24/7 access active`;
+                if (dot) dot.className = 'wfh-pulse-dot green';
+                if (taskWrap) taskWrap.style.display = 'none';
+            } else if (data.work_mode === 'wfh') {
+                // Outside branch perimeter on approved WFH schedule day (e.g. Tuesday / Thursday)
+                banner.className = 'wfh-status-banner ready-wfh';
+                if (icon) icon.textContent = '🏠';
+                if (title) title.textContent = `🏠 Work From Home Active (Remote Mode)`;
+                const daysStr = (data.wfh_days && data.wfh_days.length) ? data.wfh_days.join(' & ') : 'Tuesday & Thursday';
+                if (sub) sub.textContent = `${daysStr} Remote Attendance Schedule • GPS coordinates will be captured`;
+                if (dot) dot.className = 'wfh-pulse-dot blue';
+                if (taskWrap) taskWrap.style.display = 'block';
+            } else {
+                // Outside branch perimeter on a non-WFH day: Clocking locked!
+                banner.className = 'wfh-status-banner locked-geofence';
+                if (icon) icon.textContent = '🛑';
+                if (title) title.textContent = `🛑 Outside Office Geofence (Clocking Locked)`;
+                const distKm = data.distance ? (data.distance > 1000 ? (data.distance / 1000).toFixed(1) + 'km' : Math.round(data.distance) + 'm') : 'Away';
+                if (sub) sub.textContent = `You are ${distKm} away from ${data.branch || 'your branch'}. You must report to an office branch to clock in today.`;
+                if (dot) dot.className = 'wfh-pulse-dot red';
+                if (taskWrap) taskWrap.style.display = 'none';
+            }
+        } catch (_) {}
+    }, () => {}, { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 });
+}
+
+// Kick off automatic location detection on load and tab focus
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkLiveLocationStatus);
+} else {
+    checkLiveLocationStatus();
+}
+window.addEventListener('focus', checkLiveLocationStatus);
 
 // ── E-Card / RFID Smart Badge Clocking ──────────────────────────
 let nfcScanning = false;

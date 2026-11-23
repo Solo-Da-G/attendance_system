@@ -92,7 +92,7 @@ function dumpDatabase($conn) {
 // -------------------------------------------------------------
 // HELPER: Fetch detailed attendance records with staff profiles
 // -------------------------------------------------------------
-function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $branch = '', $staff_id = '', $search = '') {
+function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $branch = '', $staff_id = '', $search = '', $mode = '') {
     $where = [];
     $params = [];
     $types = '';
@@ -137,6 +137,12 @@ function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $bran
         $types .= 'sss';
     }
 
+    if (!empty($mode) && $mode !== 'all') {
+        $where[] = "a.work_mode = ?";
+        $params[] = $mode;
+        $types .= 's';
+    }
+
     $whereSql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
     $hasPhotoIn   = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'photo_in') : false;
@@ -144,12 +150,24 @@ function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $bran
     $hasGeofence  = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'is_geofenced') : false;
     $hasBranchIn  = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'branch_in') : false;
     $hasBranchOut = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'branch_out') : false;
+    $hasWorkMode  = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'work_mode') : true;
+    $hasWfhTask   = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'wfh_task') : true;
+    $hasLatIn     = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'lat_in') : true;
+    $hasLngIn     = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'lng_in') : true;
+    $hasLatOut    = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'lat_out') : true;
+    $hasLngOut    = function_exists('db_has_column') ? db_has_column($conn, 'attendance', 'lng_out') : true;
 
     $photoInExpr   = $hasPhotoIn ? "(a.photo_in IS NOT NULL AND a.photo_in != '')" : "0";
     $photoOutExpr  = $hasPhotoOut ? "(a.photo_out IS NOT NULL AND a.photo_out != '')" : "0";
     $branchInExpr  = $hasBranchIn ? "COALESCE(a.branch_in, s.branch, 'Main Branch')" : "COALESCE(s.branch, 'Main Branch')";
     $branchOutExpr = $hasBranchOut ? "COALESCE(a.branch_out, s.branch, 'Main Branch')" : "COALESCE(s.branch, 'Main Branch')";
     $geoExpr       = $hasGeofence ? "a.is_geofenced" : "0";
+    $workModeExpr  = $hasWorkMode ? "COALESCE(a.work_mode, 'office')" : "'office'";
+    $wfhTaskExpr   = $hasWfhTask ? "a.wfh_task" : "NULL";
+    $latInExpr     = $hasLatIn ? "a.lat_in" : "NULL";
+    $lngInExpr     = $hasLngIn ? "a.lng_in" : "NULL";
+    $latOutExpr    = $hasLatOut ? "a.lat_out" : "NULL";
+    $lngOutExpr    = $hasLngOut ? "a.lng_out" : "NULL";
 
     $sql = "SELECT a.id, a.staff_id, a.clock_in, a.clock_out, a.status, a.source, a.total_hours,
                    {$photoInExpr} AS has_photo_in,
@@ -157,6 +175,12 @@ function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $bran
                    {$branchInExpr} AS loc_in,
                    {$branchOutExpr} AS loc_out,
                    {$geoExpr} AS is_geofenced,
+                   {$workModeExpr} AS work_mode,
+                   {$wfhTaskExpr} AS wfh_task,
+                   {$latInExpr} AS lat_in,
+                   {$lngInExpr} AS lng_in,
+                   {$latOutExpr} AS lat_out,
+                   {$lngOutExpr} AS lng_out,
                    s.full_name, s.job_title, s.department, s.branch, s.email, s.phone
             FROM attendance a
             LEFT JOIN staff s ON a.staff_id = s.staff_id
@@ -198,6 +222,25 @@ function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $bran
 
             $hours = isset($row['total_hours']) && $row['total_hours'] !== null ? number_format((float)$row['total_hours'], 2) . ' hrs' : ($status === 'Working' ? 'In Progress' : '0.00 hrs');
 
+            $wMode = strtolower((string)($row['work_mode'] ?? 'office'));
+            if ($wMode === 'wfh') {
+                $wModeLabel = 'Work From Home (Remote)';
+            } elseif ($wMode === 'hybrid') {
+                $wModeLabel = 'Hybrid Shift (Split)';
+            } else {
+                $wModeLabel = 'Branch Office';
+            }
+
+            $wfhTask = !empty($row['wfh_task']) ? $row['wfh_task'] : '—';
+
+            $clockInGps = (!empty($row['lat_in']) && !empty($row['lng_in']))
+                ? "https://www.google.com/maps?q=" . $row['lat_in'] . "," . $row['lng_in']
+                : '—';
+
+            $clockOutGps = (!empty($row['lat_out']) && !empty($row['lng_out']))
+                ? "https://www.google.com/maps?q=" . $row['lat_out'] . "," . $row['lng_out']
+                : '—';
+
             $records[] = [
                 'Log ID'               => $row['id'],
                 'Staff ID'             => $row['staff_id'],
@@ -209,13 +252,17 @@ function getAttendanceLogRecords($conn, $month = '', $from = '', $to = '', $bran
                 'Phone'                => $row['phone'] ?: '—',
                 'Date'                 => $date,
                 'Day'                  => $dayName,
+                'Work Mode'            => $wModeLabel,
                 'Clock In Time'        => $clockInTime,
                 'Clock In Branch'      => $row['loc_in'],
+                'Clock In GPS'         => $clockInGps,
                 'Clock Out Time'       => $clockOutTime,
                 'Clock Out Branch'     => $row['loc_out'],
+                'Clock Out GPS'        => $clockOutGps,
                 'Total Hours'          => $hours,
                 'Status'               => $status,
                 'Clock Method'         => $src,
+                'WFH Daily Task / Note'=> $wfhTask,
                 'Geofenced Verified'   => $geofenced,
                 'Selfie Verified'      => $selfie
             ];
@@ -568,9 +615,10 @@ if ($action === 'attendance_excel' || $action === 'attendance_download') {
     $branch   = trim($_GET['branch'] ?? '');
     $staff_id = trim($_GET['staff_id'] ?? '');
     $search   = trim($_GET['search'] ?? '');
+    $mode     = trim($_GET['mode'] ?? '');
     $isZip    = (!empty($_GET['zip']) && $_GET['zip'] == '1');
 
-    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch, $staff_id, $search);
+    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch, $staff_id, $search, $mode);
     $csvData = generateCsvFromRecords($records, 'No attendance records found for this period.');
 
     // Build smart dynamic filename
@@ -593,6 +641,11 @@ if ($action === 'attendance_excel' || $action === 'attendance_download') {
         $staffLabel = $cleanName . "_";
     }
 
+    $modeLabel = '';
+    if (!empty($mode) && $mode !== 'all') {
+        $modeLabel = preg_replace('/[^a-zA-Z0-9_-]/', '', $mode) . "_";
+    }
+
     if (!empty($from) && !empty($to)) {
         $dateLabel = ($from === $to) ? $from : "{$from}_to_{$to}";
     } elseif (!empty($from)) {
@@ -605,7 +658,7 @@ if ($action === 'attendance_excel' || $action === 'attendance_download') {
         $dateLabel = ($month === 'all') ? 'all_time' : date('Y-m-d');
     }
 
-    $fileBase = "attendance_{$staffLabel}{$dateLabel}";
+    $fileBase = "attendance_{$modeLabel}{$staffLabel}{$dateLabel}";
 
     if ($isZip) {
         $zipData = createZipArchive([
@@ -638,8 +691,9 @@ if ($action === 'email_attendance') {
     $from   = trim($_GET['from'] ?? '');
     $to     = trim($_GET['to'] ?? '');
     $branch = trim($_GET['branch'] ?? '');
+    $mode   = trim($_GET['mode'] ?? '');
 
-    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch);
+    $records = getAttendanceLogRecords($conn, $month, $from, $to, $branch, '', '', $mode);
     $csvData = generateCsvFromRecords($records, 'No attendance records found for this period.');
     $count   = count($records);
 

@@ -118,13 +118,16 @@ const TDSBiometric = (function () {
         });
     }
 
-    // Pre-fetch authentication challenge & options in background
+    // Pre-fetch authentication challenge & options in background with device-scoped credential optimization
     async function prefetchAuth() {
         if (_prefetchingAuthPromise) return _prefetchingAuthPromise;
 
         _prefetchingAuthPromise = (async () => {
             try {
-                const resp = await fetch('/api/biometric_options.php?action=auth_options', { cache: 'no-store' });
+                let savedCred = '';
+                try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
+                const optUrl = '/api/biometric_options.php?action=auth_options' + (savedCred ? '&device_cred=' + encodeURIComponent(savedCred) : '');
+                const resp = await fetch(optUrl, { cache: 'no-store' });
                 const data = await resp.json();
                 if (data && data.status === 'success') {
                     _prefetchedAuth = data;
@@ -137,26 +140,29 @@ const TDSBiometric = (function () {
         return _prefetchingAuthPromise;
     }
 
-    // Get Auth Options (Instant if prefetched, otherwise fallback to network)
+    // Get Auth Options (Instant 0ms if prefetched, otherwise fallback to network)
     async function getAuthOptions() {
-        if (_prefetchedAuth && (Date.now() - _prefetchedAuthTime < 180000)) {
+        if (_prefetchedAuth && (Date.now() - _prefetchedAuthTime < 240000)) {
             const opt = _prefetchedAuth;
             _prefetchedAuth = null;
-            setTimeout(prefetchAuth, 600);
+            setTimeout(prefetchAuth, 300);
             return opt;
         }
 
         if (_prefetchingAuthPromise) {
             await _prefetchingAuthPromise;
-            if (_prefetchedAuth && (Date.now() - _prefetchedAuthTime < 180000)) {
+            if (_prefetchedAuth && (Date.now() - _prefetchedAuthTime < 240000)) {
                 const opt = _prefetchedAuth;
                 _prefetchedAuth = null;
-                setTimeout(prefetchAuth, 600);
+                setTimeout(prefetchAuth, 300);
                 return opt;
             }
         }
 
-        const optResp = await fetch('/api/biometric_options.php?action=auth_options', { cache: 'no-store' });
+        let savedCred = '';
+        try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
+        const optUrl = '/api/biometric_options.php?action=auth_options' + (savedCred ? '&device_cred=' + encodeURIComponent(savedCred) : '');
+        const optResp = await fetch(optUrl, { cache: 'no-store' });
         return await optResp.json();
     }
 
@@ -284,14 +290,17 @@ const TDSBiometric = (function () {
             throw new Error(saveResult.message || 'Failed to complete registration on server.');
         }
 
+        // Cache device credential ID locally for instant subsequent authentications
+        try { localStorage.setItem('tds_bio_cred_id', credential.id); } catch(_) {}
+
         // Preload next authentication options immediately
         setTimeout(prefetchAuth, 200);
 
         return saveResult;
     }
 
-    // Lightning-Fast Verify thumbprint / Face ID & punch attendance
-    async function clock() {
+    // Lightning-Fast Verify thumbprint / Face ID & punch attendance (<15ms hardware invocation)
+    async function clock(taskComment = '') {
         // 1. Launch background GPS acquisition concurrently (0ms wait)
         const coordsPromise = getCoordinates();
 
@@ -301,7 +310,7 @@ const TDSBiometric = (function () {
             throw new Error("Biometric authentication is not supported on this device/browser.");
         }
 
-        // 3. Grab authentication challenge (0ms if prefetched!)
+        // 3. Grab authentication challenge (0ms from RAM cache)
         const options = await getAuthOptions();
 
         if (!options || options.status !== 'success') {
@@ -312,7 +321,10 @@ const TDSBiometric = (function () {
             throw new Error("No biometric registered for this account. Please click 'Register This Device' first.");
         }
 
-        // 4. Format allowed credentials
+        // 4. Format allowed credentials with device credential prioritized at index 0
+        let savedCred = '';
+        try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
+
         const allowCreds = options.allowCredentials.map(c => {
             const item = {
                 type: 'public-key',
@@ -324,12 +336,20 @@ const TDSBiometric = (function () {
             return item;
         });
 
+        if (savedCred) {
+            allowCreds.sort((a, b) => {
+                const aMatch = bufferToBase64Url(a.id) === savedCred;
+                const bMatch = bufferToBase64Url(b.id) === savedCred;
+                return bMatch - aMatch;
+            });
+        }
+
         const getOptions = {
             challenge: base64UrlToBuffer(options.challenge),
             rpId: options.rpId,
             allowCredentials: allowCreds,
             userVerification: options.userVerification || 'preferred',
-            timeout: options.timeout || 60000
+            timeout: options.timeout || 30000
         };
 
         // 5. TRIGGER NATIVE FINGERPRINT / FACE ID SENSOR IMMEDIATELY (<15ms)
@@ -352,14 +372,18 @@ const TDSBiometric = (function () {
             throw new Error("Biometric verification cancelled.");
         }
 
+        // Cache confirmed credential ID on device
+        try { localStorage.setItem('tds_bio_cred_id', assertion.id); } catch(_) {}
+
         // 6. Await GPS (which already finished in background while user touched sensor!)
         const coords = await coordsPromise;
 
-        // 7. Post assertion & coordinates to server for clocking
+        // 7. Post assertion, coordinates, and optional WFH task to server for clocking
         const clockPayload = {
             credential_id: assertion.id,
             latitude: coords ? coords.latitude : null,
             longitude: coords ? coords.longitude : null,
+            task: taskComment || '',
             response: {
                 clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
                 authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),
@@ -383,12 +407,23 @@ const TDSBiometric = (function () {
 
     // Auto pre-warm support, GPS, and challenges as soon as script runs
     if (typeof window !== 'undefined') {
-        setTimeout(() => {
+        const warmUpAll = () => {
             isSupported();
             warmupGps();
             prefetchAuth();
             prefetchRegister();
-        }, 100);
+        };
+
+        setTimeout(warmUpAll, 80);
+
+        // Continuous banking-app keep-warm: refresh challenge every 90 seconds
+        setInterval(prefetchAuth, 90000);
+
+        // Immediate refresh when user re-focuses tab or app
+        window.addEventListener('focus', warmUpAll);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') warmUpAll();
+        });
     }
 
     return {

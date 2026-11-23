@@ -115,7 +115,7 @@ try {
 } catch (Throwable $t) {}
 
 // 5. Check today's attendance record
-$stmt = $conn->prepare("SELECT id, clock_in, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
+$stmt = $conn->prepare("SELECT id, clock_in, clock_out, work_mode, branch_in FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
 $stmt->bind_param("ss", $staff_id, $today);
 $stmt->execute();
 $check = $stmt->get_result();
@@ -126,7 +126,7 @@ $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
 if (!$record) {
     // ── CLOCK IN ──
-    $stmt2 = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, source, lat_in, lng_in, is_geofenced, branch_in) VALUES (?, ?, 'in', 'card', ?, ?, ?, ?)");
+    $stmt2 = $conn->prepare("INSERT INTO attendance (staff_id, clock_in, status, source, lat_in, lng_in, is_geofenced, branch_in, work_mode) VALUES (?, ?, 'in', 'card', ?, ?, ?, ?, 'office')");
     $stmt2->bind_param("ssddis", $staff_id, $current_time, $lat, $lng, $is_geofenced, $branch_name);
     $stmt2->execute();
     $stmt2->close();
@@ -160,8 +160,11 @@ if (!$record) {
     $diff_seconds = max(0, $clock_out_time - $clock_in_time);
     $total_hours = round($diff_seconds / 3600, 2);
 
-    $stmt3 = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', source = 'card', total_hours = ?, lat_out = ?, lng_out = ?, branch_out = ? WHERE id = ?");
-    $stmt3->bind_param("sdddsi", $current_time, $total_hours, $lat, $lng, $branch_name, $record['id']);
+    $prev_mode  = $record['work_mode'] ?? 'office';
+    $final_mode = ($prev_mode === 'wfh') ? 'hybrid' : 'office';
+
+    $stmt3 = $conn->prepare("UPDATE attendance SET clock_out = ?, status = 'out', source = 'card', total_hours = ?, lat_out = ?, lng_out = ?, branch_out = ?, work_mode = ? WHERE id = ?");
+    $stmt3->bind_param("sdddssi", $current_time, $total_hours, $lat, $lng, $branch_name, $final_mode, $record['id']);
     $stmt3->execute();
     $stmt3->close();
 

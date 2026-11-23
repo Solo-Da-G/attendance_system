@@ -214,7 +214,7 @@ if (!function_exists('db_has_table')) {
     }
 }
 
-// Auto-heal schema for password change requirements and cards (TiDB & MySQL safe)
+// Auto-heal schema for password change requirements, cards, and WFH (TiDB & MySQL safe)
 if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
     try {
         if (db_has_table($conn, 'staff') && !db_has_column($conn, 'staff', 'must_change_password')) {
@@ -230,8 +230,112 @@ if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
                 $conn->query("ALTER TABLE `staff` ADD UNIQUE INDEX `uq_card_uid` (`card_uid`)");
             } catch (Throwable $t) {}
         }
+
+        // ── Auto-heal WFH system settings table ──
+        if (!db_has_table($conn, 'system_settings')) {
+            $conn->query("CREATE TABLE IF NOT EXISTS `system_settings` (
+                `setting_key` VARCHAR(50) NOT NULL PRIMARY KEY,
+                `setting_value` TEXT NULL,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            
+            // Seed defaults: Tuesdays & Thursdays enabled
+            $conn->query("INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`) VALUES 
+                ('wfh_days', 'Tuesday,Thursday'),
+                ('wfh_task_required', '0')");
+        }
+
+        // ── Auto-heal attendance table for Work From Home tracking ──
+        if (db_has_table($conn, 'attendance')) {
+            if (!db_has_column($conn, 'attendance', 'work_mode')) {
+                $conn->query("ALTER TABLE `attendance` ADD COLUMN `work_mode` VARCHAR(20) NOT NULL DEFAULT 'office' AFTER `status`");
+            }
+            if (!db_has_column($conn, 'attendance', 'wfh_task')) {
+                $conn->query("ALTER TABLE `attendance` ADD COLUMN `wfh_task` TEXT NULL AFTER `work_mode`");
+            }
+            if (!db_has_column($conn, 'attendance', 'wfh_address_in')) {
+                $conn->query("ALTER TABLE `attendance` ADD COLUMN `wfh_address_in` VARCHAR(255) NULL AFTER `lng_in`");
+            }
+            if (!db_has_column($conn, 'attendance', 'wfh_address_out')) {
+                $conn->query("ALTER TABLE `attendance` ADD COLUMN `wfh_address_out` VARCHAR(255) NULL AFTER `lng_out`");
+            }
+        }
     } catch (Throwable $t) {
         // Suppress schema auto-heal errors so they never interrupt normal page loading
+    }
+}
+
+// ── WFH & System Settings Helper Functions ──
+if (!function_exists('get_system_setting')) {
+    function get_system_setting(mysqli $conn, string $key, string $default = ''): string {
+        if (!isset($GLOBALS['__system_setting_cache'])) {
+            $GLOBALS['__system_setting_cache'] = [];
+        }
+        if (isset($GLOBALS['__system_setting_cache'][$key])) {
+            return $GLOBALS['__system_setting_cache'][$key];
+        }
+        try {
+            $stmt = $conn->prepare("SELECT setting_value FROM `system_settings` WHERE setting_key = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param("s", $key);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($res && $row = $res->fetch_assoc()) {
+                    $stmt->close();
+                    $val = (string)($row['setting_value'] ?? '');
+                    $GLOBALS['__system_setting_cache'][$key] = $val;
+                    return $val;
+                }
+                $stmt->close();
+            }
+        } catch (Throwable $e) {}
+        return $default;
+    }
+}
+
+if (!function_exists('set_system_setting')) {
+    function set_system_setting(mysqli $conn, string $key, string $value): bool {
+        try {
+            $stmt = $conn->prepare("INSERT INTO `system_settings` (`setting_key`, `setting_value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`)");
+            if ($stmt) {
+                $stmt->bind_param("ss", $key, $value);
+                $ok = $stmt->execute();
+                $stmt->close();
+                if ($ok) {
+                    if (!isset($GLOBALS['__system_setting_cache'])) {
+                        $GLOBALS['__system_setting_cache'] = [];
+                    }
+                    $GLOBALS['__system_setting_cache'][$key] = $value;
+                }
+                return $ok;
+            }
+        } catch (Throwable $e) {}
+        return false;
+    }
+}
+
+if (!function_exists('get_wfh_days')) {
+    function get_wfh_days(mysqli $conn): array {
+        $raw = get_system_setting($conn, 'wfh_days', 'Tuesday,Thursday');
+        if (trim($raw) === '' || strtolower(trim($raw)) === 'none') return [];
+        $parts = array_map('trim', explode(',', $raw));
+        return array_values(array_filter($parts, function($d) {
+            return !empty($d) && strtolower($d) !== 'none';
+        }));
+    }
+}
+
+if (!function_exists('is_wfh_day_today')) {
+    function is_wfh_day_today(mysqli $conn): bool {
+        $wfh_days = get_wfh_days($conn);
+        if (empty($wfh_days)) return false;
+        $current_day = date('l'); // e.g. "Tuesday"
+        foreach ($wfh_days as $day) {
+            if (strcasecmp($day, $current_day) === 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 

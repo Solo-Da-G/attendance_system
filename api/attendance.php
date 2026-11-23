@@ -24,8 +24,15 @@ if ($stmtStat) {
     $stmtStat->close();
 }
 
-$r2 = $conn->query("SELECT COUNT(*) AS c FROM attendance WHERE clock_out IS NULL");
-if ($r2 && !is_bool($r2)) $stat_open = (int)($r2->fetch_assoc()['c'] ?? 0);
+$stat_wfh_today = 0;
+$stmtWfhStat = $conn->prepare("SELECT COUNT(*) AS c FROM attendance WHERE DATE(clock_in) = ? AND work_mode IN ('wfh', 'hybrid')");
+if ($stmtWfhStat) {
+    $stmtWfhStat->bind_param("s", $today);
+    $stmtWfhStat->execute();
+    $resWfhStat = $stmtWfhStat->get_result();
+    if ($resWfhStat) $stat_wfh_today = (int)($resWfhStat->fetch_assoc()['c'] ?? 0);
+    $stmtWfhStat->close();
+}
 
 function formatAttendanceHours($decimal) {
     if (!$decimal || $decimal <= 0) return "—";
@@ -59,6 +66,7 @@ $search          = trim($_GET['search'] ?? '');
 $from            = trim($_GET['from'] ?? '');
 $to              = trim($_GET['to'] ?? '');
 $selected_branch = trim($_GET['filter_branch'] ?? '');
+$selected_mode   = trim($_GET['filter_mode'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -129,6 +137,7 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
     <div class="card"><h3>Total Records</h3><p><?php echo (int)$stat_total; ?></p></div>
     <div class="card"><h3>Today</h3><p><?php echo (int)$stat_today; ?></p></div>
     <div class="card"><h3>Currently In</h3><p><?php echo (int)$stat_open; ?></p></div>
+    <div class="card"><h3>Remote / WFH Today</h3><p><?php echo (int)$stat_wfh_today; ?></p></div>
   </div>
 
   <!-- Filter Card -->
@@ -149,7 +158,7 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
           </datalist>
         </div>
 
-        <div style="flex:1; min-width:180px;">
+        <div style="flex:1; min-width:160px;">
           <label style="display:block; margin-bottom:5px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">
             🏢 Branch:
           </label>
@@ -160,6 +169,18 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
                 <?php echo htmlspecialchars($br); ?>
               </option>
             <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div style="flex:1; min-width:160px;">
+          <label style="display:block; margin-bottom:5px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">
+            🏠 Work Mode:
+          </label>
+          <select name="filter_mode" style="width:100%; box-sizing:border-box; padding:11px 14px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px; font-weight:600; background:white; cursor:pointer;">
+            <option value="">All Modes</option>
+            <option value="office" <?php echo $selected_mode === 'office' ? 'selected' : ''; ?>>🏢 Office Branch</option>
+            <option value="wfh" <?php echo $selected_mode === 'wfh' ? 'selected' : ''; ?>>🏠 Work From Home</option>
+            <option value="hybrid" <?php echo $selected_mode === 'hybrid' ? 'selected' : ''; ?>>🔄 Hybrid Split</option>
           </select>
         </div>
       </div>
@@ -216,6 +237,7 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
           if (!empty($from)) $exportUrl .= "&from=" . urlencode($from);
           if (!empty($to)) $exportUrl .= "&to=" . urlencode($to);
           if (!empty($selected_branch)) $exportUrl .= "&branch=" . urlencode($selected_branch);
+          if (!empty($selected_mode)) $exportUrl .= "&mode=" . urlencode($selected_mode);
         ?>
         <a href="<?php echo htmlspecialchars($exportUrl); ?>" target="_blank" style="padding:11px 20px; border-radius:10px; background:linear-gradient(135deg, #10b981, #059669); color:white; text-decoration:none; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16,185,129,0.25); margin-left:auto;">
           <span>📊</span> Export Filtered to Excel (.csv)
@@ -239,6 +261,7 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
             <th>Employee Name</th>
             <th>Staff ID</th>
             <th>Job Title</th>
+            <th>Work Mode</th>
             <th>Branch</th>
             <th>Date</th>
             <th>Time In</th>
@@ -255,7 +278,8 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
     $query = "SELECT s.full_name, s.staff_id, s.job_title, s.branch, a.id, a.clock_in, a.clock_out, a.status, a.source, a.total_hours,
                      (a.photo_in IS NOT NULL AND a.photo_in != '') AS has_photo_in, 
                      (a.photo_out IS NOT NULL AND a.photo_out != '') AS has_photo_out, 
-                     a.branch_in, a.branch_out, a.lat_in, a.lng_in, a.lat_out, a.lng_out, a.is_geofenced
+                     a.branch_in, a.branch_out, a.lat_in, a.lng_in, a.lat_out, a.lng_out, a.is_geofenced,
+                     a.work_mode, a.wfh_task
               FROM attendance a
               JOIN staff s ON a.staff_id = s.staff_id WHERE 1=1";
     $params = [];
@@ -291,6 +315,12 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
         $params[] = $selected_branch;
         $params[] = $selected_branch;
         $types .= "sss";
+    }
+
+    if (!empty($selected_mode)) {
+        $query .= " AND a.work_mode = ?";
+        $params[] = $selected_mode;
+        $types .= "s";
     }
 
     $query .= " ORDER BY a.clock_in DESC LIMIT 500";
@@ -367,10 +397,25 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
 
         $displayStatus = ($row['status'] ?? 'In') === 'missed_out' ? 'missed(clockout)' : ($row['status'] ?? 'In');
 
+        $wMode = strtolower(trim((string)($row['work_mode'] ?? 'office')));
+        if ($wMode === 'wfh') {
+            $modeBadge = "<span class='badge' style='background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-weight:700;font-size:11px;'>🏠 WFH</span>";
+        } elseif ($wMode === 'hybrid') {
+            $modeBadge = "<span class='badge' style='background:#f3e8ff;color:#7e22ce;border:1px solid #e9d5ff;font-weight:700;font-size:11px;'>🔄 HYBRID</span>";
+        } else {
+            $modeBadge = "<span class='badge' style='background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;font-weight:700;font-size:11px;'>🏢 OFFICE</span>";
+        }
+        if (!empty($row['wfh_task'])) {
+            $taskEsc = htmlspecialchars($row['wfh_task']);
+            $shortTask = htmlspecialchars(mb_strimwidth($row['wfh_task'], 0, 30, '…'));
+            $modeBadge .= "<div style='font-size:10.5px;color:#475569;margin-top:3px;' title='{$taskEsc}'>📝 {$shortTask}</div>";
+        }
+
         echo "<tr>
           <td data-label='Employee Name'><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
           <td data-label='Staff ID'><code style='background:#f1f5f9;padding:2px 6px;border-radius:4px;'>{$row['staff_id']}</code></td>
           <td data-label='Job Title'>" . htmlspecialchars($row['job_title'] ?? '—') . "</td>
+          <td data-label='Work Mode'>{$modeBadge}</td>
           <td data-label='Branch'>" . htmlspecialchars($row['branch'] ?? '—') . "</td>
           <td data-label='Date'>{$date}</td>
           <td data-label='Time In'>{$timeInHtml}</td>
@@ -382,7 +427,7 @@ $selected_branch = trim($_GET['filter_branch'] ?? '');
         </tr>";
       }
     } else {
-      echo "<tr><td colspan='11' style='text-align:center;padding:36px;color:#94a3b8;'>No attendance records match your search criteria.</td></tr>";
+      echo "<tr><td colspan='12' style='text-align:center;padding:36px;color:#94a3b8;'>No attendance records match your search criteria.</td></tr>";
     }
 
     if (isset($stmt) && $stmt instanceof mysqli_stmt) {

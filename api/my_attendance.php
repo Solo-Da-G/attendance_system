@@ -12,14 +12,14 @@ $to = isset($_GET['to']) ? trim($_GET['to']) : '';
 
 $rows = [];
 if ($from !== '' && $to !== '') {
-    $stmt = $conn->prepare("SELECT clock_in, clock_out, status, total_hours FROM attendance WHERE staff_id = ? AND DATE(clock_in) BETWEEN ? AND ? ORDER BY clock_in DESC");
+    $stmt = $conn->prepare("SELECT clock_in, clock_out, status, total_hours, work_mode, wfh_task FROM attendance WHERE staff_id = ? AND DATE(clock_in) BETWEEN ? AND ? ORDER BY clock_in DESC");
     $stmt->bind_param("sss", $staff_id, $from, $to);
     $stmt->execute();
     $res = $stmt->get_result();
     while ($r = $res->fetch_assoc()) $rows[] = $r;
     $stmt->close();
 } else {
-    $stmt = $conn->prepare("SELECT clock_in, clock_out, status, total_hours FROM attendance WHERE staff_id = ? ORDER BY clock_in DESC LIMIT 200");
+    $stmt = $conn->prepare("SELECT clock_in, clock_out, status, total_hours, work_mode, wfh_task FROM attendance WHERE staff_id = ? ORDER BY clock_in DESC LIMIT 200");
     $stmt->bind_param("s", $staff_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -65,6 +65,7 @@ if ($from !== '' && $to !== '') {
         <thead>
           <tr>
             <th>Date</th>
+            <th>Work Mode</th>
             <th>Time In</th>
             <th>Time Out</th>
             <th>Status</th>
@@ -80,9 +81,20 @@ if ($from !== '' && $to !== '') {
                 $timeOut = $row['clock_out'] ? date("h:i A", strtotime($row['clock_out'])) : "—";
                 $statusClass = strtolower($row['status'] ?? 'in');
                 $hrs = isset($row['total_hours']) ? (float)$row['total_hours'] : 0;
+
+                $workMode = strtolower((string)($row['work_mode'] ?? 'office'));
+                if ($workMode === 'wfh') {
+                    $taskTitle = !empty($row['wfh_task']) ? 'Task: ' . htmlspecialchars($row['wfh_task']) : 'Work From Home';
+                    $modeBadge = '<span class="badge" style="background:#fef3c7; color:#b45309; padding:4px 8px; border-radius:6px; font-weight:700; font-size:11px;" title="' . $taskTitle . '">🏠 Remote</span>';
+                } elseif ($workMode === 'hybrid') {
+                    $modeBadge = '<span class="badge" style="background:#f3e8ff; color:#7e22ce; padding:4px 8px; border-radius:6px; font-weight:700; font-size:11px;" title="Clocked in at home, clocked out at branch">🔄 Hybrid</span>';
+                } else {
+                    $modeBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:6px; font-weight:700; font-size:11px;">🏢 Office</span>';
+                }
               ?>
               <tr>
                 <td data-label="Date"><?php echo htmlspecialchars($date); ?></td>
+                <td data-label="Work Mode"><?php echo $modeBadge; ?></td>
                 <td data-label="Time In"><?php echo htmlspecialchars($timeIn); ?></td>
                 <td data-label="Time Out"><?php echo htmlspecialchars($timeOut); ?></td>
                 <td data-label="Status" class="status <?php echo htmlspecialchars($statusClass); ?>"><?php echo ($row['status'] === 'missed_out' ? 'missed(clockout)' : htmlspecialchars($row['status'] ?? 'in')); ?></td>
@@ -90,16 +102,15 @@ if ($from !== '' && $to !== '') {
               </tr>
             <?php endforeach; ?>
           <?php else: ?>
-            <tr><td colspan="5" style="text-align:center;">No attendance records found</td></tr>
+            <tr><td colspan="6" style="text-align:center;">No attendance records found</td></tr>
           <?php endif; ?>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System</div>
+  <div class="footer">&copy; <?php echo date("Y"); ?> Attendance System | Powered by Solomon</div>
 </div>
 
 </body>
 </html>
-

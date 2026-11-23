@@ -63,6 +63,7 @@ $search            = trim($_GET['search'] ?? '');
 $from              = trim($_GET['from'] ?? ($_GET['filter_date'] ?? ''));
 $to                = trim($_GET['to'] ?? ($_GET['filter_date'] ?? ''));
 $selected_branch   = trim($_GET['filter_branch'] ?? '');
+$selected_mode     = trim($_GET['filter_mode'] ?? '');
 
 // If staff_id not set but search matches an exact staff_id, align them
 if (empty($selected_staff_id) && !empty($search)) {
@@ -214,6 +215,18 @@ if (!empty($selected_staff_id)) {
             <?php endforeach; ?>
           </select>
         </div>
+
+        <div style="flex:1; min-width:160px;">
+          <label style="display:block; margin-bottom:5px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">
+            🏠 Work Mode:
+          </label>
+          <select name="filter_mode" onchange="document.getElementById('repFilterForm').submit()" style="width:100%; box-sizing:border-box; padding:11px 14px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px; font-weight:600; background:white; cursor:pointer;">
+            <option value="">All Modes</option>
+            <option value="office" <?php echo $selected_mode === 'office' ? 'selected' : ''; ?>>🏢 Office Branch</option>
+            <option value="wfh" <?php echo $selected_mode === 'wfh' ? 'selected' : ''; ?>>🏠 Work From Home</option>
+            <option value="hybrid" <?php echo $selected_mode === 'hybrid' ? 'selected' : ''; ?>>🔄 Hybrid Split</option>
+          </select>
+        </div>
       </div>
 
       <!-- Second Row: Date From, Date To, and Quick Presets -->
@@ -269,6 +282,7 @@ if (!empty($selected_staff_id)) {
           if (!empty($from)) $repExport .= "&from=" . urlencode($from);
           if (!empty($to)) $repExport .= "&to=" . urlencode($to);
           if (!empty($selected_branch)) $repExport .= "&branch=" . urlencode($selected_branch);
+          if (!empty($selected_mode)) $repExport .= "&mode=" . urlencode($selected_mode);
         ?>
         <a href="<?php echo htmlspecialchars($repExport); ?>" target="_blank" style="padding:11px 22px; border-radius:10px; background:linear-gradient(135deg, #10b981, #059669); color:white; text-decoration:none; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16,185,129,0.25); margin-left:auto;">
           <span>📊</span> Export to Excel Sheet (.csv)
@@ -280,7 +294,8 @@ if (!empty($selected_staff_id)) {
   <?php
   // ── PREPARE DATA QUERY ──────────────────────────────────────────
   $query = "SELECT a.id, a.staff_id, s.full_name, s.department, s.branch, s.job_title,
-                   a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out
+                   a.clock_in, a.clock_out, a.source, a.status, a.total_hours, a.branch_in, a.branch_out,
+                   a.lat_in, a.lng_in, a.lat_out, a.lng_out, a.work_mode, a.wfh_task
             FROM attendance a
             JOIN staff s ON a.staff_id = s.staff_id WHERE s.deleted_at IS NULL";
   $params = [];
@@ -319,6 +334,12 @@ if (!empty($selected_staff_id)) {
       $params[] = $selected_branch;
       $params[] = $selected_branch;
       $types .= "sss";
+  }
+
+  if (!empty($selected_mode)) {
+      $query .= " AND a.work_mode = ?";
+      $params[] = $selected_mode;
+      $types .= "s";
   }
 
   $query .= " ORDER BY a.clock_in DESC";
@@ -427,6 +448,7 @@ if (!empty($selected_staff_id)) {
             <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Staff ID</th>
             <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Full Name</th>
             <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Department</th>
+            <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Work Mode</th>
             <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Date</th>
             <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Clock In</th>
             <th style="padding:14px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Clock Out</th>
@@ -488,11 +510,26 @@ if (!empty($selected_staff_id)) {
 
             $hoursFormatted = !empty($row['clock_out']) ? formatHours($hours) : "<span style='color:#f59e0b;font-weight:600;'>In Progress</span>";
 
+            $wMode = strtolower(trim((string)($row['work_mode'] ?? 'office')));
+            if ($wMode === 'wfh') {
+                $modeBadge = "<span class='badge' style='background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-weight:700;font-size:11px;'>🏠 WFH</span>";
+            } elseif ($wMode === 'hybrid') {
+                $modeBadge = "<span class='badge' style='background:#f3e8ff;color:#7e22ce;border:1px solid #e9d5ff;font-weight:700;font-size:11px;'>🔄 HYBRID</span>";
+            } else {
+                $modeBadge = "<span class='badge' style='background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;font-weight:700;font-size:11px;'>🏢 OFFICE</span>";
+            }
+            if (!empty($row['wfh_task'])) {
+                $taskEsc = htmlspecialchars($row['wfh_task']);
+                $shortTask = htmlspecialchars(mb_strimwidth($row['wfh_task'], 0, 26, '…'));
+                $modeBadge .= "<div style='font-size:10px;color:#475569;margin-top:2px;' title='{$taskEsc}'>📝 {$shortTask}</div>";
+            }
+
             echo "<tr>
                     <td data-label='Log ID' style='padding:12px 16px;'>{$row['id']}</td>
                     <td data-label='Staff ID' style='padding:12px 16px;'><code style='background:#f1f5f9;padding:2px 6px;border-radius:4px;'>{$row['staff_id']}</code></td>
                     <td data-label='Full Name' style='padding:12px 16px;'><strong>" . htmlspecialchars($row['full_name']) . "</strong></td>
                     <td data-label='Department' style='padding:12px 16px;'>" . htmlspecialchars($row['department'] ?? '—') . "</td>
+                    <td data-label='Work Mode' style='padding:12px 16px;'>{$modeBadge}</td>
                     <td data-label='Date' style='padding:12px 16px;'>{$dateFormatted}</td>
                     <td data-label='Clock In' style='padding:12px 16px;'>{$clockInHtml}</td>
                     <td data-label='Clock Out' style='padding:12px 16px;'>{$clockOutHtml}</td>
@@ -502,7 +539,7 @@ if (!empty($selected_staff_id)) {
                   </tr>";
         }
     } else {
-        echo "<tr><td colspan='10' style='text-align:center;padding:36px;color:#94a3b8;'>No attendance records found for the selected criteria.</td></tr>";
+        echo "<tr><td colspan='11' style='text-align:center;padding:36px;color:#94a3b8;'>No attendance records found for the selected criteria.</td></tr>";
     }
 
     if (isset($stmt) && $stmt instanceof mysqli_stmt) {
