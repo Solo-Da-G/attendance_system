@@ -57,6 +57,17 @@ if (isset($_POST['update_settings'])) {
             $wfh_days_str = implode(',', $clean_wfh_days);
             set_system_setting($conn, 'wfh_days', $wfh_days_str);
 
+            // Save Applicable Branches for WFH
+            $wfh_branches_all = isset($_POST['wfh_branches_all']) ? '1' : '0';
+            $selected_wfh_branches = isset($_POST['wfh_branches']) && is_array($_POST['wfh_branches']) ? $_POST['wfh_branches'] : [];
+            if ($wfh_branches_all === '1' || empty($selected_wfh_branches) || in_array('all', $selected_wfh_branches, true)) {
+                $wfh_branches_str = 'all';
+            } else {
+                $clean_branches = array_values(array_filter(array_map('trim', $selected_wfh_branches), function($b) { return !empty($b) && $b !== 'all'; }));
+                $wfh_branches_str = empty($clean_branches) ? 'all' : implode(',', $clean_branches);
+            }
+            set_system_setting($conn, 'wfh_branches', $wfh_branches_str);
+
             $wfh_task_req = isset($_POST['wfh_task_required']) ? '1' : '0';
             set_system_setting($conn, 'wfh_task_required', $wfh_task_req);
 
@@ -81,7 +92,17 @@ $stmt->close();
 
 /* FETCH CURRENT WFH SETTINGS */
 $current_wfh_days = get_wfh_days($conn);
+$current_wfh_branches = function_exists('get_wfh_branches') ? get_wfh_branches($conn) : ['all'];
 $current_wfh_req  = get_system_setting($conn, 'wfh_task_required', '0') === '1';
+
+// Load all registered branches from branches table
+$all_system_branches = [];
+$b_res = $conn->query("SELECT branch_name FROM branches ORDER BY branch_name ASC");
+if ($b_res) {
+    while ($br = $b_res->fetch_assoc()) {
+        $all_system_branches[] = $br['branch_name'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -307,6 +328,29 @@ $current_wfh_req  = get_system_setting($conn, 'wfh_task_required', '0') === '1';
                     <?php endforeach; ?>
                 </div>
 
+                <!-- 2. Select Applicable Branches for Work From Home -->
+                <label style="font-size: 13px; font-weight: 700; color: #334155; display: block; margin: 18px 0 8px;">
+                    2. Select Applicable Branches for Work From Home:
+                </label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                    <?php 
+                    $isAllBranches = in_array('all', $current_wfh_branches, true); 
+                    ?>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: white; border: 1.5px solid <?php echo $isAllBranches ? '#0284c7' : '#cbd5e1'; ?>; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; font-size: 13px; font-weight: 700; color: #1e293b;" class="wfh-branch-label">
+                        <input type="checkbox" id="wfhBranchAll" name="wfh_branches_all" value="1" <?php echo $isAllBranches ? 'checked' : ''; ?> onchange="toggleWfhAllBranches(this)" style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
+                        <span>🏢 All Branches (Company-Wide)</span>
+                    </label>
+
+                    <?php foreach ($all_system_branches as $sb): 
+                        $isBranchChecked = $isAllBranches || in_array($sb, $current_wfh_branches, true);
+                    ?>
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: white; border: 1.5px solid <?php echo $isBranchChecked ? '#0284c7' : '#cbd5e1'; ?>; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; font-size: 13px; font-weight: 600; color: #1e293b;" class="wfh-branch-label">
+                        <input type="checkbox" name="wfh_branches[]" value="<?php echo htmlspecialchars($sb); ?>" <?php echo $isBranchChecked ? 'checked' : ''; ?> onchange="toggleWfhSingleBranch(this)" style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;" class="wfh-individual-branch">
+                        <span>📍 <?php echo htmlspecialchars($sb); ?></span>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
+
                 <div id="wfhKillSwitchNotice" style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:12.5px; color:#9f1239; line-height:1.4; <?php echo !empty($current_wfh_days) ? 'display:none;' : ''; ?>">
                     <strong>🛑 Master Kill Switch Active:</strong> When no days are selected, Work From Home is completely disabled company-wide. All staff must be physically inside an authorized branch geofence (200m) to clock in or out.
                 </div>
@@ -437,6 +481,26 @@ function updateWfhPreview() {
         }
         if (killNotice) killNotice.style.display = 'none';
         if (activeNotice) activeNotice.style.display = 'block';
+    }
+}
+
+function toggleWfhAllBranches(allCheckbox) {
+    const individual = document.querySelectorAll('.wfh-individual-branch');
+    individual.forEach(cb => {
+        cb.checked = allCheckbox.checked;
+        cb.closest('label').style.borderColor = allCheckbox.checked ? '#0284c7' : '#cbd5e1';
+    });
+    allCheckbox.closest('label').style.borderColor = allCheckbox.checked ? '#0284c7' : '#cbd5e1';
+}
+
+function toggleWfhSingleBranch(singleCb) {
+    const allCb = document.getElementById('wfhBranchAll');
+    singleCb.closest('label').style.borderColor = singleCb.checked ? '#0284c7' : '#cbd5e1';
+    const individual = document.querySelectorAll('.wfh-individual-branch');
+    const allChecked = Array.from(individual).every(cb => cb.checked);
+    if (allCb) {
+        allCb.checked = allChecked;
+        allCb.closest('label').style.borderColor = allChecked ? '#0284c7' : '#cbd5e1';
     }
 }
 

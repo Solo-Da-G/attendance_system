@@ -44,10 +44,12 @@ $audio_version = @filemtime(dirname(__DIR__) . "/asset/js/attendance-audio.js") 
 $idle_logout_version = @filemtime(dirname(__DIR__) . "/asset/js/idle-logout.js") ?: time();
 
 // WFH Schedule & Remote Policy Check
-$is_wfh_day_today = function_exists('is_wfh_day_today') ? is_wfh_day_today($conn) : false;
-$active_wfh_days = function_exists('get_wfh_days') ? get_wfh_days($conn) : [];
-$wfh_task_required = function_exists('get_system_setting') ? (get_system_setting($conn, 'wfh_task_required', '0') === '1') : false;
-
+$active_wfh_days      = function_exists('get_wfh_days') ? get_wfh_days($conn) : [];
+$wfh_branches_list    = function_exists('get_wfh_branches') ? get_wfh_branches($conn) : ['all'];
+$wfh_task_required    = function_exists('get_system_setting') ? (get_system_setting($conn, 'wfh_task_required', '0') === '1') : false;
+$is_general_wfh_today = function_exists('is_wfh_day_today') ? is_wfh_day_today($conn) : false;
+$is_wfh_day_today     = $is_general_wfh_today;
+$branch_wfh_eligible  = true;
 
 // Determine greeting based on hour of the day
 $current_hour = (int)date('H');
@@ -96,6 +98,11 @@ if ($staff_id) {
             $staff_photo_error = "No profile photo uploaded. Please ask admin to upload your photo.";
         }
         $photo_stmt->close();
+
+        if ($staff_branch_name) {
+            $branch_wfh_eligible = function_exists('is_branch_wfh_allowed') ? is_branch_wfh_allowed($conn, $staff_branch_name) : true;
+            $is_wfh_day_today    = function_exists('is_wfh_day_today') ? is_wfh_day_today($conn, $staff_branch_name) : false;
+        }
     }
 }
 ?>
@@ -203,95 +210,158 @@ if ($staff_id) {
         100% { transform: scale(0.96); opacity: 0.6; }
     }
 
-    /* Interactive Work Mode Switcher */
+    /* Interactive Work Mode Switcher (Office vs WFH) */
     .work-mode-switcher-wrap {
+        width: 100%;
+        box-sizing: border-box;
         margin-bottom: 16px;
     }
     .work-mode-switcher {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 8px;
         background: #f1f5f9;
         padding: 6px;
-        border-radius: 18px;
+        border-radius: 16px;
         border: 1.5px solid #e2e8f0;
+        width: 100%;
+        box-sizing: border-box;
     }
     .work-mode-tab {
         display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 11px 14px;
-        border-radius: 14px;
-        border: 1.5px solid transparent;
-        background: transparent;
+        flex-direction: column;
+        justify-content: space-between;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 10px;
+        border-radius: 13px;
+        border: 2px solid transparent;
         cursor: pointer;
         text-align: left;
         transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         user-select: none;
+        overflow: hidden;
     }
-    .work-mode-tab:hover {
-        background: rgba(255, 255, 255, 0.65);
-    }
-    .work-mode-tab.active-office {
-        background: #ffffff;
-        border-color: #22c55e;
-        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.16), 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .work-mode-tab.active-wfh {
-        background: #ffffff;
-        border-color: #0284c7;
-        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.2), 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .work-mode-tab.mode-locked {
-        opacity: 0.65;
-        cursor: pointer;
+    .mode-tab-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 6px;
     }
     .mode-tab-icon {
-        font-size: 24px;
+        font-size: 20px;
         line-height: 1;
         flex-shrink: 0;
     }
-    .mode-tab-info {
-        flex: 1;
-        min-width: 0;
+    .mode-tab-badge {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        flex-shrink: 0;
+        line-height: 1.2;
     }
     .mode-tab-title {
-        font-size: 13.5px;
+        font-size: clamp(12px, 3.2vw, 13.5px);
         font-weight: 800;
-        color: #0f172a;
-        line-height: 1.25;
+        line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        width: 100%;
     }
     .mode-tab-sub {
-        font-size: 11px;
+        font-size: clamp(9.5px, 2.4vw, 11px);
         font-weight: 600;
-        color: #64748b;
-        margin-top: 2px;
         line-height: 1.2;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        opacity: 0.9;
     }
-    .mode-tab-badge {
-        font-size: 9.5px;
-        font-weight: 800;
-        letter-spacing: 0.4px;
-        padding: 3px 6px;
-        border-radius: 6px;
-        background: #e2e8f0;
-        color: #475569;
-        text-transform: uppercase;
-        flex-shrink: 0;
+
+    /* Office Mode: Distinct Emerald / Mint Gradient */
+    .work-mode-tab.mode-office-inactive {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-color: #86efac;
+        color: #166534;
+    }
+    .work-mode-tab.mode-office-inactive .mode-tab-badge {
+        background: rgba(22, 101, 52, 0.12);
+        color: #15803d;
+        border: 1px solid rgba(22, 101, 52, 0.2);
+    }
+    .work-mode-tab.active-office {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        border-color: #047857;
+        color: #ffffff !important;
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35), 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .work-mode-tab.active-office .mode-tab-title {
+        color: #ffffff !important;
+    }
+    .work-mode-tab.active-office .mode-tab-sub {
+        color: rgba(255, 255, 255, 0.92) !important;
     }
     .work-mode-tab.active-office .mode-tab-badge {
-        background: #dcfce7;
-        color: #15803d;
-        border: 1px solid #bbf7d0;
+        background: #ffffff;
+        color: #047857;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    /* WFH Mode: Distinct Royal Blue / Azure Gradient */
+    .work-mode-tab.mode-wfh-inactive {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border-color: #7dd3fc;
+        color: #0369a1;
+    }
+    .work-mode-tab.mode-wfh-inactive .mode-tab-badge {
+        background: rgba(3, 105, 161, 0.12);
+        color: #0284c7;
+        border: 1px solid rgba(3, 105, 161, 0.2);
+    }
+    .work-mode-tab.active-wfh {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        border-color: #1e40af;
+        color: #ffffff !important;
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35), 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .work-mode-tab.active-wfh .mode-tab-title {
+        color: #ffffff !important;
+    }
+    .work-mode-tab.active-wfh .mode-tab-sub {
+        color: rgba(255, 255, 255, 0.92) !important;
     }
     .work-mode-tab.active-wfh .mode-tab-badge {
-        background: #e0f2fe;
-        color: #0369a1;
-        border: 1px solid #bae6fd;
+        background: #ffffff;
+        color: #1d4ed8;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    /* WFH Locked State */
+    .work-mode-tab.mode-locked {
+        background: #f8fafc !important;
+        border: 1.5px dashed #cbd5e1 !important;
+        color: #64748b !important;
+        opacity: 0.75;
+        box-shadow: none !important;
+    }
+    .work-mode-tab.mode-locked .mode-tab-title {
+        color: #64748b !important;
+    }
+    .work-mode-tab.mode-locked .mode-tab-sub {
+        color: #94a3b8 !important;
+    }
+    .work-mode-tab.mode-locked .mode-tab-badge {
+        background: #e2e8f0;
+        color: #64748b;
     }
 
     /* Educational Low-Literacy Reassurance Banner */
@@ -843,36 +913,39 @@ if ($staff_id) {
     <?php $change_pass_url = $staff_id ? 'change_staff_password.php?first_login=1' : 'change_password.php?first_login=1'; ?>
     <!-- First login password prompt modal -->
     <div class="dashboard-modal-overlay show" id="firstLoginModal" style="display:flex; opacity:1; z-index:999999;">
-        <div class="dashboard-modal" style="text-align:center; padding:32px 24px; max-width:440px;">
-            <div style="width:68px; height:68px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:32px; margin:0 auto 16px;">
+        <div class="dashboard-modal" style="text-align:center; padding:24px 20px; max-width:400px; border-radius:20px;">
+            <div style="width:56px; height:56px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 12px;">
                 🔐
             </div>
-            <h3 style="margin:0 0 10px; font-size:20px; color:var(--text); font-weight:800;">Please Change Your Password</h3>
-            <p style="color:var(--text-muted); font-size:14px; line-height:1.5; margin:0 0 24px;">
-                Welcome to <strong>TDS Attendance System</strong>! You are currently using a default or temporary password. For your security, please update it now.
+            <h3 style="margin:0 0 6px; font-size:18px; color:var(--text); font-weight:800;">Welcome, <?php echo htmlspecialchars($display_name); ?>! 👋</h3>
+            <div style="font-size:12px; font-weight:600; color:#d97706; margin-bottom:12px; background:#fffbeb; padding:4px 10px; border-radius:99px; display:inline-block;">
+                📅 <?php echo date('l, d F Y'); ?>
+            </div>
+            <p style="color:var(--text-muted); font-size:13px; line-height:1.45; margin:0 0 18px;">
+                You are currently using your default password. For your account security, please create your personalized password.
             </p>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <a href="<?php echo $change_pass_url; ?>" style="background:var(--primary); color:white; padding:13px; border-radius:12px; font-weight:700; font-size:15px; text-decoration:none; display:block;">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <a href="<?php echo $change_pass_url; ?>" style="background:var(--primary); color:white; padding:11px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none; display:block; box-shadow:0 4px 12px rgba(16,67,159,0.25);">
                     Change Password Now
                 </a>
-                <button type="button" class="password-modal-dismiss-btn" onclick="document.getElementById('firstLoginModal').style.display='none'" style="background:transparent; border:none; color:var(--text-muted); padding:8px; font-weight:600; font-size:13px; cursor:pointer;">
-                    Remind Me Later
+                <button type="button" class="password-modal-dismiss-btn" onclick="document.getElementById('firstLoginModal').style.display='none'" style="background:transparent; border:none; color:var(--text-muted); padding:6px; font-weight:600; font-size:12.5px; cursor:pointer;">
+                    Dismiss &bull; Remind Me Later
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Top alert banner -->
-    <div style="background: linear-gradient(135deg, #fef3c7, #fed7aa); border: 1.5px solid #f59e0b; border-radius: 16px; padding: 18px 24px; margin-bottom: 24px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 44px; height: 44px; border-radius: 12px; background: #f59e0b; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">🔒</div>
+    <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1.5px solid #f59e0b; border-radius: 14px; padding: 12px 18px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: #f59e0b; color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">🔒</div>
             <div>
-                <strong style="color: #92400e; font-size: 15px; display: block;">Default Password Active — Action Required</strong>
-                <span style="color: #b45309; font-size: 13px;">As a new user/employee, you must set a personalized password to secure your account.</span>
+                <strong style="color: #92400e; font-size: 13.5px; display: block;">Default Password Active — Action Required</strong>
+                <span style="color: #b45309; font-size: 12px;">Welcome! Please set a personalized password to secure your account.</span>
             </div>
         </div>
-        <a href="<?php echo $change_pass_url; ?>" style="background: linear-gradient(135deg, #d97706, #b45309); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(180, 83, 9, 0.25);">
-            Change Password Now →
+        <a href="<?php echo $change_pass_url; ?>" style="background: linear-gradient(135deg, #d97706, #b45309); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 12.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(180, 83, 9, 0.2);">
+            Change Password →
         </a>
     </div>
     <?php endif; ?>
@@ -938,34 +1011,39 @@ if ($staff_id) {
         <!-- Interactive Work Mode Switcher (Office Branch vs Work From Home) -->
         <div class="work-mode-switcher-wrap">
             <div class="work-mode-switcher" id="workModeSwitcher">
-                <button type="button" class="work-mode-tab active-office" id="modeOfficeTab" onclick="selectWorkLocationMode('office', true)">
-                    <span class="mode-tab-icon">🏢</span>
-                    <div class="mode-tab-info">
-                        <div class="mode-tab-title">Office Branch</div>
-                        <div class="mode-tab-sub">On-Site Geofence</div>
+                <button type="button" class="work-mode-tab <?php echo $is_wfh_day_today ? 'mode-office-inactive' : 'active-office'; ?>" id="modeOfficeTab" onclick="selectWorkLocationMode('office', true)">
+                    <div class="mode-tab-top">
+                        <span class="mode-tab-icon">🏢</span>
+                        <span class="mode-tab-badge" id="modeOfficeBadge"><?php echo $is_wfh_day_today ? 'ON-SITE' : 'ACTIVE'; ?></span>
                     </div>
-                    <span class="mode-tab-badge" id="modeOfficeBadge">ACTIVE</span>
+                    <div class="mode-tab-title">Office Branch</div>
+                    <div class="mode-tab-sub">Geofence Active</div>
                 </button>
 
-                <button type="button" class="work-mode-tab <?php echo !$is_wfh_day_today ? 'mode-locked' : ''; ?>" id="modeWfhTab" onclick="selectWorkLocationMode('wfh', true)">
-                    <span class="mode-tab-icon"><?php echo $is_wfh_day_today ? '🏠' : '🔒'; ?></span>
-                    <div class="mode-tab-info">
-                        <div class="mode-tab-title">Work From Home</div>
-                        <div class="mode-tab-sub"><?php echo $is_wfh_day_today ? 'Remote GPS Active' : 'Office Day Today'; ?></div>
+                <button type="button" class="work-mode-tab <?php echo $is_wfh_day_today ? 'active-wfh' : 'mode-locked'; ?>" id="modeWfhTab" onclick="selectWorkLocationMode('wfh', true)">
+                    <div class="mode-tab-top">
+                        <span class="mode-tab-icon"><?php echo $is_wfh_day_today ? '🏠' : '🔒'; ?></span>
+                        <span class="mode-tab-badge" id="modeWfhBadge"><?php echo $is_wfh_day_today ? 'ACTIVE' : 'OFFICE DAY'; ?></span>
                     </div>
-                    <span class="mode-tab-badge" id="modeWfhBadge"><?php echo $is_wfh_day_today ? 'AVAILABLE' : 'OFFICE DAY'; ?></span>
+                    <div class="mode-tab-title">Work From Home</div>
+                    <div class="mode-tab-sub"><?php echo $is_wfh_day_today ? 'Remote GPS Active' : 'Report to branch'; ?></div>
                 </button>
             </div>
         </div>
 
-        <!-- Non-WFH Day Friendly Notice (Inline alert if WFH tapped on non-WFH day) -->
+        <!-- Non-WFH Day Friendly Notice (Inline alert if WFH tapped on non-WFH day or excluded branch) -->
         <div id="wfhLockedNotice" style="display:none; background:#fef2f2; border:1.5px solid #f87171; border-radius:14px; padding:12px 16px; margin-bottom:16px; color:#991b1b; font-size:13px; line-height:1.4;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:22px; flex-shrink:0;">🔒</span>
-                    <div>
-                        <strong>Work From Home is Not Active Today:</strong><br>
-                        <span>Today is an on-site office day. WFH is scheduled for: <strong><?php echo !empty($active_wfh_days) ? htmlspecialchars(implode(', ', array_map('ucfirst', $active_wfh_days))) : 'Tuesday & Thursday'; ?></strong>. Please report to your branch to clock in.</span>
+                    <div id="wfhLockedNoticeText">
+                        <?php if ($is_general_wfh_today && !$branch_wfh_eligible): ?>
+                            <strong>Remote Clocking Not Active For Your Branch:</strong><br>
+                            <span>Work From Home is active for select branches today, but your branch (<strong><?php echo htmlspecialchars($staff_branch_name); ?></strong>) is scheduled for on-site attendance. Please clock in at your branch location.</span>
+                        <?php else: ?>
+                            <strong>Work From Home is Not Active Today:</strong><br>
+                            <span>Today is an on-site office day. WFH is scheduled for: <strong><?php echo !empty($active_wfh_days) ? htmlspecialchars(implode(', ', array_map('ucfirst', $active_wfh_days))) : 'Tuesday & Thursday'; ?></strong>. Please report to your branch to clock in.</span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <button type="button" onclick="document.getElementById('wfhLockedNotice').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer; color:#991b1b; padding:0 4px;">✕</button>
@@ -2991,6 +3069,10 @@ if ($staff_id) {
 <script src="/asset/js/biometric.js?v=<?php echo time(); ?>"></script>
 <script>
 const IS_WFH_DAY_TODAY = <?php echo $is_wfh_day_today ? 'true' : 'false'; ?>;
+const IS_GENERAL_WFH_TODAY = <?php echo $is_general_wfh_today ? 'true' : 'false'; ?>;
+const IS_BRANCH_WFH_ELIGIBLE = <?php echo $branch_wfh_eligible ? 'true' : 'false'; ?>;
+const STAFF_BRANCH = <?php echo json_encode($staff_branch_name); ?>;
+const ACTIVE_WFH_DAYS_STR = <?php echo json_encode(!empty($active_wfh_days) ? implode(', ', array_map('ucfirst', $active_wfh_days)) : 'Tuesday & Thursday'); ?>;
 const IS_ALREADY_IN = <?php echo $currently_in ? 'true' : 'false'; ?>;
 const STAFF_ID = '<?php echo htmlspecialchars($staff_id ?? ''); ?>';
 let currentClockMode = 'face';
@@ -3060,14 +3142,34 @@ function selectWorkLocationMode(mode, isUserClick = false) {
 
     if (mode === 'wfh') {
         if (!IS_WFH_DAY_TODAY) {
-            if (lockedNotice) lockedNotice.style.display = 'block';
+            if (lockedNotice) {
+                const noticeText = document.getElementById('wfhLockedNoticeText');
+                if (noticeText) {
+                    if (IS_GENERAL_WFH_TODAY && !IS_BRANCH_WFH_ELIGIBLE) {
+                        noticeText.innerHTML = `<strong>Remote Clocking Not Active For Your Branch:</strong><br><span>Work From Home is active for select branches today, but your branch (<strong>${STAFF_BRANCH}</strong>) is scheduled for on-site attendance. Please clock in at your branch location.</span>`;
+                    } else {
+                        noticeText.innerHTML = `<strong>Work From Home is Not Active Today:</strong><br><span>Today is an on-site office day. WFH is scheduled for: <strong>${ACTIVE_WFH_DAYS_STR}</strong>. Please report to your branch to clock in.</span>`;
+                    }
+                }
+                lockedNotice.style.display = 'block';
+            }
             return;
         }
         if (lockedNotice) lockedNotice.style.display = 'none';
         currentSelectedWorkMode = 'wfh';
 
-        if (modeOfficeTab) modeOfficeTab.classList.remove('active-office');
-        if (modeWfhTab) modeWfhTab.classList.add('active-wfh');
+        if (modeOfficeTab) {
+            modeOfficeTab.classList.remove('active-office');
+            modeOfficeTab.classList.add('mode-office-inactive');
+            const offBadge = document.getElementById('modeOfficeBadge');
+            if (offBadge) offBadge.textContent = 'ON-SITE';
+        }
+        if (modeWfhTab) {
+            modeWfhTab.classList.remove('mode-wfh-inactive', 'mode-locked');
+            modeWfhTab.classList.add('active-wfh');
+            const wfhBadge = document.getElementById('modeWfhBadge');
+            if (wfhBadge) wfhBadge.textContent = 'ACTIVE';
+        }
         if (reassuranceCard) reassuranceCard.style.display = 'flex';
         if (taskWrap) taskWrap.style.display = 'block';
 
@@ -3077,8 +3179,24 @@ function selectWorkLocationMode(mode, isUserClick = false) {
         if (lockedNotice) lockedNotice.style.display = 'none';
         currentSelectedWorkMode = 'office';
 
-        if (modeOfficeTab) modeOfficeTab.classList.add('active-office');
-        if (modeWfhTab) modeWfhTab.classList.remove('active-wfh');
+        if (modeOfficeTab) {
+            modeOfficeTab.classList.remove('mode-office-inactive');
+            modeOfficeTab.classList.add('active-office');
+            const offBadge = document.getElementById('modeOfficeBadge');
+            if (offBadge) offBadge.textContent = 'ACTIVE';
+        }
+        if (modeWfhTab) {
+            modeWfhTab.classList.remove('active-wfh');
+            if (IS_WFH_DAY_TODAY) {
+                modeWfhTab.classList.add('mode-wfh-inactive');
+                const wfhBadge = document.getElementById('modeWfhBadge');
+                if (wfhBadge) wfhBadge.textContent = 'AVAILABLE';
+            } else {
+                modeWfhTab.classList.add('mode-locked');
+                const wfhBadge = document.getElementById('modeWfhBadge');
+                if (wfhBadge) wfhBadge.textContent = 'OFFICE DAY';
+            }
+        }
         if (reassuranceCard) reassuranceCard.style.display = 'none';
 
         const taskInput = document.getElementById('wfhTaskInput');
@@ -3298,7 +3416,7 @@ async function checkLiveLocationStatus() {
                 if (dot) dot.className = 'wfh-pulse-dot green';
 
                 const officeBadge = document.getElementById('modeOfficeBadge');
-                if (officeBadge) officeBadge.textContent = 'VERIFIED ON-SITE';
+                if (officeBadge) officeBadge.textContent = 'VERIFIED';
 
                 if (!userManuallySelectedMode) {
                     selectWorkLocationMode('office', false);
@@ -3316,19 +3434,24 @@ async function checkLiveLocationStatus() {
                 if (dot) dot.className = 'wfh-pulse-dot blue';
 
                 const wfhBadge = document.getElementById('modeWfhBadge');
-                if (wfhBadge) wfhBadge.textContent = 'REMOTE ACTIVE';
+                if (wfhBadge) wfhBadge.textContent = 'REMOTE GPS';
 
                 if (!userManuallySelectedMode) {
                     selectWorkLocationMode('wfh', false);
                 }
             } else {
-                // Outside branch perimeter on a non-WFH day: Clocking locked!
+                // Outside branch perimeter on a non-WFH day or branch not eligible: Clocking locked!
                 banner.className = 'wfh-status-banner locked-geofence';
                 if (icon) icon.textContent = '🛑';
                 if (title) title.textContent = `🛑 Outside Office Geofence (Clocking Locked)`;
                 const distKm = data.distance ? (data.distance > 1000 ? (data.distance / 1000).toFixed(1) + 'km' : Math.round(data.distance) + 'm') : 'Away';
                 if (sub) sub.textContent = `You are ${distKm} away from ${data.branch || 'your branch'}. You must report to an office branch to clock in today.`;
                 if (dot) dot.className = 'wfh-pulse-dot red';
+
+                const wfhBadge = document.getElementById('modeWfhBadge');
+                if (wfhBadge) {
+                    wfhBadge.textContent = (IS_GENERAL_WFH_TODAY && !IS_BRANCH_WFH_ELIGIBLE) ? 'BRANCH ON-SITE' : 'OFFICE DAY';
+                }
 
                 if (!userManuallySelectedMode) {
                     selectWorkLocationMode('office', false);

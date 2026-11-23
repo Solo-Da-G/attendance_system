@@ -325,17 +325,47 @@ if (!function_exists('get_wfh_days')) {
     }
 }
 
+if (!function_exists('get_wfh_branches')) {
+    function get_wfh_branches(mysqli $conn): array {
+        $raw = get_system_setting($conn, 'wfh_branches', 'all');
+        if (trim($raw) === '' || strtolower(trim($raw)) === 'all') return ['all'];
+        $parts = array_map('trim', explode(',', $raw));
+        $cleaned = array_values(array_filter($parts, function($b) { return !empty($b); }));
+        return empty($cleaned) ? ['all'] : $cleaned;
+    }
+}
+
+if (!function_exists('is_branch_wfh_allowed')) {
+    function is_branch_wfh_allowed(mysqli $conn, ?string $branch_name): bool {
+        $allowed = get_wfh_branches($conn);
+        if (in_array('all', $allowed, true)) return true;
+        if (empty($branch_name)) return true;
+        foreach ($allowed as $ab) {
+            if (strcasecmp($ab, trim($branch_name)) === 0) return true;
+        }
+        return false;
+    }
+}
+
 if (!function_exists('is_wfh_day_today')) {
-    function is_wfh_day_today(mysqli $conn): bool {
+    function is_wfh_day_today(mysqli $conn, ?string $branch_name = null): bool {
         $wfh_days = get_wfh_days($conn);
         if (empty($wfh_days)) return false;
         $current_day = date('l'); // e.g. "Tuesday"
+        $is_day_match = false;
         foreach ($wfh_days as $day) {
             if (strcasecmp($day, $current_day) === 0) {
-                return true;
+                $is_day_match = true;
+                break;
             }
         }
-        return false;
+        if (!$is_day_match) return false;
+
+        if ($branch_name !== null && trim($branch_name) !== '') {
+            return is_branch_wfh_allowed($conn, $branch_name);
+        }
+
+        return true;
     }
 }
 

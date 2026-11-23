@@ -105,12 +105,14 @@ if ($current_hour >= 19) {
 // FETCH STAFF DETAILS (for audit log)
 // ──────────────────────────────────────────────────────────────────
 $staff_full_name = '';
-$staffInfo = $conn->prepare("SELECT full_name FROM staff WHERE staff_id = ? LIMIT 1");
+$staff_branch    = '';
+$staffInfo = $conn->prepare("SELECT full_name, branch FROM staff WHERE staff_id = ? LIMIT 1");
 if ($staffInfo) {
     $staffInfo->bind_param("s", $staff_id);
     $staffInfo->execute();
     $si = $staffInfo->get_result()->fetch_assoc();
     $staff_full_name = $si['full_name'] ?? '';
+    $staff_branch    = $si['branch'] ?? '';
     $staffInfo->close();
 }
 
@@ -147,8 +149,8 @@ if (!empty($wfh_task)) {
 }
 $selected_mode = trim((string)($_POST['selected_mode'] ?? ''));
 
-// Check if today is a company-approved Work From Home day (e.g. Tue, Thu)
-$is_wfh_day = is_wfh_day_today($conn);
+// Check if today is a company-approved Work From Home day for this staff's branch
+$is_wfh_day = is_wfh_day_today($conn, $staff_branch);
 
 // ── UNIVERSAL GPS BRANCH AUTO-DETECTION & GEOFENCE ENFORCEMENT ──
 $geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
@@ -170,11 +172,16 @@ if ($selected_mode === 'wfh' && $is_wfh_day) {
 } else {
     // Outside branch perimeter: Check WFH eligibility
     if (!$is_wfh_day) {
+        $is_general_wfh = is_wfh_day_today($conn);
+        $err_msg = $geo['error'];
+        if ($is_general_wfh && !empty($staff_branch) && !is_branch_wfh_allowed($conn, $staff_branch)) {
+            $err_msg = "🔒 Work From Home is not active for your branch ($staff_branch) today. You must report to an office branch to clock in.";
+        }
         // Non-WFH day or WFH master-disabled: STRICTLY REJECT!
-        audit_clock_event($conn, $staff_id, $staff_full_name, 'location_rejected', "Attempted $action outside geofence on non-WFH day — " . $geo['error']);
+        audit_clock_event($conn, $staff_id, $staff_full_name, 'location_rejected', "Attempted $action outside geofence on non-WFH day/branch — " . $err_msg);
         json_response([
             "status"  => "error",
-            "message" => $geo['error'],
+            "message" => $err_msg,
             "debug"   => ["dist" => $geo['distance'], "limit" => $geo['radius'], "gps_accuracy" => $gps_accuracy]
         ], 400);
     }

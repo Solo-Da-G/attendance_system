@@ -76,7 +76,8 @@ if (!empty($wfh_task)) {
     $wfh_task = mb_substr($wfh_task, 0, 50, 'UTF-8');
 }
 $selected_mode = trim((string)($data['selected_mode'] ?? ''));
-$is_wfh_day    = is_wfh_day_today($conn);
+$staff_branch  = $bio['branch'] ?? '';
+$is_wfh_day    = is_wfh_day_today($conn, $staff_branch);
 
 $geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
 
@@ -97,10 +98,15 @@ if ($selected_mode === 'wfh' && $is_wfh_day) {
 } else {
     // Outside registered branch: Verify WFH eligibility
     if (!$is_wfh_day) {
+        $is_general_wfh = is_wfh_day_today($conn);
+        $err_msg = $geo['error'];
+        if ($is_general_wfh && !empty($staff_branch) && !is_branch_wfh_allowed($conn, $staff_branch)) {
+            $err_msg = "🔒 Work From Home is not active for your branch ($staff_branch) today. You must report to an office branch to clock in.";
+        }
         // Non-WFH day or WFH disabled: Strictly reject punch!
         echo json_encode([
             "status"  => "error",
-            "message" => $geo['error']
+            "message" => $err_msg
         ]);
         exit;
     }

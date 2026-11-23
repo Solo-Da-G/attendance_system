@@ -18,8 +18,18 @@ if ($lat === null || $lng === null) {
     exit;
 }
 
-$is_wfh_day = is_wfh_day_today($conn);
-$wfh_days   = get_wfh_days($conn);
+$staff_branch = '';
+$s_stmt = $conn->prepare("SELECT branch FROM staff WHERE staff_id = ? LIMIT 1");
+if ($s_stmt) {
+    $s_stmt->bind_param("s", $staff_id);
+    $s_stmt->execute();
+    $staff_branch = $s_stmt->get_result()->fetch_assoc()['branch'] ?? '';
+    $s_stmt->close();
+}
+
+$is_wfh_day   = is_wfh_day_today($conn, $staff_branch);
+$wfh_days     = get_wfh_days($conn);
+$wfh_branches = function_exists('get_wfh_branches') ? get_wfh_branches($conn) : ['all'];
 
 $geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
 

@@ -70,6 +70,7 @@ if ($action === 'fetch') {
         FROM admin_notifications n
         LEFT JOIN notif_reads nr ON nr.notification_id = n.id AND nr.user_key = ?
         WHERE n.is_active = 1
+          AND n.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
           AND nr.id IS NULL
           AND (n.target = 'all' OR n.target = ?)
         ORDER BY n.created_at DESC
