@@ -141,7 +141,11 @@ try {
 // ──────────────────────────────────────────────────────────────────
 // GEOFENCE VALIDATION, WFH SCHEDULE & BRANCH DETECTION
 // ──────────────────────────────────────────────────────────────────
-$wfh_task = trim((string)($_POST['task'] ?? $_POST['wfh_task'] ?? ''));
+$wfh_task      = trim((string)($_POST['task'] ?? $_POST['wfh_task'] ?? ''));
+if (!empty($wfh_task)) {
+    $wfh_task = mb_substr($wfh_task, 0, 50, 'UTF-8');
+}
+$selected_mode = trim((string)($_POST['selected_mode'] ?? ''));
 
 // Check if today is a company-approved Work From Home day (e.g. Tue, Thu)
 $is_wfh_day = is_wfh_day_today($conn);
@@ -153,7 +157,12 @@ $work_mode    = 'office';
 $clock_branch = '';
 $is_geofenced = 1;
 
-if ($geo['success']) {
+if ($selected_mode === 'wfh' && $is_wfh_day) {
+    // Explicitly selected Work From Home on an approved WFH day
+    $work_mode    = 'wfh';
+    $clock_branch = 'Remote / WFH';
+    $is_geofenced = 0;
+} elseif ($geo['success']) {
     // Physical presence inside an authorized office branch (ALWAYS active 24/7!)
     $work_mode    = 'office';
     $clock_branch = $geo['branch_name'];
@@ -174,7 +183,9 @@ if ($geo['success']) {
     $work_mode    = 'wfh';
     $clock_branch = 'Remote / WFH';
     $is_geofenced = 0;
+}
 
+if ($work_mode === 'wfh') {
     // Check if task summary is mandatory
     $task_required = get_system_setting($conn, 'wfh_task_required', '0') === '1';
     if ($task_required && empty($wfh_task) && $action === 'clock_in') {

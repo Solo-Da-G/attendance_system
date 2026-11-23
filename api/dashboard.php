@@ -203,6 +203,166 @@ if ($staff_id) {
         100% { transform: scale(0.96); opacity: 0.6; }
     }
 
+    /* Interactive Work Mode Switcher */
+    .work-mode-switcher-wrap {
+        margin-bottom: 16px;
+    }
+    .work-mode-switcher {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        background: #f1f5f9;
+        padding: 6px;
+        border-radius: 18px;
+        border: 1.5px solid #e2e8f0;
+    }
+    .work-mode-tab {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 14px;
+        border-radius: 14px;
+        border: 1.5px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        user-select: none;
+    }
+    .work-mode-tab:hover {
+        background: rgba(255, 255, 255, 0.65);
+    }
+    .work-mode-tab.active-office {
+        background: #ffffff;
+        border-color: #22c55e;
+        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.16), 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .work-mode-tab.active-wfh {
+        background: #ffffff;
+        border-color: #0284c7;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.2), 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .work-mode-tab.mode-locked {
+        opacity: 0.65;
+        cursor: pointer;
+    }
+    .mode-tab-icon {
+        font-size: 24px;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+    .mode-tab-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .mode-tab-title {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .mode-tab-sub {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        margin-top: 2px;
+        line-height: 1.2;
+    }
+    .mode-tab-badge {
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        padding: 3px 6px;
+        border-radius: 6px;
+        background: #e2e8f0;
+        color: #475569;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+    .work-mode-tab.active-office .mode-tab-badge {
+        background: #dcfce7;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+    }
+    .work-mode-tab.active-wfh .mode-tab-badge {
+        background: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+    }
+
+    /* Educational Low-Literacy Reassurance Banner */
+    .wfh-reassurance-card {
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border: 1.5px solid #7dd3fc;
+        border-radius: 16px;
+        padding: 13px 16px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        color: #0369a1;
+        animation: fadeInSlide .25s ease-out;
+    }
+    .reassurance-icon {
+        font-size: 26px;
+        line-height: 1;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .reassurance-body strong {
+        display: block;
+        font-size: 13px;
+        font-weight: 800;
+        color: #0c4a6e;
+        margin-bottom: 2px;
+    }
+    .reassurance-body p {
+        font-size: 12px;
+        margin: 0;
+        line-height: 1.35;
+        color: #075985;
+    }
+
+    /* High-Visibility 1-Line Task Box */
+    .wfh-task-box {
+        margin: 12px 0 16px;
+        background: #ffffff;
+        border: 1.5px solid #bae6fd;
+        border-radius: 14px;
+        padding: 12px 14px;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+        transition: all .2s ease;
+    }
+    .wfh-task-box:focus-within {
+        border-color: #0284c7;
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+    .wfh-task-box input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 14px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #0f172a;
+        outline: none;
+        background: #f8fafc;
+        transition: border-color .2s;
+    }
+    .wfh-task-box input:focus {
+        border-color: #0284c7;
+        background: #ffffff;
+    }
+    @keyframes fadeInSlide {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* WFH Traffic-Light Visual Indicator */
     .wfh-status-banner {
         display: flex;
@@ -775,6 +935,52 @@ if ($staff_id) {
     <?php endif; ?>
     
     <div class="clocking-card">
+        <!-- Interactive Work Mode Switcher (Office Branch vs Work From Home) -->
+        <div class="work-mode-switcher-wrap">
+            <div class="work-mode-switcher" id="workModeSwitcher">
+                <button type="button" class="work-mode-tab active-office" id="modeOfficeTab" onclick="selectWorkLocationMode('office', true)">
+                    <span class="mode-tab-icon">🏢</span>
+                    <div class="mode-tab-info">
+                        <div class="mode-tab-title">Office Branch</div>
+                        <div class="mode-tab-sub">On-Site Geofence</div>
+                    </div>
+                    <span class="mode-tab-badge" id="modeOfficeBadge">ACTIVE</span>
+                </button>
+
+                <button type="button" class="work-mode-tab <?php echo !$is_wfh_day_today ? 'mode-locked' : ''; ?>" id="modeWfhTab" onclick="selectWorkLocationMode('wfh', true)">
+                    <span class="mode-tab-icon"><?php echo $is_wfh_day_today ? '🏠' : '🔒'; ?></span>
+                    <div class="mode-tab-info">
+                        <div class="mode-tab-title">Work From Home</div>
+                        <div class="mode-tab-sub"><?php echo $is_wfh_day_today ? 'Remote GPS Active' : 'Office Day Today'; ?></div>
+                    </div>
+                    <span class="mode-tab-badge" id="modeWfhBadge"><?php echo $is_wfh_day_today ? 'AVAILABLE' : 'OFFICE DAY'; ?></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Non-WFH Day Friendly Notice (Inline alert if WFH tapped on non-WFH day) -->
+        <div id="wfhLockedNotice" style="display:none; background:#fef2f2; border:1.5px solid #f87171; border-radius:14px; padding:12px 16px; margin-bottom:16px; color:#991b1b; font-size:13px; line-height:1.4;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:22px; flex-shrink:0;">🔒</span>
+                    <div>
+                        <strong>Work From Home is Not Active Today:</strong><br>
+                        <span>Today is an on-site office day. WFH is scheduled for: <strong><?php echo !empty($active_wfh_days) ? htmlspecialchars(implode(', ', array_map('ucfirst', $active_wfh_days))) : 'Tuesday & Thursday'; ?></strong>. Please report to your branch to clock in.</span>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('wfhLockedNotice').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer; color:#991b1b; padding:0 4px;">✕</button>
+            </div>
+        </div>
+
+        <!-- Educational Low-Literacy Reassurance Banner (Visible when WFH active) -->
+        <div id="wfhReassuranceCard" class="wfh-reassurance-card" style="display: <?php echo $is_wfh_day_today ? 'flex' : 'none'; ?>;">
+            <div class="reassurance-icon">🛡️</div>
+            <div class="reassurance-body">
+                <strong>Authorized Remote Clock-in (Geofencing is Safe)</strong>
+                <p>Your company authorizes Work From Home today. Geofencing is <u>not breached or broken</u> — your remote GPS coordinates are securely captured and approved by management.</p>
+            </div>
+        </div>
+
         <!-- Intelligent Traffic-Light Work Mode Banner (Ultra-Visual for all staff) -->
         <div id="wfhIndicatorBanner" class="wfh-status-banner <?php echo $is_wfh_day_today ? 'ready-wfh' : 'ready-office'; ?>">
             <span class="wfh-banner-icon" id="wfhBannerIcon"><?php echo $is_wfh_day_today ? '🏠' : '🏢'; ?></span>
@@ -898,12 +1104,15 @@ if ($staff_id) {
             $past_7pm = (int)date('G') >= 19;
         ?>
 
-        <!-- Optional / Required WFH Daily Task Focus -->
-        <div id="wfhTaskWrap" style="display: <?php echo ($is_wfh_day_today && !$attendance_done && !$past_7pm) ? 'block' : 'none'; ?>; margin: 10px 0 16px;">
-            <label for="wfhTaskInput" style="display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#0369a1; margin-bottom:5px;">
-                <span>📝</span> Today's Work Focus / Tasks <?php if($wfh_task_required): ?><span style="color:#ef4444; font-size:11px;">(Required)</span><?php else: ?><span style="color:#64748b; font-weight:500; font-size:11px;">(Optional)</span><?php endif; ?>:
-            </label>
-            <input type="text" id="wfhTaskInput" placeholder="e.g. Preparing sales report, client support, code review..." autocomplete="off" style="width:100%; padding:10px 14px; border:1.5px solid #bae6fd; border-radius:12px; font-size:13.5px; outline:none; background:#f0f9ff; transition:border-color .2s;">
+        <!-- High-Visibility 1-Line Daily Task / Work Summary (Max 40 letters) -->
+        <div id="wfhTaskWrap" class="wfh-task-box" style="display: <?php echo ($is_wfh_day_today && !$attendance_done && !$past_7pm) ? 'block' : 'none'; ?>;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                <label for="wfhTaskInput" style="font-size:12.5px; font-weight:700; color:#0369a1; display:flex; align-items:center; gap:6px;">
+                    <span>📝</span> Today's Work Summary <?php if($wfh_task_required): ?><span style="color:#ef4444; font-size:11px;">(Required)</span><?php else: ?><span style="color:#64748b; font-weight:500; font-size:11px;">(Optional)</span><?php endif; ?>:
+                </label>
+                <span id="wfhTaskCharCount" style="font-size:11.5px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:10px;">0 / 40</span>
+            </div>
+            <input type="text" id="wfhTaskInput" maxlength="40" placeholder="e.g. Sales calls, client support, audit..." autocomplete="off" oninput="updateTaskCharCount(this)">
         </div>
 
         <div id="clockControls">
@@ -2058,6 +2267,7 @@ if ($staff_id) {
         formData.append('photo', photoData);
         formData.append('face_verified', '1');
         formData.append('face_distance', String(faceResult.distance));
+        formData.append('selected_mode', currentSelectedWorkMode);
 
         const taskInput = document.getElementById('wfhTaskInput');
         if (taskInput && taskInput.value.trim()) {
@@ -2780,8 +2990,105 @@ if ($staff_id) {
 
 <script src="/asset/js/biometric.js?v=<?php echo time(); ?>"></script>
 <script>
+const IS_WFH_DAY_TODAY = <?php echo $is_wfh_day_today ? 'true' : 'false'; ?>;
+const IS_ALREADY_IN = <?php echo $currently_in ? 'true' : 'false'; ?>;
+const STAFF_ID = '<?php echo htmlspecialchars($staff_id ?? ''); ?>';
 let currentClockMode = 'face';
+let currentSelectedWorkMode = '<?php echo $is_wfh_day_today ? "wfh" : "office"; ?>';
+let userManuallySelectedMode = false;
 let bioEnrolled = false;
+try {
+    if (STAFF_ID && localStorage.getItem('tds_bio_enrolled_' + STAFF_ID) === '1') {
+        bioEnrolled = true;
+    }
+} catch(_) {}
+
+function updateTaskCharCount(input) {
+    const counter = document.getElementById('wfhTaskCharCount');
+    if (!counter || !input) return;
+    const len = input.value.length;
+    counter.textContent = `${len} / 40`;
+    if (len >= 38) {
+        counter.style.color = '#ef4444';
+        counter.style.background = '#fee2e2';
+    } else if (len >= 30) {
+        counter.style.color = '#d97706';
+        counter.style.background = '#fef3c7';
+    } else {
+        counter.style.color = '#0284c7';
+        counter.style.background = '#e0f2fe';
+    }
+}
+
+function updateClockButtonLabels(mode, isOut) {
+    const clockBtn = document.getElementById('clockBtn');
+    const bioBtn = document.getElementById('bioClockBtn');
+    if (!clockBtn) return;
+    if (clockBtn.dataset.preventEnable === "true") return;
+
+    if (isOut) {
+        if (mode === 'wfh') {
+            clockBtn.innerHTML = '🏠 Verify & Clock Out (Work From Home)';
+            if (bioBtn) bioBtn.innerHTML = '👆 Touch Sensor to Clock Out (Home)';
+        } else if (mode === 'hybrid') {
+            clockBtn.innerHTML = '🔄 Clock Out at Office (Hybrid Shift)';
+            if (bioBtn) bioBtn.innerHTML = '🔄 Touch Sensor at Office (Hybrid)';
+        } else {
+            clockBtn.innerHTML = '🏢 Verify & Clock Out at Branch';
+            if (bioBtn) bioBtn.innerHTML = '👆 Touch Sensor to Clock Out';
+        }
+    } else {
+        if (mode === 'wfh') {
+            clockBtn.innerHTML = '🏠 Verify & Clock In (Work From Home)';
+            if (bioBtn) bioBtn.innerHTML = '👆 Touch Sensor to Clock In (Home)';
+        } else {
+            clockBtn.innerHTML = '🏢 Verify & Clock In at Branch';
+            if (bioBtn) bioBtn.innerHTML = '👆 Touch Sensor to Clock In';
+        }
+    }
+}
+
+function selectWorkLocationMode(mode, isUserClick = false) {
+    if (isUserClick) {
+        userManuallySelectedMode = true;
+    }
+    const modeOfficeTab = document.getElementById('modeOfficeTab');
+    const modeWfhTab = document.getElementById('modeWfhTab');
+    const lockedNotice = document.getElementById('wfhLockedNotice');
+    const reassuranceCard = document.getElementById('wfhReassuranceCard');
+    const taskWrap = document.getElementById('wfhTaskWrap');
+
+    if (mode === 'wfh') {
+        if (!IS_WFH_DAY_TODAY) {
+            if (lockedNotice) lockedNotice.style.display = 'block';
+            return;
+        }
+        if (lockedNotice) lockedNotice.style.display = 'none';
+        currentSelectedWorkMode = 'wfh';
+
+        if (modeOfficeTab) modeOfficeTab.classList.remove('active-office');
+        if (modeWfhTab) modeWfhTab.classList.add('active-wfh');
+        if (reassuranceCard) reassuranceCard.style.display = 'flex';
+        if (taskWrap) taskWrap.style.display = 'block';
+
+        updateClockButtonLabels('wfh', IS_ALREADY_IN);
+    } else {
+        // Office Mode
+        if (lockedNotice) lockedNotice.style.display = 'none';
+        currentSelectedWorkMode = 'office';
+
+        if (modeOfficeTab) modeOfficeTab.classList.add('active-office');
+        if (modeWfhTab) modeWfhTab.classList.remove('active-wfh');
+        if (reassuranceCard) reassuranceCard.style.display = 'none';
+
+        const taskInput = document.getElementById('wfhTaskInput');
+        if (taskWrap && (!taskInput || !taskInput.value.trim())) {
+            taskWrap.style.display = 'none';
+        }
+
+        updateClockButtonLabels('office', IS_ALREADY_IN);
+    }
+}
 
 function switchClockMode(mode) {
     currentClockMode = mode;
@@ -2852,6 +3159,13 @@ async function checkBiometrics() {
     const bioReg = document.getElementById('bioRegControl');
     const bioBtn = document.getElementById('bioClockBtn');
 
+    // Instant local cache display for zero perception lag
+    if (bioEnrolled) {
+        if (statusText) statusText.innerHTML = `<span style="color:#10b981;">✅ Sensor Ready. Touch sensor or button to clock.</span>`;
+        if (bioReg) bioReg.style.display = 'none';
+        if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = false;
+    }
+
     try {
         const supported = await TDSBiometric.isSupported();
         if (!supported) {
@@ -2862,17 +3176,19 @@ async function checkBiometrics() {
         const res = await TDSBiometric.getStatus();
         if (res.status === 'success' && res.enrolled) {
             bioEnrolled = true;
+            try { if (STAFF_ID) localStorage.setItem('tds_bio_enrolled_' + STAFF_ID, '1'); } catch(_) {}
             if (statusText) statusText.innerHTML = `<span style="color:#10b981;">✅ Sensor Ready (${res.count} registered device${res.count > 1 ? 's' : ''}). Touch sensor to clock.</span>`;
             if (bioReg) bioReg.style.display = 'none';
             if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = false;
         } else {
             bioEnrolled = false;
+            try { if (STAFF_ID) localStorage.removeItem('tds_bio_enrolled_' + STAFF_ID); } catch(_) {}
             if (statusText) statusText.innerHTML = '<span style="color:#2563eb;">ℹ️ No thumbprint enrolled on this account yet. Click below to register this device.</span>';
             if (bioReg) bioReg.style.display = 'block';
             if (bioBtn && !bioBtn.dataset.preventEnable) bioBtn.disabled = true;
         }
     } catch (e) {
-        if (statusText) statusText.innerHTML = '<span style="color:#ef4444;">Status: ' + e.message + '</span>';
+        if (!bioEnrolled && statusText) statusText.innerHTML = '<span style="color:#ef4444;">Status: ' + e.message + '</span>';
     }
 }
 
@@ -2926,7 +3242,7 @@ async function processBiometricClock() {
     try {
         const taskInput = document.getElementById('wfhTaskInput');
         const taskVal = taskInput ? taskInput.value.trim() : '';
-        const res = await TDSBiometric.clock(taskVal);
+        const res = await TDSBiometric.clock(taskVal, currentSelectedWorkMode);
         if (bioCard) bioCard.classList.remove('scanning');
         if (statusText) statusText.innerHTML = '<span style="color:#10b981;">' + res.message + '</span>';
         if (resultBox) {
@@ -2969,7 +3285,6 @@ async function checkLiveLocationStatus() {
             const title = document.getElementById('wfhBannerTitle');
             const sub = document.getElementById('wfhBannerSub');
             const dot = document.getElementById('wfhBannerDot');
-            const taskWrap = document.getElementById('wfhTaskWrap');
 
             if (!banner || !data) return;
 
@@ -2979,18 +3294,33 @@ async function checkLiveLocationStatus() {
                 if (icon) icon.textContent = '🏢';
                 if (title) title.textContent = `🏢 Inside ${data.branch || 'Office Branch'} (Ready to Clock)`;
                 const distText = data.distance ? ` (${Math.round(data.distance)}m inside radius)` : '';
-                if (sub) sub.textContent = `On-site branch perimeter verified${distText} • Full 24/7 access active`;
+                if (sub) sub.textContent = `On-site branch perimeter verified${distText} • Physical presence active`;
                 if (dot) dot.className = 'wfh-pulse-dot green';
-                if (taskWrap) taskWrap.style.display = 'none';
+
+                const officeBadge = document.getElementById('modeOfficeBadge');
+                if (officeBadge) officeBadge.textContent = 'VERIFIED ON-SITE';
+
+                if (!userManuallySelectedMode) {
+                    selectWorkLocationMode('office', false);
+                    if (IS_ALREADY_IN) {
+                        updateClockButtonLabels('hybrid', true);
+                    }
+                }
             } else if (data.work_mode === 'wfh') {
                 // Outside branch perimeter on approved WFH schedule day (e.g. Tuesday / Thursday)
                 banner.className = 'wfh-status-banner ready-wfh';
                 if (icon) icon.textContent = '🏠';
                 if (title) title.textContent = `🏠 Work From Home Active (Remote Mode)`;
                 const daysStr = (data.wfh_days && data.wfh_days.length) ? data.wfh_days.join(' & ') : 'Tuesday & Thursday';
-                if (sub) sub.textContent = `${daysStr} Remote Attendance Schedule • GPS coordinates will be captured`;
+                if (sub) sub.textContent = `${daysStr} Remote Attendance Schedule • Geofencing Safe & Approved`;
                 if (dot) dot.className = 'wfh-pulse-dot blue';
-                if (taskWrap) taskWrap.style.display = 'block';
+
+                const wfhBadge = document.getElementById('modeWfhBadge');
+                if (wfhBadge) wfhBadge.textContent = 'REMOTE ACTIVE';
+
+                if (!userManuallySelectedMode) {
+                    selectWorkLocationMode('wfh', false);
+                }
             } else {
                 // Outside branch perimeter on a non-WFH day: Clocking locked!
                 banner.className = 'wfh-status-banner locked-geofence';
@@ -2999,7 +3329,10 @@ async function checkLiveLocationStatus() {
                 const distKm = data.distance ? (data.distance > 1000 ? (data.distance / 1000).toFixed(1) + 'km' : Math.round(data.distance) + 'm') : 'Away';
                 if (sub) sub.textContent = `You are ${distKm} away from ${data.branch || 'your branch'}. You must report to an office branch to clock in today.`;
                 if (dot) dot.className = 'wfh-pulse-dot red';
-                if (taskWrap) taskWrap.style.display = 'none';
+
+                if (!userManuallySelectedMode) {
+                    selectWorkLocationMode('office', false);
+                }
             }
         } catch (_) {}
     }, () => {}, { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 });

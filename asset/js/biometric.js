@@ -300,7 +300,7 @@ const TDSBiometric = (function () {
     }
 
     // Lightning-Fast Verify thumbprint / Face ID & punch attendance (<15ms hardware invocation)
-    async function clock(taskComment = '') {
+    async function clock(taskComment = '', selectedMode = '') {
         // 1. Launch background GPS acquisition concurrently (0ms wait)
         const coordsPromise = getCoordinates();
 
@@ -384,6 +384,7 @@ const TDSBiometric = (function () {
             latitude: coords ? coords.latitude : null,
             longitude: coords ? coords.longitude : null,
             task: taskComment || '',
+            selected_mode: selectedMode || '',
             response: {
                 clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
                 authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),

@@ -71,8 +71,12 @@ if ($current_hour >= 19) {
 }
 
 // 3. Universal GPS Branch Auto-Detection, WFH Schedule & Geofence Enforcement
-$wfh_task   = trim((string)($data['task'] ?? $data['wfh_task'] ?? ''));
-$is_wfh_day = is_wfh_day_today($conn);
+$wfh_task      = trim((string)($data['task'] ?? $data['wfh_task'] ?? ''));
+if (!empty($wfh_task)) {
+    $wfh_task = mb_substr($wfh_task, 0, 50, 'UTF-8');
+}
+$selected_mode = trim((string)($data['selected_mode'] ?? ''));
+$is_wfh_day    = is_wfh_day_today($conn);
 
 $geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
 
@@ -80,7 +84,12 @@ $work_mode    = 'office';
 $branch_name  = '';
 $is_geofenced = 1;
 
-if ($geo['success']) {
+if ($selected_mode === 'wfh' && $is_wfh_day) {
+    // Explicitly selected Work From Home on an approved WFH day
+    $work_mode    = 'wfh';
+    $branch_name  = 'Remote / WFH';
+    $is_geofenced = 0;
+} elseif ($geo['success']) {
     // Inside registered company branch (ALWAYS allowed 24/7!)
     $work_mode    = 'office';
     $branch_name  = $geo['branch_name'];
@@ -100,7 +109,9 @@ if ($geo['success']) {
     $work_mode    = 'wfh';
     $branch_name  = 'Remote / WFH';
     $is_geofenced = 0;
+}
 
+if ($work_mode === 'wfh') {
     // Check if attendance already completed for today
     $checkToday = $conn->prepare("SELECT id, clock_out FROM attendance WHERE staff_id = ? AND DATE(clock_in) = ? ORDER BY id DESC LIMIT 1");
     if ($checkToday) {
