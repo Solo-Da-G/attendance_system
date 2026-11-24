@@ -27,36 +27,47 @@ if ($s_stmt) {
     $s_stmt->close();
 }
 
-$is_wfh_day   = is_wfh_day_today($conn, $staff_branch);
-$wfh_days     = get_wfh_days($conn);
-$wfh_branches = function_exists('get_wfh_branches') ? get_wfh_branches($conn) : ['all'];
+$is_general_wfh = is_wfh_day_today($conn);
+$branch_eligible = function_exists('is_branch_wfh_allowed') ? is_branch_wfh_allowed($conn, $staff_branch) : true;
+$is_wfh_day     = $is_general_wfh && $branch_eligible;
+$wfh_days       = get_wfh_days($conn);
+$wfh_branches   = function_exists('get_wfh_branches') ? get_wfh_branches($conn) : ['all'];
 
 $geo = auto_detect_gps_branch($conn, $lat, $lng, $staff_id);
 
 if ($geo['success']) {
     echo json_encode([
-        'status'      => 'success',
-        'is_near'     => true,
-        'work_mode'   => 'office',
-        'branch'      => $geo['branch_name'],
-        'distance'    => $geo['distance'],
-        'radius'      => $geo['radius'],
-        'is_wfh_day'  => $is_wfh_day,
-        'wfh_days'    => $wfh_days,
-        'message'     => "🏢 Inside {$geo['branch_name']} perimeter."
+        'status'          => 'success',
+        'is_near'         => true,
+        'work_mode'       => 'office',
+        'branch'          => $geo['branch_name'],
+        'distance'        => $geo['distance'],
+        'radius'          => $geo['radius'],
+        'is_wfh_day'      => $is_wfh_day,
+        'is_general_wfh'  => $is_general_wfh,
+        'branch_eligible' => $branch_eligible,
+        'wfh_days'        => $wfh_days,
+        'message'         => "🏢 Inside {$geo['branch_name']} perimeter."
     ]);
 } else {
+    $status_code = $is_wfh_day ? 'wfh_active' : ($is_general_wfh && !$branch_eligible ? 'branch_not_eligible' : 'not_near');
+    $status_msg  = $is_wfh_day 
+        ? "🏠 Remote location detected — Work From Home schedule active." 
+        : ($is_general_wfh && !$branch_eligible 
+            ? "🔒 Remote clocking is not active for your branch (" . ($staff_branch ?: 'Unassigned') . ") today. Please clock in at your branch." 
+            : $geo['error']);
+
     echo json_encode([
-        'status'      => $is_wfh_day ? 'wfh_active' : 'not_near',
-        'is_near'     => false,
-        'work_mode'   => $is_wfh_day ? 'wfh' : 'locked',
-        'branch'      => $geo['branch_name'],
-        'distance'    => $geo['distance'],
-        'radius'      => $geo['radius'],
-        'is_wfh_day'  => $is_wfh_day,
-        'wfh_days'    => $wfh_days,
-        'message'     => $is_wfh_day 
-            ? "🏠 Remote location detected — Work From Home schedule active." 
-            : $geo['error']
+        'status'          => $status_code,
+        'is_near'         => false,
+        'work_mode'       => $is_wfh_day ? 'wfh' : 'locked',
+        'branch'          => $geo['branch_name'],
+        'distance'        => $geo['distance'],
+        'radius'          => $geo['radius'],
+        'is_wfh_day'      => $is_wfh_day,
+        'is_general_wfh'  => $is_general_wfh,
+        'branch_eligible' => $branch_eligible,
+        'wfh_days'        => $wfh_days,
+        'message'         => $status_msg
     ]);
 }

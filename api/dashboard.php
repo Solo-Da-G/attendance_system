@@ -1067,7 +1067,10 @@ if ($staff_id) {
                     <?php echo $is_wfh_day_today ? '🏠 Work From Home Day Active' : '🏢 On-Site Office Attendance'; ?>
                 </div>
                 <div class="wfh-banner-sub" id="wfhBannerSub">
-                    <?php echo $is_wfh_day_today ? 'Tuesday &amp; Thursday remote schedule &bull; Verifying GPS location…' : 'Detecting your branch location…'; ?>
+                    <?php 
+                        $wfh_sched_txt = !empty($active_wfh_days) ? htmlspecialchars(implode(' & ', array_map('ucfirst', $active_wfh_days))) : 'Remote';
+                        echo $is_wfh_day_today ? "{$wfh_sched_txt} remote schedule &bull; Verifying GPS location…" : 'Detecting your branch location…'; 
+                    ?>
                 </div>
             </div>
             <span class="wfh-pulse-dot <?php echo $is_wfh_day_today ? 'blue' : 'green'; ?>" id="wfhBannerDot"></span>
@@ -3429,7 +3432,7 @@ async function checkLiveLocationStatus() {
                 banner.className = 'wfh-status-banner ready-wfh';
                 if (icon) icon.textContent = '🏠';
                 if (title) title.textContent = `🏠 Work From Home Active (Remote Mode)`;
-                const daysStr = (data.wfh_days && data.wfh_days.length) ? data.wfh_days.join(' & ') : 'Tuesday & Thursday';
+                const daysStr = (data.wfh_days && data.wfh_days.length) ? data.wfh_days.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(' & ') : ACTIVE_WFH_DAYS_STR;
                 if (sub) sub.textContent = `${daysStr} Remote Attendance Schedule • Geofencing Safe & Approved`;
                 if (dot) dot.className = 'wfh-pulse-dot blue';
 
@@ -3439,8 +3442,22 @@ async function checkLiveLocationStatus() {
                 if (!userManuallySelectedMode) {
                     selectWorkLocationMode('wfh', false);
                 }
+            } else if (data.status === 'branch_not_eligible') {
+                // Remote active today, but this staff's branch is not included
+                banner.className = 'wfh-status-banner locked-geofence';
+                if (icon) icon.textContent = '🔒';
+                if (title) title.textContent = `🔒 Work From Home Not Scheduled for Your Branch`;
+                if (sub) sub.textContent = data.message || `Your branch (${STAFF_BRANCH}) is on-site today. Please report to your branch to clock in.`;
+                if (dot) dot.className = 'wfh-pulse-dot red';
+
+                const wfhBadge = document.getElementById('modeWfhBadge');
+                if (wfhBadge) wfhBadge.textContent = 'BRANCH ON-SITE';
+
+                if (!userManuallySelectedMode) {
+                    selectWorkLocationMode('office', false);
+                }
             } else {
-                // Outside branch perimeter on a non-WFH day or branch not eligible: Clocking locked!
+                // Outside branch perimeter on a non-WFH day: Clocking locked!
                 banner.className = 'wfh-status-banner locked-geofence';
                 if (icon) icon.textContent = '🛑';
                 if (title) title.textContent = `🛑 Outside Office Geofence (Clocking Locked)`;
