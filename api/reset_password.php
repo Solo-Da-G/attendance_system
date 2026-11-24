@@ -19,7 +19,7 @@ if (empty($token) || empty($email)) {
 } else {
     // Validate token
     $table = ($type === 'staff') ? 'staff' : 'admin';
-    $stmt = $conn->prepare("SELECT id, reset_token_expires FROM $table WHERE email = ? AND reset_token = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, reset_token_expires FROM $table WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) AND reset_token = ? LIMIT 1");
     $stmt->bind_param("ss", $email, $token);
     $stmt->execute();
     $res = $stmt->get_result();

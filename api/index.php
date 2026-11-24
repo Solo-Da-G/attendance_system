@@ -20,8 +20,8 @@ if (isset($_POST['login'])) {
     } else {
         $has_mcp_admin = function_exists('db_has_column') && db_has_column($conn, 'admin', 'must_change_password');
         $sql_admin = $has_mcp_admin
-            ? "SELECT id, username, password, role, must_change_password FROM `admin` WHERE (username = ? OR email = ?) LIMIT 1"
-            : "SELECT id, username, password, role FROM `admin` WHERE (username = ? OR email = ?) LIMIT 1";
+            ? "SELECT id, username, password, role, must_change_password FROM `admin` WHERE (LOWER(TRIM(username)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))) LIMIT 1"
+            : "SELECT id, username, password, role FROM `admin` WHERE (LOWER(TRIM(username)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))) LIMIT 1";
         $stmt = $conn->prepare($sql_admin);
         if (!$stmt) { die("MySQL Prepare Error (Admin Table): " . $conn->error); }
         $stmt->bind_param("ss", $username, $username);
@@ -58,8 +58,8 @@ if (isset($_POST['login'])) {
 
         $has_mcp_staff = function_exists('db_has_column') && db_has_column($conn, 'staff', 'must_change_password');
         $sql_staff = $has_mcp_staff
-            ? "SELECT id, staff_id, full_name, password, must_change_password FROM staff WHERE (staff_id = ? OR email = ?) AND deleted_at IS NULL LIMIT 1"
-            : "SELECT id, staff_id, full_name, password FROM staff WHERE (staff_id = ? OR email = ?) AND deleted_at IS NULL LIMIT 1";
+            ? "SELECT id, staff_id, full_name, password, must_change_password FROM staff WHERE (LOWER(TRIM(staff_id)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))) AND deleted_at IS NULL LIMIT 1"
+            : "SELECT id, staff_id, full_name, password FROM staff WHERE (LOWER(TRIM(staff_id)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))) AND deleted_at IS NULL LIMIT 1";
         $stmt = $conn->prepare($sql_staff);
         $stmt->bind_param("ss", $username, $username);
         $stmt->execute();
@@ -1256,7 +1256,7 @@ body {
                     <span class="input-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </span>
-                    <input type="text" id="username" name="username" placeholder="e.g. TDS-001 or admin" required autofocus>
+                    <input type="text" id="username" name="username" placeholder="e.g. TDS-001 or admin" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required autofocus>
                 </div>
             </div>
 
@@ -1266,7 +1266,7 @@ body {
                     <span class="input-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
                     </span>
-                    <input type="password" id="passwordField" name="password" placeholder="Enter your password" required>
+                    <input type="password" id="passwordField" name="password" placeholder="Enter your password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required>
                     <button type="button" class="toggle-password-btn" onclick="togglePass()" aria-label="Toggle password visibility">
                         <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>

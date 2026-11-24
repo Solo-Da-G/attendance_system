@@ -66,14 +66,14 @@ if (isset($_POST['reset_request'])) {
         $msg_type = "error";
     } else {
         // 1. Search in Admin table
-        $stmt = $conn->prepare("SELECT id, username FROM `admin` WHERE email = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, username FROM `admin` WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) LIMIT 1");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $admin_res = $stmt->get_result();
         $stmt->close();
 
         // 2. Search in Staff table
-        $stmt = $conn->prepare("SELECT id, full_name as username FROM staff WHERE email = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, full_name as username FROM staff WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) AND deleted_at IS NULL LIMIT 1");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $staff_res = $stmt->get_result();
@@ -99,7 +99,7 @@ if (isset($_POST['reset_request'])) {
         }
         
         // Auto-assign admin email if solyno04@gmail.com is not found
-        if (!$user_found && $email === 'solyno04@gmail.com') {
+        if (!$user_found && strtolower(trim($email)) === 'solyno04@gmail.com') {
             $upd = $conn->query("UPDATE `admin` SET email = 'solyno04@gmail.com' LIMIT 1");
             if ($upd) {
                 $user_found = true;
@@ -418,7 +418,7 @@ if (isset($_POST['reset_request'])) {
                 <span class="input-icon">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 </span>
-                <input type="email" id="email" name="email" placeholder="name@company.com" required autofocus>
+                <input type="email" id="email" name="email" placeholder="name@company.com" required autofocus autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false">
             </div>
         </div>
         <button type="submit" name="reset_request" class="btn-submit">Send Reset Link →</button>
