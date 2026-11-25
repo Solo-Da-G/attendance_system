@@ -238,6 +238,51 @@
         osc.start(now + n.time);
         osc.stop(now + n.time + n.dur);
       });
+    },
+
+    /**
+     * Attention-Grabbing Loud Reminder Chime & Voice
+     * Dual-tone pulsing alert: A5 (880Hz) -> E6 (1318Hz) x 2, followed by spoken announcement
+     */
+    playReminder(type = 'clock_in') {
+      unlock();
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.90, now);
+      master.connect(ctx.destination);
+
+      // 4-pulse attention pattern: 880Hz -> 1318Hz -> 880Hz -> 1318Hz
+      const pings = [
+        { f: 880.00, time: 0.00, dur: 0.14 },
+        { f: 1318.51, time: 0.12, dur: 0.18 },
+        { f: 880.00, time: 0.32, dur: 0.14 },
+        { f: 1318.51, time: 0.44, dur: 0.35 }
+      ];
+
+      pings.forEach((p) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(p.f, now + p.time);
+        gain.gain.setValueAtTime(0.001, now + p.time);
+        gain.gain.linearRampToValueAtTime(0.75, now + p.time + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + p.time + p.dur);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(now + p.time);
+        osc.stop(now + p.time + p.dur);
+      });
+
+      // Voice prompt after chimes finish
+      setTimeout(() => {
+        const speechText = (type === 'clock_out')
+          ? "Attention, it is close of work! Please remember to clock out."
+          : "Attention, you have not clocked in today! Please verify your attendance now.";
+        speakConfirmation(speechText);
+      }, 550);
     }
   };
 

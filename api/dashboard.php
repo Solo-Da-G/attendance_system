@@ -901,6 +901,100 @@ if ($staff_id) {
         .record-divider { display: none !important; }
         .dash-quick-link { flex: 1 1 100%; }
     }
+
+    /* Attendance Reminder Modal */
+    .att-reminder-modal-overlay {
+        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78);
+        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        z-index: 99999; display: flex; align-items: center; justify-content: center;
+        padding: 16px; animation: fadeInOverlay 0.25s ease;
+    }
+    .att-reminder-card {
+        background: white; border-radius: 24px; padding: 28px 24px; width: 100%; max-width: 420px;
+        text-align: center; box-shadow: 0 25px 50px -12px rgba(220, 38, 38, 0.35), 0 0 0 1px rgba(220, 38, 38, 0.15);
+        position: relative; animation: popReminder 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popReminder {
+        0% { transform: scale(0.85); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .att-reminder-pulse-icon {
+        font-size: 52px; width: 88px; height: 88px; margin: 0 auto 16px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        background: #fee2e2; border: 3px solid #ef4444;
+        animation: reminderAlarmPulse 1.2s infinite;
+    }
+    .att-reminder-pulse-icon.blue {
+        background: #dbeafe; border-color: #2563eb;
+        animation: reminderAlarmPulseBlue 1.2s infinite;
+    }
+    @keyframes reminderAlarmPulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+        70% { transform: scale(1.08); box-shadow: 0 0 0 18px rgba(239, 68, 68, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    @keyframes reminderAlarmPulseBlue {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6); }
+        70% { transform: scale(1.08); box-shadow: 0 0 0 18px rgba(37, 99, 235, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    }
+    .att-reminder-badge {
+        display: inline-block; padding: 4px 12px; border-radius: 99px;
+        background: #fef2f2; color: #dc2626; font-size: 11px; font-weight: 800;
+        letter-spacing: 0.8px; margin-bottom: 10px; border: 1px solid #fecaca;
+    }
+    .att-reminder-badge.blue {
+        background: #eff6ff; color: #2563eb; border-color: #bfdbfe;
+    }
+    .att-reminder-title {
+        font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0 0 8px; line-height: 1.3;
+    }
+    .att-reminder-msg {
+        font-size: 0.9rem; color: #64748b; line-height: 1.5; margin: 0 0 20px;
+    }
+    .att-reminder-actions { display: flex; flex-direction: column; gap: 10px; }
+    .att-reminder-btn-primary {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white; border: none; padding: 14px 20px; border-radius: 14px;
+        font-weight: 800; font-size: 15px; cursor: pointer; transition: all 0.2s;
+        box-shadow: 0 8px 20px -4px rgba(239, 68, 68, 0.5);
+    }
+    .att-reminder-btn-primary.blue {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.5);
+    }
+    .att-reminder-btn-primary:hover { transform: translateY(-2px); }
+    .att-reminder-btn-secondary {
+        background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;
+        padding: 11px 18px; border-radius: 12px; font-weight: 700; font-size: 13.5px;
+        cursor: pointer; transition: background 0.2s;
+    }
+    .att-reminder-btn-secondary:hover { background: #e2e8f0; color: #1e293b; }
+
+    /* Web Push Banner */
+    .web-push-prompt-banner {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        color: white; border-radius: 16px; padding: 12px 18px; margin-bottom: 18px;
+        display: flex; align-items: center; justify-content: space-between; gap: 14px;
+        box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.35); flex-wrap: wrap;
+    }
+    .web-push-prompt-content { display: flex; align-items: center; gap: 12px; min-width: 260px; flex: 1; }
+    .web-push-prompt-icon { font-size: 24px; }
+    .web-push-prompt-text { font-size: 13px; line-height: 1.4; color: #eff6ff; }
+    .web-push-prompt-text strong { color: #ffffff; }
+    .web-push-prompt-btns { display: flex; align-items: center; gap: 8px; }
+    .btn-enable-push {
+        background: #ffffff; color: #1d4ed8; border: none; padding: 8px 16px;
+        border-radius: 10px; font-weight: 800; font-size: 12.5px; cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.12); transition: transform 0.15s;
+    }
+    .btn-enable-push:hover { transform: translateY(-1px); }
+    .btn-dismiss-push {
+        background: rgba(255,255,255,0.2); color: white; border: none;
+        width: 32px; height: 32px; border-radius: 50%; font-size: 13px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .btn-dismiss-push:hover { background: rgba(255,255,255,0.3); }
   </style>
 </head>
 <body class="app-page dashboard-page">
@@ -989,6 +1083,20 @@ if ($staff_id) {
 
     <!-- Hidden date string element for JS clock updater -->
     <span id="liveDateStr" style="display:none;"></span>
+
+    <!-- Web Push Attendance Reminder Prompt Banner -->
+    <div id="webPushPromptBanner" class="web-push-prompt-banner" style="display:none;">
+        <div class="web-push-prompt-content">
+            <span class="web-push-prompt-icon">🔔</span>
+            <div class="web-push-prompt-text">
+                <strong>Stay on Schedule:</strong> Turn on alerts to receive attendance reminders at <strong>8:00 AM</strong> &amp; <strong>5:05 PM</strong>.
+            </div>
+        </div>
+        <div class="web-push-prompt-btns">
+            <button type="button" class="btn-enable-push" onclick="enablePushNotifications()">Turn On Alerts</button>
+            <button type="button" class="btn-dismiss-push" onclick="dismissPushPrompt()" aria-label="Dismiss">✕</button>
+        </div>
+    </div>
 
     <?php if ($is_admin && !$staff_id): ?>
     <div style="background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:16px 20px;border-radius:16px;margin-bottom:24px;font-size:14.5px;line-height:1.5;display:flex;align-items:center;gap:12px;">
@@ -2008,6 +2116,24 @@ if ($staff_id) {
       <div class="admin-notif-toast-meta" id="adminNotifMeta"></div>
   </div>
 
+  <!-- High-Priority Attendance Reminder Modal -->
+  <div id="attendanceReminderModal" class="att-reminder-modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+      <div class="att-reminder-card">
+          <div class="att-reminder-pulse-icon" id="attReminderIcon">⏰</div>
+          <div class="att-reminder-badge" id="attReminderBadge">⚠️ ATTENDANCE ALERT</div>
+          <h3 id="attReminderTitle" class="att-reminder-title">You Have Not Clocked In Today!</h3>
+          <p id="attReminderMsg" class="att-reminder-msg">It is currently <strong>08:15 AM</strong>. Please verify your attendance now to maintain your punctuality score.</p>
+          <div class="att-reminder-actions">
+              <button type="button" id="attReminderActionBtn" class="att-reminder-btn-primary" onclick="handleReminderPunchAction()">
+                  👆 Punch Attendance Now
+              </button>
+              <button type="button" class="att-reminder-btn-secondary" onclick="dismissAttendanceReminder()">
+                  Dismiss Reminder
+              </button>
+          </div>
+      </div>
+  </div>
+
 <?php if ($staff_id): ?>
 <script src="/asset/js/face-api.min.js?v=<?php echo $face_api_version; ?>"></script>
 <script src="/asset/js/clock-face.js?v=<?php echo $clock_face_version; ?>"></script>
@@ -2358,6 +2484,10 @@ if ($staff_id) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
+        const slowWebTimer = setTimeout(() => {
+            if (btn) btn.innerHTML = '📡 Slow connection… processing, do not tap…';
+        }, 2500);
+
         try {
             const res = await fetch('/api/web_clock.php', {
                 method: 'POST',
@@ -2366,6 +2496,7 @@ if ($staff_id) {
                 credentials: 'same-origin'
             });
             clearTimeout(timeoutId);
+            clearTimeout(slowWebTimer);
 
             const text = await res.text();
             let data;
@@ -2388,6 +2519,13 @@ if ($staff_id) {
                     }
                 }
                 setTimeout(() => location.reload(), 2200);
+            } else if (data.status === 'warning') {
+                cameraContainer.style.borderColor = '#f59e0b';
+                showApiError(data.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                if (window.TDSAudio) TDSAudio.playSuccess();
+                setTimeout(() => { cameraContainer.style.borderColor = '#e2e8f0'; }, 3000);
             } else {
                 let errMsg = data.message || 'Verification failed.';
                 if (data.debug && data.debug.dist) {
@@ -3342,7 +3480,11 @@ async function registerCurrentDevice() {
     }
 }
 
+let isBioClockingInFlight = false;
 async function processBiometricClock() {
+    if (isBioClockingInFlight) return;
+    isBioClockingInFlight = true;
+
     if (window.TDSAudio) {
         try { TDSAudio.unlock(); } catch(_) {}
     }
@@ -3356,15 +3498,34 @@ async function processBiometricClock() {
     if (bioCard) bioCard.classList.add('scanning');
     if (bioBtn) {
         bioBtn.disabled = true;
-        bioBtn.innerHTML = '⚡ Verifying fingerprint &amp; GPS…';
+        bioBtn.innerHTML = '⏳ Verifying and sending to server… Please wait.';
     }
     if (statusText) statusText.innerHTML = '👆 <strong>Touch your fingerprint sensor now…</strong>';
 
     try {
         const taskInput = document.getElementById('wfhTaskInput');
         const taskVal = taskInput ? taskInput.value.trim() : '';
-        const res = await TDSBiometric.clock(taskVal, currentSelectedWorkMode);
+        const res = await TDSBiometric.clock(taskVal, currentSelectedWorkMode, () => {
+            if (bioBtn) bioBtn.innerHTML = '📡 Slow connection detected. Processing your punch, do not tap again…';
+            if (statusText) statusText.innerHTML = '📡 <strong>Slow connection detected. Processing your punch, do not tap again…</strong>';
+        });
+
         if (bioCard) bioCard.classList.remove('scanning');
+
+        if (res.status === 'warning') {
+            // 5-minute safety cooldown active (anti-double-punch)
+            if (statusText) statusText.innerHTML = '<span style="color:#d97706;font-weight:700;">' + res.message + '</span>';
+            if (resultBox) {
+                resultBox.innerHTML = '<div style="background:#fffbeb;color:#92400e;border:1.5px solid #f59e0b;padding:14px;border-radius:14px;margin-top:14px;font-weight:700;">' + res.message + '</div>';
+            }
+            if (window.TDSAudio) TDSAudio.playSuccess();
+            if (bioBtn) {
+                bioBtn.disabled = false;
+                bioBtn.innerHTML = originalBioText;
+            }
+            return;
+        }
+
         if (statusText) statusText.innerHTML = '<span style="color:#10b981;">' + res.message + '</span>';
         if (resultBox) {
             resultBox.innerHTML = '<div style="background:#f0fdf4;color:#166534;border:1.5px solid #22c55e;padding:14px;border-radius:14px;margin-top:14px;font-weight:700;">🎉 ' + res.message + '</div>';
@@ -3388,6 +3549,8 @@ async function processBiometricClock() {
         if (resultBox) {
             resultBox.innerHTML = '<div style="background:#fef2f2;color:#991b1b;border:1.5px solid #ef4444;padding:12px;border-radius:12px;margin-top:14px;font-weight:600;">❌ ' + err.message + '</div>';
         }
+    } finally {
+        isBioClockingInFlight = false;
     }
 }
 
@@ -3683,6 +3846,213 @@ async function submitCardClock() {
         }
     }, 120000);
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// ⏰ IN-APP ATTENDANCE REMINDER SYSTEM & WEB PUSH NOTIFICATIONS
+// (8:00 AM, 8:15 AM for Clock-In | 5:05 PM, 5:15 PM for Clock-Out)
+// ════════════════════════════════════════════════════════════════════
+const USER_ATTENDANCE_STATE = {
+    isStaff: <?php echo $staff_id ? 'true' : 'false'; ?>,
+    clockedIn: <?php echo (!empty($today_records)) ? 'true' : 'false'; ?>,
+    clockedOut: <?php echo (!empty($today_records) && !empty($today_records[0]['clock_out'])) ? 'true' : 'false'; ?>,
+    clockInTime: <?php echo (!empty($today_records)) ? json_encode(date('h:i A', strtotime($today_records[0]['clock_in']))) : 'null'; ?>
+};
+
+function getTodayStorageKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function showAttendanceReminderModal(type, slot) {
+    const modal = document.getElementById('attendanceReminderModal');
+    const icon = document.getElementById('attReminderIcon');
+    const badge = document.getElementById('attReminderBadge');
+    const title = document.getElementById('attReminderTitle');
+    const msg = document.getElementById('attReminderMsg');
+    const actionBtn = document.getElementById('attReminderActionBtn');
+    if (!modal) return;
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (type === 'clock_out') {
+        if (icon) {
+            icon.textContent = '🏠';
+            icon.className = 'att-reminder-pulse-icon blue';
+        }
+        if (badge) {
+            badge.textContent = '🔔 CLOSE OF WORK ALERT';
+            badge.className = 'att-reminder-badge blue';
+        }
+        if (title) title.textContent = 'Time to Clock Out!';
+        if (msg) msg.innerHTML = `It is currently <strong>${timeStr}</strong>. Your shift has concluded for the day. Please remember to clock out before leaving.`;
+        if (actionBtn) {
+            actionBtn.textContent = '👆 Clock Out Now';
+            actionBtn.className = 'att-reminder-btn-primary blue';
+        }
+    } else {
+        if (icon) {
+            icon.textContent = '⏰';
+            icon.className = 'att-reminder-pulse-icon';
+        }
+        if (badge) {
+            badge.textContent = '⚠️ ATTENDANCE REMINDER';
+            badge.className = 'att-reminder-badge';
+        }
+        if (title) title.textContent = 'You Have Not Clocked In Today!';
+        if (msg) msg.innerHTML = `It is currently <strong>${timeStr}</strong>. You have not recorded your clock-in yet today. Please verify your attendance now.`;
+        if (actionBtn) {
+            actionBtn.textContent = '👆 Clock In Now';
+            actionBtn.className = 'att-reminder-btn-primary';
+        }
+    }
+
+    modal.style.display = 'flex';
+
+    // Vibrate phone
+    if ('vibrate' in navigator) {
+        try { navigator.vibrate([400, 150, 400, 150, 600]); } catch(_) {}
+    }
+
+    // Play loud attention-grabbing chime & voice
+    if (window.TDSAudio) {
+        try { TDSAudio.playReminder(type); } catch(_) {}
+    }
+}
+
+function dismissAttendanceReminder() {
+    const modal = document.getElementById('attendanceReminderModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function handleReminderPunchAction() {
+    dismissAttendanceReminder();
+    const target = document.getElementById('bioClockBtn') || document.getElementById('snapBtn');
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.focus();
+        const card = document.querySelector('.clocking-card');
+        if (card) {
+            card.style.transition = 'box-shadow 0.3s';
+            card.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.4)';
+            setTimeout(() => { card.style.boxShadow = ''; }, 2500);
+        }
+    }
+}
+
+// Check every 25 seconds if a target reminder window has been reached
+function checkAttendanceReminders() {
+    if (!USER_ATTENDANCE_STATE.isStaff) return;
+
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes();
+    const todayKey = getTodayStorageKey();
+
+    let targetSlot = null;
+    let targetType = null;
+
+    // Morning Clock-In Windows: 08:00 - 08:05 and 08:15 - 08:20
+    if (!USER_ATTENDANCE_STATE.clockedIn) {
+        if (h === 8 && m >= 0 && m <= 5) {
+            targetSlot = 'morning_800';
+            targetType = 'clock_in';
+        } else if (h === 8 && m >= 15 && m <= 20) {
+            targetSlot = 'morning_815';
+            targetType = 'clock_in';
+        }
+    }
+
+    // Evening Clock-Out Windows: 17:05 - 17:10 and 17:15 - 17:20
+    if (USER_ATTENDANCE_STATE.clockedIn && !USER_ATTENDANCE_STATE.clockedOut) {
+        if (h === 17 && m >= 5 && m <= 10) {
+            targetSlot = 'evening_1705';
+            targetType = 'clock_out';
+        } else if (h === 17 && m >= 15 && m <= 20) {
+            targetSlot = 'evening_1715';
+            targetType = 'clock_out';
+        }
+    }
+
+    if (targetSlot) {
+        const key = 'tds_alarm_' + todayKey + '_' + targetSlot;
+        if (!localStorage.getItem(key)) {
+            localStorage.setItem(key, '1');
+            showAttendanceReminderModal(targetType, targetSlot);
+        }
+    }
+}
+
+// Manual testing helper accessible in console
+window.triggerAttendanceReminderTest = function(type = 'clock_in') {
+    showAttendanceReminderModal(type, 'manual_test');
+};
+
+// ── Web Push Subscription Management ──
+async function initPushNotificationBanner() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        return;
+    }
+
+    const banner = document.getElementById('webPushPromptBanner');
+    if (!banner) return;
+
+    const dismissedToday = localStorage.getItem('tds_push_dismissed_' + getTodayStorageKey());
+    if (Notification.permission === 'granted' || Notification.permission === 'denied' || dismissedToday) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    banner.style.display = 'flex';
+}
+
+async function enablePushNotifications() {
+    const banner = document.getElementById('webPushPromptBanner');
+    try {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+            if (banner) banner.style.display = 'none';
+            showTopNotification("🔔 Reminders active! You will now receive clocking alerts on this device.", true);
+
+            const reg = await navigator.serviceWorker.ready;
+            if (reg.pushManager) {
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    try {
+                        sub = await reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: null
+                        });
+                    } catch (_) {}
+                }
+                if (sub) {
+                    await fetch('/api/push_subscribe.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'subscribe', subscription: sub })
+                    });
+                }
+            }
+        } else {
+            if (banner) banner.style.display = 'none';
+        }
+    } catch (e) {
+        if (banner) banner.style.display = 'none';
+    }
+}
+
+function dismissPushPrompt() {
+    const banner = document.getElementById('webPushPromptBanner');
+    if (banner) banner.style.display = 'none';
+    localStorage.setItem('tds_push_dismissed_' + getTodayStorageKey(), '1');
+}
+
+// Start reminder monitor on dashboard load
+document.addEventListener('DOMContentLoaded', function() {
+    checkAttendanceReminders();
+    setInterval(checkAttendanceReminders, 25000);
+    initPushNotificationBanner();
+});
 </script>
 
 <script src="/asset/js/idle-logout.js?v=<?php echo $idle_logout_version; ?>" defer></script>

@@ -299,111 +299,134 @@ const TDSBiometric = (function () {
         return saveResult;
     }
 
+    let isClockingInFlight = false;
+
     // Lightning-Fast Verify thumbprint / Face ID & punch attendance (<15ms hardware invocation)
-    async function clock(taskComment = '', selectedMode = '') {
-        // 1. Launch background GPS acquisition concurrently (0ms wait)
-        const coordsPromise = getCoordinates();
-
-        // 2. Check platform support (0ms if cached)
-        const supported = await isSupported();
-        if (!supported) {
-            throw new Error("Biometric authentication is not supported on this device/browser.");
+    async function clock(taskComment = '', selectedMode = '', onSlowNetwork = null) {
+        if (isClockingInFlight) {
+            throw new Error("A clocking request is already being processed. Please wait…");
         }
+        isClockingInFlight = true;
 
-        // 3. Grab authentication challenge (0ms from RAM cache)
-        const options = await getAuthOptions();
-
-        if (!options || options.status !== 'success') {
-            throw new Error((options && options.message) || 'Failed to start biometric authentication.');
-        }
-
-        if (!options.allowCredentials || options.allowCredentials.length === 0) {
-            throw new Error("No biometric registered for this account. Please click 'Register This Device' first.");
-        }
-
-        // 4. Format allowed credentials with device credential prioritized at index 0
-        let savedCred = '';
-        try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
-
-        const allowCreds = options.allowCredentials.map(c => {
-            const item = {
-                type: 'public-key',
-                id: base64UrlToBuffer(c.id)
-            };
-            if (c.transports && Array.isArray(c.transports)) {
-                item.transports = c.transports;
-            }
-            return item;
-        });
-
-        if (savedCred) {
-            allowCreds.sort((a, b) => {
-                const aMatch = bufferToBase64Url(a.id) === savedCred;
-                const bMatch = bufferToBase64Url(b.id) === savedCred;
-                return bMatch - aMatch;
-            });
-        }
-
-        const getOptions = {
-            challenge: base64UrlToBuffer(options.challenge),
-            rpId: options.rpId,
-            allowCredentials: allowCreds,
-            userVerification: options.userVerification || 'preferred',
-            timeout: options.timeout || 30000
-        };
-
-        // 5. TRIGGER NATIVE FINGERPRINT / FACE ID SENSOR IMMEDIATELY (<15ms)
-        let assertion;
+        let slowTimer = null;
         try {
-            assertion = await navigator.credentials.get({ publicKey: getOptions });
-        } catch (err) {
-            if (err.name === 'NotAllowedError') {
-                const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-                if (isIOS) {
-                    throw new Error("Biometric verification was not allowed. If using an iPhone, ensure Face ID / Touch ID is permitted in Safari or your Home Screen app.");
-                } else {
-                    throw new Error("Biometric verification was cancelled or timed out.");
+            // 1. Launch background GPS acquisition concurrently (0ms wait)
+            const coordsPromise = getCoordinates();
+
+            // 2. Check platform support (0ms if cached)
+            const supported = await isSupported();
+            if (!supported) {
+                throw new Error("Biometric authentication is not supported on this device/browser.");
+            }
+
+            // 3. Grab authentication challenge (0ms from RAM cache)
+            const options = await getAuthOptions();
+
+            if (!options || options.status !== 'success') {
+                throw new Error((options && options.message) || 'Failed to start biometric authentication.');
+            }
+
+            if (!options.allowCredentials || options.allowCredentials.length === 0) {
+                throw new Error("No biometric registered for this account. Please click 'Register This Device' first.");
+            }
+
+            // 4. Format allowed credentials with device credential prioritized at index 0
+            let savedCred = '';
+            try { savedCred = localStorage.getItem('tds_bio_cred_id') || ''; } catch(_) {}
+
+            const allowCreds = options.allowCredentials.map(c => {
+                const item = {
+                    type: 'public-key',
+                    id: base64UrlToBuffer(c.id)
+                };
+                if (c.transports && Array.isArray(c.transports)) {
+                    item.transports = c.transports;
                 }
+                return item;
+            });
+
+            if (savedCred) {
+                allowCreds.sort((a, b) => {
+                    const aMatch = bufferToBase64Url(a.id) === savedCred;
+                    const bMatch = bufferToBase64Url(b.id) === savedCred;
+                    return bMatch - aMatch;
+                });
             }
-            throw err;
-        }
 
-        if (!assertion) {
-            throw new Error("Biometric verification cancelled.");
-        }
+            const getOptions = {
+                challenge: base64UrlToBuffer(options.challenge),
+                rpId: options.rpId,
+                allowCredentials: allowCreds,
+                userVerification: options.userVerification || 'preferred',
+                timeout: options.timeout || 30000
+            };
 
-        // Cache confirmed credential ID on device
-        try { localStorage.setItem('tds_bio_cred_id', assertion.id); } catch(_) {}
-
-        // 6. Await GPS (which already finished in background while user touched sensor!)
-        const coords = await coordsPromise;
-
-        // 7. Post assertion, coordinates, and optional WFH task to server for clocking
-        const clockPayload = {
-            credential_id: assertion.id,
-            latitude: coords ? coords.latitude : null,
-            longitude: coords ? coords.longitude : null,
-            task: taskComment || '',
-            selected_mode: selectedMode || '',
-            response: {
-                clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
-                authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),
-                signature: bufferToBase64Url(assertion.response.signature)
+            // 5. TRIGGER NATIVE FINGERPRINT / FACE ID SENSOR IMMEDIATELY (<15ms)
+            let assertion;
+            try {
+                assertion = await navigator.credentials.get({ publicKey: getOptions });
+            } catch (err) {
+                if (err.name === 'NotAllowedError') {
+                    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+                    if (isIOS) {
+                        throw new Error("Biometric verification was not allowed. If using an iPhone, ensure Face ID / Touch ID is permitted in Safari or your Home Screen app.");
+                    } else {
+                        throw new Error("Biometric verification was cancelled or timed out.");
+                    }
+                }
+                throw err;
             }
-        };
 
-        const clockResp = await fetch('/api/biometric_clock.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(clockPayload)
-        });
+            if (!assertion) {
+                throw new Error("Biometric verification cancelled.");
+            }
 
-        const clockResult = await clockResp.json();
-        if (clockResult.status !== 'success') {
-            throw new Error(clockResult.message || 'Clocking rejected by server.');
+            // Cache confirmed credential ID on device
+            try { localStorage.setItem('tds_bio_cred_id', assertion.id); } catch(_) {}
+
+            // 6. Await GPS (which already finished in background while user touched sensor!)
+            const coords = await coordsPromise;
+
+            // Trigger slow network indicator if server call takes > 2.5 seconds
+            if (typeof onSlowNetwork === 'function') {
+                slowTimer = setTimeout(onSlowNetwork, 2500);
+            }
+
+            // 7. Post assertion, coordinates, and optional WFH task to server for clocking
+            const clockPayload = {
+                credential_id: assertion.id,
+                latitude: coords ? coords.latitude : null,
+                longitude: coords ? coords.longitude : null,
+                task: taskComment || '',
+                selected_mode: selectedMode || '',
+                response: {
+                    clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
+                    authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),
+                    signature: bufferToBase64Url(assertion.response.signature)
+                }
+            };
+
+            const clockResp = await fetch('/api/biometric_clock.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(clockPayload)
+            });
+
+            if (slowTimer) {
+                clearTimeout(slowTimer);
+                slowTimer = null;
+            }
+
+            const clockResult = await clockResp.json();
+            if (clockResult.status !== 'success' && clockResult.status !== 'warning') {
+                throw new Error(clockResult.message || 'Clocking rejected by server.');
+            }
+
+            return clockResult;
+        } finally {
+            if (slowTimer) clearTimeout(slowTimer);
+            isClockingInFlight = false;
         }
-
-        return clockResult;
     }
 
     // Auto pre-warm support, GPS, and challenges as soon as script runs

@@ -284,7 +284,20 @@ if ($action === 'clock_in') {
 
     if ($record) {
         $clock_in_time = strtotime($record['clock_in']);
-        $total_hours   = round((time() - $clock_in_time) / 3600, 2);
+        $diff_seconds  = max(0, time() - $clock_in_time);
+
+        // ── 5-MINUTE COOLDOWN PROTECTION (Anti-Double-Tap / Network Lag Shield) ──
+        if ($diff_seconds < 300) {
+            $unlock_time = date('h:i A', $clock_in_time + 300);
+            $in_time_str = date('h:i A', $clock_in_time);
+            json_response([
+                "status"  => "warning",
+                "action"  => "cooldown_active",
+                "message" => "⏱️ You already clocked in today at {$in_time_str}. To prevent accidental double clock-out, clock-out is locked for 5 minutes (available at {$unlock_time})."
+            ], 200);
+        }
+
+        $total_hours   = round($diff_seconds / 3600, 2);
 
         // ── HYBRID DAY-SHIFT RESOLUTION ──
         $prev_mode   = $record['work_mode'] ?? 'office';
