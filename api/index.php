@@ -1356,7 +1356,7 @@ body {
                     <div style="font-size:11px; color:#64748b;">Direct APK &amp; Web Install</div>
                 </div>
             </div>
-            <a href="javascript:void(0)" onclick="openSmartInstallModal()" style="display:inline-flex; align-items:center; gap:6px; background:#10439f; color:#ffffff; font-size:11.5px; font-weight:800; padding:7px 12px; border-radius:10px; text-decoration:none; box-shadow:0 3px 10px rgba(16,67,159,0.3); flex-shrink:0;">
+            <a href="javascript:void(0)" onclick="triggerTDSInstall(event)" style="display:inline-flex; align-items:center; gap:6px; background:#10439f; color:#ffffff; font-size:11.5px; font-weight:800; padding:7px 12px; border-radius:10px; text-decoration:none; box-shadow:0 3px 10px rgba(16,67,159,0.3); flex-shrink:0;">
                 <span>Install</span>
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
