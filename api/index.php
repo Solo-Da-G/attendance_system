@@ -1345,6 +1345,23 @@ body {
             <div class="trust-pill"><span>🛡️</span> Device Guard</div>
         </div>
 
+        <!-- Install App / Download Android APK Badge -->
+        <div style="margin-top:16px; padding:12px 14px; background:linear-gradient(135deg, rgba(16,67,159,0.06), rgba(37,99,235,0.08)); border:1.5px solid rgba(37,99,235,0.2); border-radius:16px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px; text-align:left;">
+                <div style="width:36px; height:36px; border-radius:10px; background:#10439f; color:#ffffff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:12.5px; font-weight:800; color:#0f172a;">TDS Attendance App</div>
+                    <div style="font-size:11px; color:#64748b;">Direct APK &amp; Web Install</div>
+                </div>
+            </div>
+            <a href="javascript:void(0)" onclick="openSmartInstallModal()" style="display:inline-flex; align-items:center; gap:6px; background:#10439f; color:#ffffff; font-size:11.5px; font-weight:800; padding:7px 12px; border-radius:10px; text-decoration:none; box-shadow:0 3px 10px rgba(16,67,159,0.3); flex-shrink:0;">
+                <span>Install</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+        </div>
+
         <div class="auth-footer-help">
             Having trouble signing in? Contact your system administrator for assistance.
         </div>
@@ -1719,5 +1736,6 @@ if ('serviceWorker' in navigator) {
     }
 }
 </script>
+<?php require_once __DIR__ . '/includes/install_modal.php'; ?>
 </body>
 </html>

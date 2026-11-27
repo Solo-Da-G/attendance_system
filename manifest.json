@@ -1,9 +1,9 @@
 {
-  "id": "tds-attendance-system",
+  "id": "/?source=pwa",
   "name": "TDS Attendance System",
   "short_name": "TDS Attendance",
   "description": "Enterprise Geofencing & Biometric Attendance Management System",
-  "start_url": "/dashboard.php",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": [
